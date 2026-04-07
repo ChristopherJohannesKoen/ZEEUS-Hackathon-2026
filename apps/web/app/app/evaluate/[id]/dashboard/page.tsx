@@ -1,10 +1,11 @@
 import Link from 'next/link';
 import { forbidden, notFound } from 'next/navigation';
 import { Badge, Card, buttonClassName } from '@packages/ui';
+import { EvaluationLifecycleActions } from '../../../../../components/evaluation-lifecycle-actions';
+import { EvaluationProgress } from '../../../../../components/evaluation-progress';
 import { ApiRequestError } from '../../../../../lib/api-error';
 import { confidenceTone, priorityTone } from '../../../../../lib/display';
 import { getEvaluation, getEvaluationDashboard } from '../../../../../lib/server-api';
-import { EvaluationProgress } from '../../../../../components/evaluation-progress';
 
 export const dynamic = 'force-dynamic';
 
@@ -85,6 +86,16 @@ export default async function DashboardPage({ params }: { params: Params }) {
                 >
                   Export CSV
                 </a>
+                <a
+                  className={buttonClassName({
+                    variant: 'ghost',
+                    className:
+                      'border border-white/20 text-white hover:bg-white/10 hover:text-white'
+                  })}
+                  href={`/api/evaluations/${evaluation.id}/export.pdf`}
+                >
+                  Export PDF
+                </a>
               </div>
             </div>
           </Card>
@@ -119,6 +130,24 @@ export default async function DashboardPage({ params }: { params: Params }) {
             </div>
           </Card>
         </section>
+
+        <Card className="border-surface-border">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="text-xs uppercase tracking-[0.25em] text-[#58724d]">Lifecycle</p>
+              <h2 className="mt-2 text-2xl font-black text-slate-950">
+                Freeze, reopen, and review revisions
+              </h2>
+              <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
+                Completed evaluations are preserved as immutable snapshots. Reopening starts a new
+                draft revision without mutating the completed result.
+              </p>
+            </div>
+          </div>
+          <div className="mt-5">
+            <EvaluationLifecycleActions evaluationId={evaluation.id} status={evaluation.status} />
+          </div>
+        </Card>
 
         <section className="grid gap-6 lg:grid-cols-[1fr_1fr_0.9fr]">
           <Card className="border-surface-border">
@@ -239,7 +268,7 @@ export default async function DashboardPage({ params }: { params: Params }) {
             {dashboard.recommendations.map((recommendation) => (
               <div className="rounded-[28px] bg-[#f7f9f4] p-5" key={recommendation.id}>
                 <p className="text-xs uppercase tracking-[0.22em] text-[#5d7355]">
-                  {recommendation.source} · {recommendation.severityBand}
+                  {recommendation.source} / {recommendation.severityBand}
                 </p>
                 <h3 className="mt-2 text-lg font-bold text-slate-950">{recommendation.title}</h3>
                 <p className="mt-3 text-sm leading-7 text-slate-600">{recommendation.text}</p>

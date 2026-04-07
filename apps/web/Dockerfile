@@ -11,6 +11,8 @@ COPY apps/web/package.json ./apps/web/package.json
 COPY vendor/nestjs-config-4.0.3.tgz ./vendor/nestjs-config-4.0.3.tgz
 COPY vendor/nestjs-swagger-11.2.6.tgz ./vendor/nestjs-swagger-11.2.6.tgz
 COPY packages/shared/package.json ./packages/shared/package.json
+COPY packages/contracts/package.json ./packages/contracts/package.json
+COPY packages/scoring/package.json ./packages/scoring/package.json
 COPY packages/ui/package.json ./packages/ui/package.json
 COPY packages/config/package.json ./packages/config/package.json
 COPY packages/db/package.json ./packages/db/package.json
@@ -23,7 +25,9 @@ COPY . .
 ARG API_ORIGIN=http://localhost:4000
 ENV API_ORIGIN=${API_ORIGIN}
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN npm run prisma:generate && npm run build --workspace=@apps/web
+RUN npm run prisma:generate \
+  && npm run build:runtime-packages \
+  && npm run build --workspace=@apps/web
 
 FROM base AS runner
 WORKDIR /app
@@ -33,6 +37,12 @@ RUN addgroup -S nodejs && adduser -S nextjs -G nodejs
 COPY --from=builder /app/apps/web/.next/standalone ./
 COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
 COPY --from=builder /app/apps/web/public ./apps/web/public
+COPY --from=builder /app/packages/shared/package.json ./packages/shared/package.json
+COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
+COPY --from=builder /app/packages/contracts/package.json ./packages/contracts/package.json
+COPY --from=builder /app/packages/contracts/dist ./packages/contracts/dist
+COPY --from=builder /app/packages/scoring/package.json ./packages/scoring/package.json
+COPY --from=builder /app/packages/scoring/dist ./packages/scoring/dist
 USER nextjs
 EXPOSE 3000
 ENV PORT=3000

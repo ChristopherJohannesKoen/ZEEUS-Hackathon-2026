@@ -2,13 +2,24 @@
   "name": "@packages/scoring",
   "private": true,
   "type": "module",
-  "main": "src/index.ts",
+  "main": "./dist/cjs/src/index.js",
+  "module": "./dist/esm/src/index.js",
+  "types": "./dist/types/src/index.d.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/types/src/index.d.ts",
+      "import": "./dist/esm/src/index.js",
+      "require": "./dist/cjs/src/index.js",
+      "default": "./dist/esm/src/index.js"
+    }
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "dev": "tsc -p tsconfig.json --watch",
+    "clean": "node -e \"require('node:fs').rmSync('dist',{ recursive: true, force: true })\"",
+    "build": "npm run clean && tsc -p tsconfig.build.esm.json && tsc -p tsconfig.build.cjs.json && node ../../scripts/finalize-package-build.mjs packages/scoring catalog",
+    "dev": "tsc -p tsconfig.build.esm.json --watch",
     "lint": "eslint \"src/**/*.ts\" --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"

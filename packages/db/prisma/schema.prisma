@@ -153,6 +153,13 @@ model Evaluation {
   innovationApproach   InnovationApproach
   status               EvaluationStatus        @default(draft)
   currentStep          EvaluationStep          @default(start)
+  currentRevisionId    String?
+  currentRevisionNumber Int                    @default(0)
+  scoringVersion       String                  @default("2026.04.ready-software.1")
+  catalogVersion       String                  @default("workbook-catalog")
+  completedAt          DateTime?
+  archivedAt           DateTime?
+  lastScoredAt         DateTime?
   financialTotal       Int                     @default(0)
   riskOverall          Float                   @default(0)
   opportunityOverall   Float                   @default(0)
@@ -163,10 +170,13 @@ model Evaluation {
   stage1TopicAnswers   Stage1TopicAnswer[]
   stage2RiskAnswers    Stage2RiskAnswer[]
   stage2OpportunityAnswers Stage2OpportunityAnswer[]
+  revisions            EvaluationRevision[]
+  artifacts            EvaluationArtifact[]
   createdAt            DateTime                @default(now())
   updatedAt            DateTime                @updatedAt
 
   @@index([userId, updatedAt])
+  @@index([currentRevisionId])
 }
 
 model Stage1FinancialAnswer {
@@ -192,6 +202,7 @@ model Stage1TopicAnswer {
   irreversibility ImpactDimensionLevel
   likelihood      ImpactLikelihoodLevel
   evidenceBasis   EvidenceBasis
+  evidenceNote    String?
   impactScore     Float                 @default(0)
   priorityBand    PriorityBand          @default(not_applicable)
   createdAt       DateTime              @default(now())
@@ -210,6 +221,7 @@ model Stage2RiskAnswer {
   probability   RiskProbabilityLevel
   impact        ImpactDimensionLevel
   evidenceBasis EvidenceBasis
+  evidenceNote  String?
   ratingLabel   RiskRatingLabel       @default(neutral)
   ratingScore   Float                 @default(0)
   createdAt     DateTime              @default(now())
@@ -228,6 +240,7 @@ model Stage2OpportunityAnswer {
   likelihood      RiskProbabilityLevel
   impact          ImpactDimensionLevel
   evidenceBasis   EvidenceBasis
+  evidenceNote    String?
   ratingLabel     OpportunityRatingLabel @default(neutral)
   ratingScore     Float                  @default(0)
   createdAt       DateTime               @default(now())
@@ -262,6 +275,46 @@ model RecommendationTemplate {
   updatedAt          DateTime           @updatedAt
 
   @@unique([code, recommendationType, severityBand])
+}
+
+model EvaluationRevision {
+  id                    String           @id @default(cuid())
+  evaluationId          String
+  evaluation            Evaluation       @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  revisionNumber        Int
+  status                EvaluationStatus
+  currentStep           EvaluationStep
+  scoringVersion        String
+  catalogVersion        String
+  detailSnapshot        Json
+  impactSummarySnapshot Json
+  dashboardSnapshot     Json
+  reportSnapshot        Json
+  createdByUserId       String?
+  createdAt             DateTime         @default(now())
+  artifacts             EvaluationArtifact[]
+
+  @@unique([evaluationId, revisionNumber])
+  @@index([evaluationId, createdAt])
+}
+
+model EvaluationArtifact {
+  id              String                   @id @default(cuid())
+  evaluationId    String
+  evaluation      Evaluation               @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  revisionId      String?
+  revision        EvaluationRevision?      @relation(fields: [revisionId], references: [id], onDelete: SetNull)
+  kind            EvaluationArtifactKind
+  status          EvaluationArtifactStatus @default(ready)
+  filename        String
+  mimeType        String
+  byteSize        Int
+  createdByUserId String?
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+
+  @@index([evaluationId, createdAt])
+  @@index([revisionId])
 }
 
 model IdentityProviderConfig {
@@ -488,6 +541,7 @@ enum EvaluationStatus {
   draft
   in_progress
   completed
+  archived
 }
 
 enum EvaluationStep {
@@ -631,4 +685,16 @@ enum RecommendationType {
   stage1
   risk
   opportunity
+}
+
+enum EvaluationArtifactKind {
+  csv
+  pdf
+  ai_explanation
+}
+
+enum EvaluationArtifactStatus {
+  pending
+  ready
+  failed
 }

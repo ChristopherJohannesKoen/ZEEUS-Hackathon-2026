@@ -8,14 +8,15 @@ response schemas.
 
 ## Package Split
 
-- `packages/shared` owns Zod schemas, enums, DTOs, and response envelopes.
+- `packages/shared` owns Zod schemas, enums, DTOs, response envelopes, and
+  evaluation/report domain types.
 - `packages/contracts` owns HTTP method, path, params, query, body, and status
   surface.
 
 This keeps domain types reusable while still making the actual HTTP interface
 explicit.
 
-## Current Route Groups
+## Active Route Groups
 
 The main contract lives in `packages/contracts/src/index.ts` and currently
 includes:
@@ -25,11 +26,8 @@ includes:
 - `users`
 - `admin`
 - `evaluations`
-- `projects`
 
-`evaluations` is the primary product slice used by the hackathon app.
-`projects` remains as a retained reference CRUD slice from the original
-baseline.
+`evaluations` is the primary product slice for the ZEEUS assessment platform.
 
 ## Evaluation Routes
 
@@ -38,15 +36,19 @@ The evaluation contract covers:
 - create, list, and fetch evaluations
 - update startup context
 - fetch the summary SDG pre-screen
-- save Stage I financial answers
-- save Stage I topic answers
-- save Stage II risk answers
-- save Stage II opportunity answers
+- save Stage I transactionally with combined financial and topic answers
+- save Stage II transactionally with combined risk and opportunity answers
 - fetch impact summary
 - fetch SDG alignment
 - fetch dashboard data
 - fetch report data
+- complete, reopen, archive, and unarchive evaluations
+- list revision snapshots and fetch a specific revision snapshot
 - export CSV
+- export PDF
+
+Compatibility endpoints for split Stage I and Stage II saves still exist for one
+transition window, but the product should use the combined step routes.
 
 ## Client Rules
 
@@ -60,8 +62,8 @@ contract-backed helper should exist.
 
 ## Non-JSON Responses
 
-CSV export stays explicit as a non-JSON route. Everything else in the main
-assessment flow should stay contract-backed JSON.
+CSV and PDF exports stay explicit as non-JSON routes. Everything else in the
+main assessment flow should stay contract-backed JSON.
 
 ## Change Workflow
 

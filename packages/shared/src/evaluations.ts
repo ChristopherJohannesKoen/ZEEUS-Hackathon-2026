@@ -20,8 +20,11 @@ export type StartupStage = z.infer<typeof StartupStageSchema>;
 export const InnovationApproachSchema = z.enum(['sustaining', 'disruptive']);
 export type InnovationApproach = z.infer<typeof InnovationApproachSchema>;
 
-export const EvaluationStatusSchema = z.enum(['draft', 'in_progress', 'completed']);
+export const EvaluationStatusSchema = z.enum(['draft', 'in_progress', 'completed', 'archived']);
 export type EvaluationStatus = z.infer<typeof EvaluationStatusSchema>;
+
+export const EvaluationLifecycleStatusSchema = EvaluationStatusSchema;
+export type EvaluationLifecycleStatus = z.infer<typeof EvaluationLifecycleStatusSchema>;
 
 export const EvaluationStepSchema = z.enum([
   'start',
@@ -72,6 +75,26 @@ export type EvidenceBasis = z.infer<typeof EvidenceBasisSchema>;
 
 export const ConfidenceBandSchema = z.enum(['high', 'moderate', 'low']);
 export type ConfidenceBand = z.infer<typeof ConfidenceBandSchema>;
+
+export const RecommendationActionStatusSchema = z.enum([
+  'not_started',
+  'in_progress',
+  'completed',
+  'dismissed'
+]);
+export type RecommendationActionStatus = z.infer<typeof RecommendationActionStatusSchema>;
+
+export const EvaluationArtifactKindSchema = z.enum(['csv', 'pdf', 'ai_explanation']);
+export type EvaluationArtifactKind = z.infer<typeof EvaluationArtifactKindSchema>;
+
+export const EvaluationArtifactStatusSchema = z.enum(['pending', 'ready', 'failed']);
+export type EvaluationArtifactStatus = z.infer<typeof EvaluationArtifactStatusSchema>;
+
+export const ScoringVersionInfoSchema = z.object({
+  scoringVersion: z.string().min(1),
+  catalogVersion: z.string().min(1)
+});
+export type ScoringVersionInfo = z.infer<typeof ScoringVersionInfoSchema>;
 
 export const SdgSourceTypeSchema = z.enum(['stage', 'business', 'both']);
 export type SdgSourceType = z.infer<typeof SdgSourceTypeSchema>;
@@ -184,7 +207,8 @@ export const Stage1TopicAnswerInputSchema = z.object({
   scale: ImpactDimensionLevelSchema,
   irreversibility: ImpactDimensionLevelSchema,
   likelihood: ImpactLikelihoodLevelSchema,
-  evidenceBasis: EvidenceBasisSchema
+  evidenceBasis: EvidenceBasisSchema,
+  evidenceNote: z.string().trim().max(500).optional().nullable()
 });
 export type Stage1TopicAnswerInput = z.infer<typeof Stage1TopicAnswerInputSchema>;
 
@@ -193,12 +217,19 @@ export const SaveStage1TopicsPayloadSchema = z.object({
 });
 export type SaveStage1TopicsPayload = z.infer<typeof SaveStage1TopicsPayloadSchema>;
 
+export const SaveStage1PayloadSchema = z.object({
+  financial: Stage1FinancialAnswersPayloadSchema,
+  topics: z.array(Stage1TopicAnswerInputSchema).length(10)
+});
+export type SaveStage1Payload = z.infer<typeof SaveStage1PayloadSchema>;
+
 export const Stage2RiskAnswerInputSchema = z.object({
   riskCode: RiskCodeSchema,
   applicable: z.boolean(),
   probability: RiskProbabilityLevelSchema,
   impact: ImpactDimensionLevelSchema,
-  evidenceBasis: EvidenceBasisSchema
+  evidenceBasis: EvidenceBasisSchema,
+  evidenceNote: z.string().trim().max(500).optional().nullable()
 });
 export type Stage2RiskAnswerInput = z.infer<typeof Stage2RiskAnswerInputSchema>;
 
@@ -212,7 +243,8 @@ export const Stage2OpportunityAnswerInputSchema = z.object({
   applicable: z.boolean(),
   likelihood: RiskProbabilityLevelSchema,
   impact: ImpactDimensionLevelSchema,
-  evidenceBasis: EvidenceBasisSchema
+  evidenceBasis: EvidenceBasisSchema,
+  evidenceNote: z.string().trim().max(500).optional().nullable()
 });
 export type Stage2OpportunityAnswerInput = z.infer<typeof Stage2OpportunityAnswerInputSchema>;
 
@@ -220,6 +252,12 @@ export const SaveStage2OpportunitiesPayloadSchema = z.object({
   items: z.array(Stage2OpportunityAnswerInputSchema).length(6)
 });
 export type SaveStage2OpportunitiesPayload = z.infer<typeof SaveStage2OpportunitiesPayloadSchema>;
+
+export const SaveStage2PayloadSchema = z.object({
+  risks: z.array(Stage2RiskAnswerInputSchema).length(6),
+  opportunities: z.array(Stage2OpportunityAnswerInputSchema).length(6)
+});
+export type SaveStage2Payload = z.infer<typeof SaveStage2PayloadSchema>;
 
 export const SdgReferenceSchema = z.object({
   number: z.number().int().min(1).max(17),
@@ -284,6 +322,17 @@ export const Stage2OpportunityAnswerSchema = Stage2OpportunityAnswerInputSchema.
 });
 export type Stage2OpportunityAnswer = z.infer<typeof Stage2OpportunityAnswerSchema>;
 
+export const EvaluationArtifactSummarySchema = z.object({
+  id: z.string(),
+  kind: EvaluationArtifactKindSchema,
+  status: EvaluationArtifactStatusSchema,
+  filename: z.string(),
+  mimeType: z.string(),
+  byteSize: z.number().int().nonnegative(),
+  createdAt: z.string()
+});
+export type EvaluationArtifactSummary = z.infer<typeof EvaluationArtifactSummarySchema>;
+
 export const EvaluationListItemSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -296,6 +345,11 @@ export const EvaluationListItemSchema = z.object({
   riskOverall: z.number().min(0),
   opportunityOverall: z.number().min(0),
   confidenceBand: ConfidenceBandSchema,
+  currentRevisionNumber: z.number().int().min(0),
+  scoringVersionInfo: ScoringVersionInfoSchema,
+  lastScoredAt: z.string().nullable(),
+  completedAt: z.string().nullable(),
+  archivedAt: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string()
 });
@@ -314,7 +368,8 @@ export const EvaluationDetailSchema = EvaluationListItemSchema.extend({
   stage1Financial: Stage1FinancialAnswerSchema.nullable(),
   stage1Topics: z.array(Stage1TopicAnswerSchema),
   stage2Risks: z.array(Stage2RiskAnswerSchema),
-  stage2Opportunities: z.array(Stage2OpportunityAnswerSchema)
+  stage2Opportunities: z.array(Stage2OpportunityAnswerSchema),
+  artifacts: z.array(EvaluationArtifactSummarySchema)
 });
 export type EvaluationDetail = z.infer<typeof EvaluationDetailSchema>;
 
@@ -391,3 +446,30 @@ export const ReportResponseSchema = z.object({
   dashboard: DashboardResponseSchema
 });
 export type ReportResponse = z.infer<typeof ReportResponseSchema>;
+
+export const EvaluationRevisionSummarySchema = z.object({
+  id: z.string(),
+  evaluationId: z.string(),
+  revisionNumber: z.number().int().min(1),
+  status: EvaluationStatusSchema,
+  currentStep: EvaluationStepSchema,
+  scoringVersionInfo: ScoringVersionInfoSchema,
+  createdAt: z.string()
+});
+export type EvaluationRevisionSummary = z.infer<typeof EvaluationRevisionSummarySchema>;
+
+export const EvaluationRevisionListResponseSchema = z.object({
+  items: z.array(EvaluationRevisionSummarySchema)
+});
+export type EvaluationRevisionListResponse = z.infer<typeof EvaluationRevisionListResponseSchema>;
+
+export const EvaluationRevisionParamsSchema = z.object({
+  id: z.string(),
+  revisionNumber: z.coerce.number().int().min(1)
+});
+export type EvaluationRevisionParams = z.infer<typeof EvaluationRevisionParamsSchema>;
+
+export const EvaluationRevisionDetailSchema = EvaluationRevisionSummarySchema.extend({
+  report: ReportResponseSchema
+});
+export type EvaluationRevisionDetail = z.infer<typeof EvaluationRevisionDetailSchema>;

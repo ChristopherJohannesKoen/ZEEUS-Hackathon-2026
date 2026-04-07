@@ -1,10 +1,10 @@
 import { forbidden, notFound } from 'next/navigation';
 import { Badge, Card } from '@packages/ui';
+import { PrintReportButton } from '../../../../components/print-report-button';
+import { ZeeusLogo } from '../../../../components/zeeus-logo';
 import { ApiRequestError } from '../../../../lib/api-error';
 import { confidenceTone, formatDate, priorityTone } from '../../../../lib/display';
 import { getEvaluationReport } from '../../../../lib/server-api';
-import { PrintReportButton } from '../../../../components/print-report-button';
-import { ZeeusLogo } from '../../../../components/zeeus-logo';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,7 +28,7 @@ export default async function ReportPage({ params }: { params: Params }) {
               Print-friendly report view for PDF export and submission review.
             </p>
           </div>
-          <PrintReportButton />
+          <PrintReportButton evaluationId={report.evaluation.id} />
         </section>
 
         <section className="overflow-hidden rounded-[32px] border border-surface-border bg-gradient-to-br from-brand to-brand-dark p-0 text-white">
@@ -48,7 +48,7 @@ export default async function ReportPage({ params }: { params: Params }) {
                 </p>
                 <h2 className="mt-2 text-3xl font-black">{report.evaluation.name}</h2>
                 <p className="mt-3 text-sm text-white/80">
-                  {report.evaluation.country} · {report.evaluation.naceDivision}
+                  {report.evaluation.country} / {report.evaluation.naceDivision}
                 </p>
               </div>
               <Badge
@@ -158,7 +158,7 @@ export default async function ReportPage({ params }: { params: Params }) {
               {report.dashboard.recommendations.map((recommendation) => (
                 <div className="rounded-[28px] bg-[#f7f9f4] p-4" key={recommendation.id}>
                   <p className="text-xs uppercase tracking-[0.2em] text-[#5d7355]">
-                    {recommendation.source} · {recommendation.severityBand}
+                    {recommendation.source} / {recommendation.severityBand}
                   </p>
                   <p className="mt-2 font-bold text-slate-950">{recommendation.title}</p>
                   <p className="mt-2 text-sm leading-7 text-slate-600">{recommendation.text}</p>

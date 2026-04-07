@@ -35,6 +35,7 @@ export function EvaluationContextForm({
       </div>
       <form
         className="mt-6 grid gap-5"
+        data-testid={`evaluation-context-form-${mode}`}
         onSubmit={async (event) => {
           event.preventDefault();
           setIsPending(true);
@@ -76,6 +77,7 @@ export function EvaluationContextForm({
         <div className="grid gap-5 md:grid-cols-2">
           <Field hint="Use the startup or venture name shown in your report." label="Name">
             <Input
+              data-testid="evaluation-name"
               defaultValue={initialValue?.name}
               name="name"
               placeholder="Circular Grid Labs"
@@ -87,6 +89,7 @@ export function EvaluationContextForm({
             label="Country"
           >
             <Input
+              data-testid="evaluation-country"
               defaultValue={initialValue?.country}
               name="country"
               placeholder="Germany"
@@ -99,7 +102,12 @@ export function EvaluationContextForm({
           hint="The web version uses NACE divisions to keep the business categorisation consistent."
           label="NACE division"
         >
-          <Select defaultValue={initialValue?.naceDivision} name="naceDivision" required>
+          <Select
+            data-testid="evaluation-nace-division"
+            defaultValue={initialValue?.naceDivision}
+            name="naceDivision"
+            required
+          >
             <option value="">Select a NACE division</option>
             {naceOptions.map((option) => (
               <option key={option.value} value={option.value}>
@@ -114,7 +122,12 @@ export function EvaluationContextForm({
             hint="The toolkit adapts a few suggestions depending on the offering type."
             label="Offering type"
           >
-            <Select defaultValue={initialValue?.offeringType} name="offeringType" required>
+            <Select
+              data-testid="evaluation-offering-type"
+              defaultValue={initialValue?.offeringType}
+              name="offeringType"
+              required
+            >
               <option value="product">Product</option>
               <option value="service">Service</option>
             </Select>
@@ -124,6 +137,7 @@ export function EvaluationContextForm({
             label="Launched"
           >
             <Select
+              data-testid="evaluation-launched"
               defaultValue={initialValue ? String(initialValue.launched) : 'false'}
               name="launched"
               required
@@ -139,7 +153,12 @@ export function EvaluationContextForm({
             hint="This drives the stage-based SDG suggestions and next-step guidance."
             label="Current stage"
           >
-            <Select defaultValue={initialValue?.currentStage} name="currentStage" required>
+            <Select
+              data-testid="evaluation-current-stage"
+              defaultValue={initialValue?.currentStage}
+              name="currentStage"
+              required
+            >
               {startupStageOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
@@ -152,6 +171,7 @@ export function EvaluationContextForm({
             label="Innovation approach"
           >
             <Select
+              data-testid="evaluation-innovation-approach"
               defaultValue={initialValue?.innovationApproach}
               name="innovationApproach"
               required
@@ -181,6 +201,7 @@ export function EvaluationContextForm({
         <div className="flex flex-wrap gap-3">
           <Button
             className="bg-[#00654A] px-5 hover:bg-[#0b7a59]"
+            data-testid="evaluation-context-submit"
             disabled={isPending}
             type="submit"
           >

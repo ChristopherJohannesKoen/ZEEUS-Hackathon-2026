@@ -1,6 +1,11 @@
 import Link from 'next/link';
 import { Badge, Card, buttonClassName } from '@packages/ui';
-import { confidenceTone, evaluationStatusTone, formatDate, roleTone } from '../../lib/display';
+import {
+  confidenceTone,
+  evaluationStatusTone,
+  formatDate,
+  roleTone
+} from '../../lib/display';
 import { getEvaluations, requireCurrentUser } from '../../lib/server-api';
 
 export default async function DashboardPage() {
@@ -9,7 +14,7 @@ export default async function DashboardPage() {
 
   const completedCount = evaluations.items.filter((item) => item.status === 'completed').length;
   const inProgressCount = evaluations.items.filter((item) => item.status === 'in_progress').length;
-  const draftCount = evaluations.items.filter((item) => item.status === 'draft').length;
+  const archivedCount = evaluations.items.filter((item) => item.status === 'archived').length;
 
   return (
     <div className="grid gap-8">
@@ -27,9 +32,7 @@ export default async function DashboardPage() {
             </span>
           </div>
           <div className="mt-6 space-y-3">
-            <h1 className="text-4xl font-black tracking-tight">
-              Welcome back, {currentUser.name}.
-            </h1>
+            <h1 className="text-4xl font-black tracking-tight">Welcome back, {currentUser.name}.</h1>
             <p className="max-w-2xl text-sm leading-7 text-white/80">
               Continue saved assessments, review materiality outputs, and move directly into the
               dashboard and report flow built for the hackathon submission.
@@ -76,10 +79,10 @@ export default async function DashboardPage() {
           </p>
         </Card>
         <Card className="border-surface-border">
-          <p className="text-xs uppercase tracking-[0.25em] text-[#5c7353]">Drafts</p>
-          <p className="mt-4 text-4xl font-black text-slate-950">{draftCount}</p>
+          <p className="text-xs uppercase tracking-[0.25em] text-[#5c7353]">Archived</p>
+          <p className="mt-4 text-4xl font-black text-slate-950">{archivedCount}</p>
           <p className="mt-2 text-sm text-slate-600">
-            Created but not yet pushed through the workflow.
+            Frozen snapshots retained for reporting and review.
           </p>
         </Card>
       </section>
@@ -131,7 +134,7 @@ export default async function DashboardPage() {
                       </div>
                       <h3 className="text-xl font-bold text-slate-950">{evaluation.name}</h3>
                       <p className="text-sm text-slate-600">
-                        {evaluation.country} · {evaluation.naceDivision}
+                        {evaluation.country} / {evaluation.naceDivision}
                       </p>
                     </div>
                     <Link

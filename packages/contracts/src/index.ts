@@ -10,6 +10,9 @@ import {
   EvaluationDetailSchema,
   EvaluationIdParamsSchema,
   EvaluationListResponseSchema,
+  EvaluationRevisionDetailSchema,
+  EvaluationRevisionListResponseSchema,
+  EvaluationRevisionParamsSchema,
   ForgotPasswordPayloadSchema,
   ForgotPasswordResponseSchema,
   HealthResponseSchema,
@@ -23,7 +26,9 @@ import {
   ReportResponseSchema,
   ResetPasswordPayloadSchema,
   RevokeSessionResponseSchema,
+  SaveStage1PayloadSchema,
   SaveStage1TopicsPayloadSchema,
+  SaveStage2PayloadSchema,
   SaveStage2OpportunitiesPayloadSchema,
   SaveStage2RisksPayloadSchema,
   SessionIdParamsSchema,
@@ -258,7 +263,7 @@ export const apiContract = c.router(
           method: 'POST',
           path: '/',
           body: CreateEvaluationPayloadSchema,
-          headers: csrfHeaderSchema,
+          headers: csrfHeaderSchema.merge(idempotencyHeaderSchema),
           responses: {
             201: EvaluationDetailSchema
           }
@@ -299,6 +304,16 @@ export const apiContract = c.router(
             200: Stage1FinancialAnswerSchema
           }
         },
+        saveStage1: {
+          method: 'PUT',
+          path: '/:id/stage-1',
+          pathParams: EvaluationIdParamsSchema,
+          body: SaveStage1PayloadSchema,
+          headers: csrfHeaderSchema.merge(idempotencyHeaderSchema),
+          responses: {
+            200: EvaluationDetailSchema
+          }
+        },
         saveStage1Topics: {
           method: 'PUT',
           path: '/:id/stage-1/topics',
@@ -309,6 +324,16 @@ export const apiContract = c.router(
             200: z.object({
               items: z.array(Stage1TopicAnswerSchema)
             })
+          }
+        },
+        saveStage2: {
+          method: 'PUT',
+          path: '/:id/stage-2',
+          pathParams: EvaluationIdParamsSchema,
+          body: SaveStage2PayloadSchema,
+          headers: csrfHeaderSchema.merge(idempotencyHeaderSchema),
+          responses: {
+            200: EvaluationDetailSchema
           }
         },
         saveStage2Risks: {
@@ -365,6 +390,73 @@ export const apiContract = c.router(
           pathParams: EvaluationIdParamsSchema,
           responses: {
             200: ReportResponseSchema
+          }
+        },
+        complete: {
+          method: 'POST',
+          path: '/:id/complete',
+          pathParams: EvaluationIdParamsSchema,
+          body: c.noBody(),
+          headers: csrfHeaderSchema.merge(idempotencyHeaderSchema),
+          responses: {
+            200: EvaluationDetailSchema
+          }
+        },
+        reopen: {
+          method: 'POST',
+          path: '/:id/reopen',
+          pathParams: EvaluationIdParamsSchema,
+          body: c.noBody(),
+          headers: csrfHeaderSchema.merge(idempotencyHeaderSchema),
+          responses: {
+            200: EvaluationDetailSchema
+          }
+        },
+        archive: {
+          method: 'POST',
+          path: '/:id/archive',
+          pathParams: EvaluationIdParamsSchema,
+          body: c.noBody(),
+          headers: csrfHeaderSchema.merge(idempotencyHeaderSchema),
+          responses: {
+            200: EvaluationDetailSchema
+          }
+        },
+        unarchive: {
+          method: 'POST',
+          path: '/:id/unarchive',
+          pathParams: EvaluationIdParamsSchema,
+          body: c.noBody(),
+          headers: csrfHeaderSchema.merge(idempotencyHeaderSchema),
+          responses: {
+            200: EvaluationDetailSchema
+          }
+        },
+        listRevisions: {
+          method: 'GET',
+          path: '/:id/revisions',
+          pathParams: EvaluationIdParamsSchema,
+          responses: {
+            200: EvaluationRevisionListResponseSchema
+          }
+        },
+        getRevision: {
+          method: 'GET',
+          path: '/:id/revisions/:revisionNumber',
+          pathParams: EvaluationRevisionParamsSchema,
+          responses: {
+            200: EvaluationRevisionDetailSchema
+          }
+        },
+        exportPdf: {
+          method: 'GET',
+          path: '/:id/export.pdf',
+          pathParams: EvaluationIdParamsSchema,
+          responses: {
+            200: c.otherResponse({
+              contentType: 'application/pdf',
+              body: z.string()
+            })
           }
         },
         exportCsv: {

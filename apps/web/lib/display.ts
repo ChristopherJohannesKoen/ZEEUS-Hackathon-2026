@@ -19,6 +19,7 @@ export function projectTone(status: string) {
 
 export function evaluationStatusTone(status: string) {
   if (status === 'completed') return 'emerald';
+  if (status === 'archived') return 'rose';
   if (status === 'in_progress') return 'amber';
   return 'slate';
 }

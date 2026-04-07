@@ -24,7 +24,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
     <main className="flex min-h-screen items-center justify-center px-6 py-16">
       <div className="w-full max-w-4xl space-y-6">
         <div className="space-y-2 text-center">
-          <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Template auth</p>
+          <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Secure access</p>
           <p className="text-sm text-slate-600">
             {breakGlassMode
               ? 'Break-glass access is reserved for audited owner recovery. Use it only during an active incident or provider outage.'

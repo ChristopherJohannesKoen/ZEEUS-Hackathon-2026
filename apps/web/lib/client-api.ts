@@ -10,7 +10,9 @@ import type {
   ForgotPasswordPayload,
   ForgotPasswordResponse,
   OkResponse,
+  SaveStage1Payload,
   SaveStage1TopicsPayload,
+  SaveStage2Payload,
   SaveStage2OpportunitiesPayload,
   SaveStage2RisksPayload,
   Project,
@@ -294,10 +296,12 @@ export function createEvaluation(body: CreateEvaluationPayload) {
   return executeMutation<EvaluationDetail>({
     method: 'POST',
     expectedStatuses: [201],
+    idempotent: true,
     call: (headers) =>
       browserClient.evaluations.create({
         body,
         headers: {
+          'idempotency-key': headers['idempotency-key']!,
           'x-csrf-token': headers['x-csrf-token']!
         }
       })
@@ -337,6 +341,23 @@ export function saveStage1Financial(evaluationId: string, body: Stage1FinancialA
   });
 }
 
+export function saveStage1(evaluationId: string, body: SaveStage1Payload) {
+  return executeMutation<EvaluationDetail>({
+    method: 'PUT',
+    expectedStatuses: [200],
+    idempotent: true,
+    call: (headers) =>
+      browserClient.evaluations.saveStage1({
+        params: { id: evaluationId },
+        body,
+        headers: {
+          'idempotency-key': headers['idempotency-key']!,
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
 export function saveStage1Topics(evaluationId: string, body: SaveStage1TopicsPayload) {
   return executeMutation<{ items: Stage1TopicAnswer[] }>({
     method: 'PUT',
@@ -346,6 +367,23 @@ export function saveStage1Topics(evaluationId: string, body: SaveStage1TopicsPay
         params: { id: evaluationId },
         body,
         headers: {
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export function saveStage2(evaluationId: string, body: SaveStage2Payload) {
+  return executeMutation<EvaluationDetail>({
+    method: 'PUT',
+    expectedStatuses: [200],
+    idempotent: true,
+    call: (headers) =>
+      browserClient.evaluations.saveStage2({
+        params: { id: evaluationId },
+        body,
+        headers: {
+          'idempotency-key': headers['idempotency-key']!,
           'x-csrf-token': headers['x-csrf-token']!
         }
       })
@@ -379,6 +417,70 @@ export function saveStage2Opportunities(
         params: { id: evaluationId },
         body,
         headers: {
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export function completeEvaluation(evaluationId: string) {
+  return executeMutation<EvaluationDetail>({
+    method: 'POST',
+    expectedStatuses: [200],
+    idempotent: true,
+    call: (headers) =>
+      browserClient.evaluations.complete({
+        params: { id: evaluationId },
+        headers: {
+          'idempotency-key': headers['idempotency-key']!,
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export function reopenEvaluation(evaluationId: string) {
+  return executeMutation<EvaluationDetail>({
+    method: 'POST',
+    expectedStatuses: [200],
+    idempotent: true,
+    call: (headers) =>
+      browserClient.evaluations.reopen({
+        params: { id: evaluationId },
+        headers: {
+          'idempotency-key': headers['idempotency-key']!,
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export function archiveEvaluation(evaluationId: string) {
+  return executeMutation<EvaluationDetail>({
+    method: 'POST',
+    expectedStatuses: [200],
+    idempotent: true,
+    call: (headers) =>
+      browserClient.evaluations.archive({
+        params: { id: evaluationId },
+        headers: {
+          'idempotency-key': headers['idempotency-key']!,
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export function unarchiveEvaluation(evaluationId: string) {
+  return executeMutation<EvaluationDetail>({
+    method: 'POST',
+    expectedStatuses: [200],
+    idempotent: true,
+    call: (headers) =>
+      browserClient.evaluations.unarchive({
+        params: { id: evaluationId },
+        headers: {
+          'idempotency-key': headers['idempotency-key']!,
           'x-csrf-token': headers['x-csrf-token']!
         }
       })

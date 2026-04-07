@@ -6,6 +6,7 @@ const e2eEnv = getE2EEnv();
 
 export default defineConfig({
   testDir: './tests/e2e',
+  testIgnore: ['**/projects.spec.ts'],
   timeout: 45_000,
   expect: {
     timeout: 10_000

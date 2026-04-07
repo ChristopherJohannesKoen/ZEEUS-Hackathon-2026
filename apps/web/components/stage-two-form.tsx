@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Card, Field, Select } from '@packages/ui';
 import type { EvaluationDetail, Stage2OpportunityAnswer, Stage2RiskAnswer } from '@packages/shared';
-import { saveStage2Opportunities, saveStage2Risks } from '../lib/client-api';
+import { saveStage2 } from '../lib/client-api';
 
 const probabilityOptions = [
   { value: 'rare', label: 'Rare' },
@@ -73,28 +73,29 @@ export function StageTwoForm({ evaluation }: { evaluation: EvaluationDetail }) {
   return (
     <form
       className="grid gap-6"
+      data-testid="stage-two-form"
       onSubmit={async (event) => {
         event.preventDefault();
         setIsPending(true);
         setErrorMessage(null);
 
         try {
-          await saveStage2Risks(evaluation.id, {
-            items: risks.map((item) => ({
+          await saveStage2(evaluation.id, {
+            risks: risks.map((item) => ({
               riskCode: item.riskCode,
               applicable: item.applicable,
               probability: item.probability,
               impact: item.impact,
-              evidenceBasis: item.evidenceBasis
-            }))
-          });
-          await saveStage2Opportunities(evaluation.id, {
-            items: opportunities.map((item) => ({
+              evidenceBasis: item.evidenceBasis,
+              evidenceNote: item.evidenceNote
+            })),
+            opportunities: opportunities.map((item) => ({
               opportunityCode: item.opportunityCode,
               applicable: item.applicable,
               likelihood: item.likelihood,
               impact: item.impact,
-              evidenceBasis: item.evidenceBasis
+              evidenceBasis: item.evidenceBasis,
+              evidenceNote: item.evidenceNote
             }))
           });
           router.push(`/app/evaluate/${evaluation.id}/impact-summary`);
@@ -121,6 +122,7 @@ export function StageTwoForm({ evaluation }: { evaluation: EvaluationDetail }) {
           {risks.map((item) => (
             <div
               className="rounded-[28px] border border-[#dde9d0] bg-[#fbfdf8] p-5"
+              data-testid={`stage-two-risk-${item.riskCode}`}
               key={item.riskCode}
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -133,6 +135,7 @@ export function StageTwoForm({ evaluation }: { evaluation: EvaluationDetail }) {
                 </div>
                 <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                   <input
+                    data-testid={`stage-two-risk-${item.riskCode}-applicable`}
                     checked={item.applicable}
                     onChange={(event) =>
                       setRisks((current) =>
@@ -152,6 +155,7 @@ export function StageTwoForm({ evaluation }: { evaluation: EvaluationDetail }) {
               <div className="mt-5 grid gap-4 md:grid-cols-3 xl:grid-cols-4">
                 <Field label="Probability">
                   <Select
+                    data-testid={`stage-two-risk-${item.riskCode}-probability`}
                     disabled={!item.applicable}
                     onChange={(event) =>
                       setRisks((current) =>
@@ -176,6 +180,7 @@ export function StageTwoForm({ evaluation }: { evaluation: EvaluationDetail }) {
                 </Field>
                 <Field label="Impact">
                   <Select
+                    data-testid={`stage-two-risk-${item.riskCode}-impact`}
                     disabled={!item.applicable}
                     onChange={(event) =>
                       setRisks((current) =>
@@ -197,6 +202,7 @@ export function StageTwoForm({ evaluation }: { evaluation: EvaluationDetail }) {
                 </Field>
                 <Field label="Evidence basis">
                   <Select
+                    data-testid={`stage-two-risk-${item.riskCode}-evidence-basis`}
                     onChange={(event) =>
                       setRisks((current) =>
                         current.map((entry) =>
@@ -237,6 +243,7 @@ export function StageTwoForm({ evaluation }: { evaluation: EvaluationDetail }) {
           {opportunities.map((item) => (
             <div
               className="rounded-[28px] border border-[#dde9d0] bg-[#fbfdf8] p-5"
+              data-testid={`stage-two-opportunity-${item.opportunityCode}`}
               key={item.opportunityCode}
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -249,6 +256,7 @@ export function StageTwoForm({ evaluation }: { evaluation: EvaluationDetail }) {
                 </div>
                 <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                   <input
+                    data-testid={`stage-two-opportunity-${item.opportunityCode}-applicable`}
                     checked={item.applicable}
                     onChange={(event) =>
                       setOpportunities((current) =>
@@ -268,6 +276,7 @@ export function StageTwoForm({ evaluation }: { evaluation: EvaluationDetail }) {
               <div className="mt-5 grid gap-4 md:grid-cols-3 xl:grid-cols-4">
                 <Field label="Likelihood">
                   <Select
+                    data-testid={`stage-two-opportunity-${item.opportunityCode}-likelihood`}
                     disabled={!item.applicable}
                     onChange={(event) =>
                       setOpportunities((current) =>
@@ -293,6 +302,7 @@ export function StageTwoForm({ evaluation }: { evaluation: EvaluationDetail }) {
                 </Field>
                 <Field label="Impact">
                   <Select
+                    data-testid={`stage-two-opportunity-${item.opportunityCode}-impact`}
                     disabled={!item.applicable}
                     onChange={(event) =>
                       setOpportunities((current) =>
@@ -317,6 +327,7 @@ export function StageTwoForm({ evaluation }: { evaluation: EvaluationDetail }) {
                 </Field>
                 <Field label="Evidence basis">
                   <Select
+                    data-testid={`stage-two-opportunity-${item.opportunityCode}-evidence-basis`}
                     onChange={(event) =>
                       setOpportunities((current) =>
                         current.map((entry) =>
@@ -358,7 +369,12 @@ export function StageTwoForm({ evaluation }: { evaluation: EvaluationDetail }) {
       ) : null}
 
       <div className="flex flex-wrap gap-3">
-        <Button className="bg-[#00654A] hover:bg-[#0b7a59]" disabled={isPending} type="submit">
+        <Button
+          className="bg-[#00654A] hover:bg-[#0b7a59]"
+          data-testid="stage-two-submit"
+          disabled={isPending}
+          type="submit"
+        >
           {isPending ? 'Saving...' : 'Save Stage II and continue'}
         </Button>
       </div>

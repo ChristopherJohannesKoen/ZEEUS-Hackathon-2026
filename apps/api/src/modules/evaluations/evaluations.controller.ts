@@ -1,10 +1,25 @@
-import { Body, Controller, Get, Param, Patch, Post, Put, Res, UseGuards } from '@nestjs/common';
-import { ApiCookieAuth, ApiOperation, ApiProduces, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  Patch,
+  Post,
+  Put,
+  Res,
+  UseGuards,
+  UseInterceptors
+} from '@nestjs/common';
+import { ApiCookieAuth, ApiHeader, ApiOperation, ApiProduces, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import {
   CreateEvaluationPayloadSchema,
   EvaluationIdParamsSchema,
+  EvaluationRevisionParamsSchema,
+  SaveStage1PayloadSchema,
   SaveStage1TopicsPayloadSchema,
+  SaveStage2PayloadSchema,
   SaveStage2OpportunitiesPayloadSchema,
   SaveStage2RisksPayloadSchema,
   Stage1FinancialAnswersPayloadSchema,
@@ -14,6 +29,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { SessionGuard } from '../../common/guards/session.guard';
 import type { AuthenticatedRequest } from '../../common/types/authenticated-request';
 import { parseZodSchema } from '../../common/validation/zod-validation';
+import { IdempotencyInterceptor } from '../idempotency/idempotency.interceptor';
 import { EvaluationsService } from './evaluations.service';
 
 @ApiTags('evaluations')
@@ -30,6 +46,8 @@ export class EvaluationsController {
   }
 
   @Post()
+  @UseInterceptors(IdempotencyInterceptor)
+  @ApiHeader({ name: 'Idempotency-Key', required: true })
   @ApiOperation({ summary: 'Create a new evaluation draft with default answer rows' })
   createEvaluation(
     @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
@@ -93,6 +111,22 @@ export class EvaluationsController {
     );
   }
 
+  @Put(':id/stage-1')
+  @UseInterceptors(IdempotencyInterceptor)
+  @ApiHeader({ name: 'Idempotency-Key', required: true })
+  @ApiOperation({ summary: 'Save the full Stage I step transactionally and create a revision' })
+  saveStage1(
+    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
+    @Param() params: unknown,
+    @Body() body: unknown
+  ) {
+    return this.evaluationsService.saveStage1(
+      currentUser,
+      parseZodSchema(EvaluationIdParamsSchema, params).id,
+      parseZodSchema(SaveStage1PayloadSchema, body)
+    );
+  }
+
   @Put(':id/stage-1/topics')
   @ApiOperation({ summary: 'Save Stage I environmental, social, and governance topic answers' })
   saveStage1Topics(
@@ -104,6 +138,22 @@ export class EvaluationsController {
       currentUser,
       parseZodSchema(EvaluationIdParamsSchema, params).id,
       parseZodSchema(SaveStage1TopicsPayloadSchema, body)
+    );
+  }
+
+  @Put(':id/stage-2')
+  @UseInterceptors(IdempotencyInterceptor)
+  @ApiHeader({ name: 'Idempotency-Key', required: true })
+  @ApiOperation({ summary: 'Save the full Stage II step transactionally and create a revision' })
+  saveStage2(
+    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
+    @Param() params: unknown,
+    @Body() body: unknown
+  ) {
+    return this.evaluationsService.saveStage2(
+      currentUser,
+      parseZodSchema(EvaluationIdParamsSchema, params).id,
+      parseZodSchema(SaveStage2PayloadSchema, body)
     );
   }
 
@@ -181,6 +231,105 @@ export class EvaluationsController {
       currentUser,
       parseZodSchema(EvaluationIdParamsSchema, params).id
     );
+  }
+
+  @Post(':id/complete')
+  @HttpCode(200)
+  @UseInterceptors(IdempotencyInterceptor)
+  @ApiHeader({ name: 'Idempotency-Key', required: true })
+  @ApiOperation({ summary: 'Mark an evaluation complete and freeze a revision snapshot' })
+  completeEvaluation(
+    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
+    @Param() params: unknown
+  ) {
+    return this.evaluationsService.completeEvaluation(
+      currentUser,
+      parseZodSchema(EvaluationIdParamsSchema, params).id
+    );
+  }
+
+  @Post(':id/reopen')
+  @HttpCode(200)
+  @UseInterceptors(IdempotencyInterceptor)
+  @ApiHeader({ name: 'Idempotency-Key', required: true })
+  @ApiOperation({ summary: 'Reopen a completed or archived evaluation as a fresh draft revision' })
+  reopenEvaluation(
+    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
+    @Param() params: unknown
+  ) {
+    return this.evaluationsService.reopenEvaluation(
+      currentUser,
+      parseZodSchema(EvaluationIdParamsSchema, params).id
+    );
+  }
+
+  @Post(':id/archive')
+  @HttpCode(200)
+  @UseInterceptors(IdempotencyInterceptor)
+  @ApiHeader({ name: 'Idempotency-Key', required: true })
+  @ApiOperation({ summary: 'Archive a completed evaluation without losing revision history' })
+  archiveEvaluation(
+    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
+    @Param() params: unknown
+  ) {
+    return this.evaluationsService.archiveEvaluation(
+      currentUser,
+      parseZodSchema(EvaluationIdParamsSchema, params).id
+    );
+  }
+
+  @Post(':id/unarchive')
+  @HttpCode(200)
+  @UseInterceptors(IdempotencyInterceptor)
+  @ApiHeader({ name: 'Idempotency-Key', required: true })
+  @ApiOperation({ summary: 'Restore an archived evaluation back to completed state' })
+  unarchiveEvaluation(
+    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
+    @Param() params: unknown
+  ) {
+    return this.evaluationsService.unarchiveEvaluation(
+      currentUser,
+      parseZodSchema(EvaluationIdParamsSchema, params).id
+    );
+  }
+
+  @Get(':id/revisions')
+  @ApiOperation({ summary: 'List immutable revision snapshots for an evaluation' })
+  listRevisions(
+    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
+    @Param() params: unknown
+  ) {
+    return this.evaluationsService.listRevisions(
+      currentUser,
+      parseZodSchema(EvaluationIdParamsSchema, params).id
+    );
+  }
+
+  @Get(':id/revisions/:revisionNumber')
+  @ApiOperation({ summary: 'Get a specific immutable revision snapshot for an evaluation' })
+  getRevision(
+    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
+    @Param() params: unknown
+  ) {
+    const parsed = parseZodSchema(EvaluationRevisionParamsSchema, params);
+    return this.evaluationsService.getRevision(currentUser, parsed.id, parsed.revisionNumber);
+  }
+
+  @Get(':id/export.pdf')
+  @ApiProduces('application/pdf')
+  @ApiOperation({ summary: 'Export a server-generated PDF summary for a single evaluation' })
+  async exportPdf(
+    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
+    @Param() params: unknown,
+    @Res() response: Response
+  ) {
+    const evaluationId = parseZodSchema(EvaluationIdParamsSchema, params).id;
+    response.setHeader('Content-Type', 'application/pdf');
+    response.setHeader(
+      'Content-Disposition',
+      `attachment; filename="evaluation-${evaluationId}.pdf"`
+    );
+    await this.evaluationsService.exportPdf(currentUser, evaluationId, response);
   }
 
   @Get(':id/export.csv')

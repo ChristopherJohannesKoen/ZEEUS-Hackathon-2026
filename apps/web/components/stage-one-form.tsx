@@ -9,7 +9,7 @@ import type {
   Stage1FinancialAnswersPayload,
   Stage1TopicAnswer
 } from '@packages/shared';
-import { saveStage1Financial, saveStage1Topics } from '../lib/client-api';
+import { saveStage1 } from '../lib/client-api';
 import { formatEnumLabel } from '../lib/display';
 
 const financialOptions = getFinancialIndicatorOptions();
@@ -79,22 +79,24 @@ export function StageOneForm({ evaluation }: { evaluation: EvaluationDetail }) {
   return (
     <form
       className="grid gap-6"
+      data-testid="stage-one-form"
       onSubmit={async (event) => {
         event.preventDefault();
         setIsPending(true);
         setErrorMessage(null);
 
         try {
-          await saveStage1Financial(evaluation.id, financial);
-          await saveStage1Topics(evaluation.id, {
-            items: topics.map((item) => ({
+          await saveStage1(evaluation.id, {
+            financial,
+            topics: topics.map((item) => ({
               topicCode: item.topicCode,
               applicable: item.applicable,
               magnitude: item.magnitude,
               scale: item.scale,
               irreversibility: item.irreversibility,
               likelihood: item.likelihood,
-              evidenceBasis: item.evidenceBasis
+              evidenceBasis: item.evidenceBasis,
+              evidenceNote: item.evidenceNote
             }))
           });
           router.push(`/app/evaluate/${evaluation.id}/stage-2`);
@@ -133,6 +135,7 @@ export function StageOneForm({ evaluation }: { evaluation: EvaluationDetail }) {
         <div className="mt-5 grid gap-5 md:grid-cols-2">
           <Field hint="ROI, IRR, NPV, and payback period." label={financialOptions.roi.label}>
             <Select
+              data-testid="stage-one-financial-roi"
               name="roiLevel"
               onChange={(event) =>
                 setFinancial((current) => ({
@@ -154,6 +157,7 @@ export function StageOneForm({ evaluation }: { evaluation: EvaluationDetail }) {
             label={financialOptions.sensitivity.label}
           >
             <Select
+              data-testid="stage-one-financial-sensitivity"
               name="sensitivityLevel"
               onChange={(event) =>
                 setFinancial((current) => ({
@@ -176,6 +180,7 @@ export function StageOneForm({ evaluation }: { evaluation: EvaluationDetail }) {
             label={financialOptions.usp.label}
           >
             <Select
+              data-testid="stage-one-financial-usp"
               name="uspLevel"
               onChange={(event) =>
                 setFinancial((current) => ({
@@ -197,6 +202,7 @@ export function StageOneForm({ evaluation }: { evaluation: EvaluationDetail }) {
             label={financialOptions.marketGrowth.label}
           >
             <Select
+              data-testid="stage-one-financial-market-growth"
               name="marketGrowthLevel"
               onChange={(event) =>
                 setFinancial((current) => ({
@@ -224,6 +230,7 @@ export function StageOneForm({ evaluation }: { evaluation: EvaluationDetail }) {
             {group.items.map((item) => (
               <div
                 className="rounded-[28px] border border-[#dde9d0] bg-[#fbfdf8] p-5"
+                data-testid={`stage-one-topic-${item.topicCode}`}
                 key={item.topicCode}
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -238,6 +245,7 @@ export function StageOneForm({ evaluation }: { evaluation: EvaluationDetail }) {
                   </div>
                   <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                     <input
+                      data-testid={`stage-one-topic-${item.topicCode}-applicable`}
                       checked={item.applicable}
                       onChange={(event) =>
                         setTopics((current) =>
@@ -257,6 +265,7 @@ export function StageOneForm({ evaluation }: { evaluation: EvaluationDetail }) {
                 <div className="mt-5 grid gap-4 md:grid-cols-4 xl:grid-cols-5">
                   <Field label="Magnitude">
                     <Select
+                      data-testid={`stage-one-topic-${item.topicCode}-magnitude`}
                       disabled={!item.applicable}
                       onChange={(event) =>
                         setTopics((current) =>
@@ -281,6 +290,7 @@ export function StageOneForm({ evaluation }: { evaluation: EvaluationDetail }) {
                   </Field>
                   <Field label="Scale">
                     <Select
+                      data-testid={`stage-one-topic-${item.topicCode}-scale`}
                       disabled={!item.applicable}
                       onChange={(event) =>
                         setTopics((current) =>
@@ -305,6 +315,7 @@ export function StageOneForm({ evaluation }: { evaluation: EvaluationDetail }) {
                   </Field>
                   <Field label="Irreversibility">
                     <Select
+                      data-testid={`stage-one-topic-${item.topicCode}-irreversibility`}
                       disabled={!item.applicable}
                       onChange={(event) =>
                         setTopics((current) =>
@@ -330,6 +341,7 @@ export function StageOneForm({ evaluation }: { evaluation: EvaluationDetail }) {
                   </Field>
                   <Field label="Likelihood">
                     <Select
+                      data-testid={`stage-one-topic-${item.topicCode}-likelihood`}
                       disabled={!item.applicable}
                       onChange={(event) =>
                         setTopics((current) =>
@@ -354,6 +366,7 @@ export function StageOneForm({ evaluation }: { evaluation: EvaluationDetail }) {
                   </Field>
                   <Field label="Evidence basis">
                     <Select
+                      data-testid={`stage-one-topic-${item.topicCode}-evidence-basis`}
                       onChange={(event) =>
                         setTopics((current) =>
                           current.map((entry) =>
@@ -394,7 +407,12 @@ export function StageOneForm({ evaluation }: { evaluation: EvaluationDetail }) {
       ) : null}
 
       <div className="flex flex-wrap gap-3">
-        <Button className="bg-[#00654A] hover:bg-[#0b7a59]" disabled={isPending} type="submit">
+        <Button
+          className="bg-[#00654A] hover:bg-[#0b7a59]"
+          data-testid="stage-one-submit"
+          disabled={isPending}
+          type="submit"
+        >
           {isPending ? 'Saving...' : 'Save Stage I and continue'}
         </Button>
       </div>

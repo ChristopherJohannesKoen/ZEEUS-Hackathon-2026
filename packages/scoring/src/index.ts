@@ -35,12 +35,26 @@ import matrices from '../catalog/matrices.json';
 import topicCatalog from '../catalog/topics.json';
 import riskCatalog from '../catalog/risks.json';
 import opportunityCatalog from '../catalog/opportunities.json';
+import workbookSnapshot from '../catalog/workbook-snapshot.json';
 
 type StageCatalogEntry = (typeof stageCatalog)[number];
 type NaceCatalogEntry = (typeof naceCatalog)[number];
 type TopicCatalogEntry = (typeof topicCatalog)[number];
 type RiskCatalogEntry = (typeof riskCatalog)[number];
 type OpportunityCatalogEntry = (typeof opportunityCatalog)[number];
+
+const workbookFileName =
+  workbookSnapshot.workbookPath.split(/[/\\]/).filter(Boolean).pop() ?? 'workbook-catalog';
+
+export const SCORING_VERSION = '2026.04.ready-software.1';
+export const CATALOG_VERSION = workbookFileName;
+
+export function getScoringVersionInfo() {
+  return {
+    scoringVersion: SCORING_VERSION,
+    catalogVersion: CATALOG_VERSION
+  };
+}
 
 const stageCatalogByKey = new Map<StartupStage, StageCatalogEntry>(
   stageCatalog.map((entry) => [entry.stage as StartupStage, entry])
@@ -211,6 +225,16 @@ const stageTwoLikelihoodScores: Record<RiskProbabilityLevel, number> = {
   very_likely: 1,
   na: 0
 };
+
+const riskMatrix = matrices.riskMatrix as Record<
+  ImpactDimensionLevel,
+  Record<RiskProbabilityLevel, RiskRatingLabel>
+>;
+
+const opportunityMatrix = matrices.opportunityMatrix as Record<
+  ImpactDimensionLevel,
+  Record<RiskProbabilityLevel, OpportunityRatingLabel>
+>;
 
 const riskActionWindows: Record<RiskRatingLabel, string> = {
   neutral: 'Record rationale and set a review date if the topic is still unknown.',
@@ -491,11 +515,11 @@ export function scoreStage1TopicAnswer(input: Stage1TopicAnswerInput): Stage1Top
   const impactScore = input.applicable
     ? Number(
         (
-          ((dimensionScores[input.magnitude] +
-            dimensionScores[input.scale] +
-            dimensionScores[input.irreversibility]) /
+          (((dimensionScores[input.magnitude] ?? 0) +
+            (dimensionScores[input.scale] ?? 0) +
+            (dimensionScores[input.irreversibility] ?? 0)) /
             3) *
-          stageOneLikelihoodScores[input.likelihood]
+          (stageOneLikelihoodScores[input.likelihood] ?? 0)
         ).toFixed(2)
       )
     : 0;
@@ -514,14 +538,14 @@ function getRiskMatrixLabel(
   impact: Stage2RiskAnswerInput['impact'],
   probability: Stage2RiskAnswerInput['probability']
 ) {
-  return matrices.riskMatrix[impact][probability] as RiskRatingLabel;
+  return riskMatrix[impact]?.[probability] ?? 'neutral';
 }
 
 function getOpportunityMatrixLabel(
   impact: Stage2OpportunityAnswerInput['impact'],
   likelihood: Stage2OpportunityAnswerInput['likelihood']
 ) {
-  return matrices.opportunityMatrix[impact][likelihood] as OpportunityRatingLabel;
+  return opportunityMatrix[impact]?.[likelihood] ?? 'neutral';
 }
 
 export function scoreStage2RiskAnswer(input: Stage2RiskAnswerInput): Stage2RiskAnswer {
@@ -533,7 +557,8 @@ export function scoreStage2RiskAnswer(input: Stage2RiskAnswerInput): Stage2RiskA
 
   const ratingScore = input.applicable
     ? Number(
-        (stageTwoLikelihoodScores[input.probability] * dimensionScores[input.impact]).toFixed(2)
+        (((stageTwoLikelihoodScores[input.probability] ?? 0) *
+          (dimensionScores[input.impact] ?? 0))).toFixed(2)
       )
     : 0;
 
@@ -559,7 +584,8 @@ export function scoreStage2OpportunityAnswer(
 
   const ratingScore = input.applicable
     ? Number(
-        (stageTwoLikelihoodScores[input.likelihood] * dimensionScores[input.impact]).toFixed(2)
+        (((stageTwoLikelihoodScores[input.likelihood] ?? 0) *
+          (dimensionScores[input.impact] ?? 0))).toFixed(2)
       )
     : 0;
 

@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-zeeus_assessment}
     ports:
-      - '5432:5432'
+      - '${DB_PORT:-5432}:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -94,7 +94,7 @@ services:
       db:
         condition: service_healthy
     ports:
-      - '4000:4000'
+      - '${API_PORT:-4000}:4000'
     command: >-
       sh -c "
       attempts=0;
@@ -107,7 +107,7 @@ services:
         sleep 2;
       done &&
       npm run seed --workspace=@packages/db &&
-      node -r ./scripts/register-workspace-runtime-aliases.cjs apps/api/dist/main.js"
+      node apps/api/dist/main.js"
     healthcheck:
       test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:4000/api/health >/dev/null']
       interval: 10s
@@ -131,7 +131,7 @@ services:
       api:
         condition: service_healthy
     ports:
-      - '3000:3000'
+      - '${WEB_PORT:-3000}:3000'
 
 volumes:
   postgres_data:

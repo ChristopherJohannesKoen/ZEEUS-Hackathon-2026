@@ -8,9 +8,10 @@
     "packages/*"
   ],
   "scripts": {
-    "postinstall": "npm run prisma:generate",
+    "postinstall": "npm run prisma:generate && npm run build:runtime-packages",
     "build": "turbo run build",
-    "dev": "node ./scripts/with-env.mjs turbo run dev --parallel --filter=@apps/api --filter=@apps/web",
+    "build:runtime-packages": "npm run build --workspace=@packages/shared --workspace=@packages/contracts --workspace=@packages/scoring",
+    "dev": "npm run build:runtime-packages && node ./scripts/with-env.mjs turbo run dev --parallel --filter=@packages/shared --filter=@packages/contracts --filter=@packages/scoring --filter=@apps/api --filter=@apps/web",
     "dev:services": "docker compose up db -d",
     "docs:lint": "markdownlint-cli2 \"README.md\" \"docs/**/*.md\" \"tests/perf/**/*.md\"",
     "docs:links": "node ./scripts/check-markdown-links.mjs",

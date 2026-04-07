@@ -10,10 +10,12 @@ test('renders the public landing page and auth links', async ({ page }) => {
   await page.goto('/');
 
   await expect(
-    page.getByRole('heading', { name: 'Start with the boring hard parts already done.' })
+    page.getByRole('heading', {
+      name: 'Build a startup that works for people, planet, and long-term growth.'
+    })
   ).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Create Your First App' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Explore Auth Flow' })).toBeVisible();
+  await expect(page.getByRole('navigation').getByRole('link', { name: 'Create account' })).toBeVisible();
+  await expect(page.getByRole('navigation').getByRole('link', { name: 'Sign in' })).toBeVisible();
 });
 
 test('serves hardened security headers on public and protected pages', async ({ page }) => {
@@ -45,7 +47,7 @@ test('serves hardened security headers on public and protected pages', async ({ 
 });
 
 test('redirects unauthenticated users from protected routes', async ({ page }) => {
-  for (const path of ['/app', '/app/projects', '/app/settings']) {
+  for (const path of ['/app', '/app/evaluations', '/app/settings']) {
     await page.goto(path);
     await expect(page).toHaveURL(/\/login$/);
   }
@@ -55,12 +57,18 @@ test('keeps privileged bootstrap details off public auth pages', async ({ page }
   await page.goto('/login');
   await expect(page.getByText('Seeded owner email')).toHaveCount(0);
   await expect(page.getByText(seededUsers.owner.email)).toHaveCount(0);
-  await expect(page.getByText('Sign in with an existing account.')).toBeVisible();
+  await expect(
+    page.getByText('Sign in with an existing account to open the protected dashboard.')
+  ).toBeVisible();
 
   await page.goto('/signup');
   await expect(page.getByText('Create the first owner')).toHaveCount(0);
   await expect(page.getByText('The first registered user becomes the owner.')).toHaveCount(0);
-  await expect(page.getByText('Self-serve signup creates member accounts.')).toBeVisible();
+  await expect(
+    page.getByText(
+      'Create a team account to save evaluations, revisit the wizard, and export reports.'
+    )
+  ).toBeVisible();
 });
 
 test('redirects authenticated users away from login and signup', async ({ page }) => {

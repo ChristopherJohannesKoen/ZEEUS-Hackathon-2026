@@ -4,6 +4,8 @@ import type {
   DashboardResponse,
   EvaluationDetail,
   EvaluationListResponse,
+  EvaluationRevisionDetail,
+  EvaluationRevisionListResponse,
   ImpactSummaryResponse,
   Project,
   ProjectListQuery,
@@ -175,6 +177,26 @@ export function getEvaluationReport(evaluationId: string) {
     () =>
       serverClient.evaluations.getReport({
         params: { id: evaluationId }
+      }),
+    [200]
+  );
+}
+
+export function getEvaluationRevisions(evaluationId: string) {
+  return protectedServerRequest<EvaluationRevisionListResponse>(
+    () =>
+      serverClient.evaluations.listRevisions({
+        params: { id: evaluationId }
+      }),
+    [200]
+  );
+}
+
+export function getEvaluationRevision(evaluationId: string, revisionNumber: number) {
+  return protectedServerRequest<EvaluationRevisionDetail>(
+    () =>
+      serverClient.evaluations.getRevision({
+        params: { id: evaluationId, revisionNumber }
       }),
     [200]
   );

@@ -2,16 +2,26 @@
 
 import { Button } from '@packages/ui';
 
-export function PrintReportButton() {
+export function PrintReportButton({ evaluationId }: { evaluationId: string }) {
   return (
-    <Button
-      className="bg-[#00654A] hover:bg-[#0b7a59]"
-      onClick={() => {
-        window.print();
-      }}
-      type="button"
-    >
-      Export PDF
-    </Button>
+    <div className="flex flex-wrap gap-3">
+      <a
+        className="btn-secondary"
+        data-testid="report-download-pdf"
+        href={`/api/evaluations/${evaluationId}/export.pdf`}
+      >
+        Download PDF
+      </a>
+      <Button
+        className="bg-[#00654A] hover:bg-[#0b7a59]"
+        data-testid="report-print"
+        onClick={() => {
+          window.print();
+        }}
+        type="button"
+      >
+        Print report
+      </Button>
+    </div>
   );
 }

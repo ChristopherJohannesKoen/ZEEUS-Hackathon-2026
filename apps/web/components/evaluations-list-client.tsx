@@ -4,7 +4,12 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Badge, Card, buttonClassName } from '@packages/ui';
 import type { EvaluationListItem, EvaluationStatus } from '@packages/shared';
-import { confidenceTone, evaluationStatusTone, formatDate, formatEnumLabel } from '../lib/display';
+import {
+  confidenceTone,
+  evaluationStatusTone,
+  formatDate,
+  formatEnumLabel
+} from '../lib/display';
 
 const continueRoute: Record<string, string> = {
   start: 'summary',
@@ -47,7 +52,7 @@ export function EvaluationsListClient({ evaluations }: { evaluations: Evaluation
           value={query}
         />
         <div className="flex flex-wrap gap-2">
-          {(['all', 'draft', 'in_progress', 'completed'] as const).map((status) => (
+          {(['all', 'draft', 'in_progress', 'completed', 'archived'] as const).map((status) => (
             <button
               className={
                 statusFilter === status
@@ -98,16 +103,24 @@ export function EvaluationsListClient({ evaluations }: { evaluations: Evaluation
                   <div>
                     <h2 className="text-2xl font-black text-slate-950">{evaluation.name}</h2>
                     <p className="mt-2 text-sm text-slate-600">
-                      {evaluation.country} · {evaluation.naceDivision}
+                      {evaluation.country} / {evaluation.naceDivision}
                     </p>
                   </div>
                 </div>
-                <Link
-                  className={buttonClassName({ variant: 'secondary' })}
-                  href={`/app/evaluate/${evaluation.id}/${continueRoute[evaluation.currentStep]}`}
-                >
-                  Continue
-                </Link>
+                <div className="flex flex-wrap gap-2">
+                  <Link
+                    className={buttonClassName({ variant: 'secondary' })}
+                    href={`/app/evaluate/${evaluation.id}/${continueRoute[evaluation.currentStep]}`}
+                  >
+                    Continue
+                  </Link>
+                  <Link
+                    className={buttonClassName({ variant: 'ghost' })}
+                    href={`/app/evaluate/${evaluation.id}/revisions`}
+                  >
+                    Revisions
+                  </Link>
+                </div>
               </div>
 
               <div className="mt-5 grid gap-3 md:grid-cols-3">

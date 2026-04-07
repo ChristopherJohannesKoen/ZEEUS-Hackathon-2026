@@ -36,5 +36,8 @@ export function confidenceTone(confidenceBand: string) {
 }
 
 export function formatEnumLabel(value: string) {
-  return value.replaceAll('_', ' ');
+  return value
+    .split('_')
+    .map((segment) => (segment ? segment[0]!.toUpperCase() + segment.slice(1) : segment))
+    .join(' ');
 }

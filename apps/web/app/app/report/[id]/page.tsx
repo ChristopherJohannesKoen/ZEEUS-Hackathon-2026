@@ -1,9 +1,10 @@
 import { forbidden, notFound } from 'next/navigation';
 import { Badge, Card } from '@packages/ui';
 import { ApiRequestError } from '../../../../lib/api-error';
-import { priorityTone } from '../../../../lib/display';
+import { confidenceTone, formatDate, priorityTone } from '../../../../lib/display';
 import { getEvaluationReport } from '../../../../lib/server-api';
 import { PrintReportButton } from '../../../../components/print-report-button';
+import { ZeeusLogo } from '../../../../components/zeeus-logo';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,39 +18,83 @@ export default async function ReportPage({ params }: { params: Params }) {
 
     return (
       <div className="grid gap-6 print:gap-4">
-        <section className="flex flex-wrap items-start justify-between gap-4">
+        <section className="no-print flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#58724d]">
               Full report
             </p>
             <h1 className="mt-2 text-4xl font-black text-slate-950">{report.evaluation.name}</h1>
             <p className="mt-3 text-sm leading-7 text-slate-600">
-              {report.evaluation.country} · {report.evaluation.naceDivision}
+              Print-friendly report view for PDF export and submission review.
             </p>
           </div>
-          <div className="print:hidden">
-            <PrintReportButton />
+          <PrintReportButton />
+        </section>
+
+        <section className="overflow-hidden rounded-[32px] border border-surface-border bg-gradient-to-br from-brand to-brand-dark p-0 text-white">
+          <div className="pattern-circles p-8">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <ZeeusLogo dark />
+              <div className="space-y-2 text-right text-xs uppercase tracking-[0.2em] text-white/70">
+                <p>Generated {formatDate(report.evaluation.updatedAt)}</p>
+                <p>Evaluation ID {report.evaluation.id}</p>
+              </div>
+            </div>
+
+            <div className="mt-8 flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#d9ef9b]">
+                  Sustainability assessment report
+                </p>
+                <h2 className="mt-2 text-3xl font-black">{report.evaluation.name}</h2>
+                <p className="mt-3 text-sm text-white/80">
+                  {report.evaluation.country} · {report.evaluation.naceDivision}
+                </p>
+              </div>
+              <Badge className="border border-white/20 bg-white/10 text-white" tone={confidenceTone(report.dashboard.confidenceBand)}>
+                {report.dashboard.confidenceBand} confidence
+              </Badge>
+            </div>
+
+            <div className="mt-6 grid gap-4 md:grid-cols-3">
+              <div className="rounded-[28px] bg-white/10 p-5">
+                <p className="text-xs uppercase tracking-[0.22em] text-[#d9ef9b]">Financial total</p>
+                <p className="mt-3 text-4xl font-black">{report.dashboard.financialTotal}/12</p>
+              </div>
+              <div className="rounded-[28px] bg-white/10 p-5">
+                <p className="text-xs uppercase tracking-[0.22em] text-[#d9ef9b]">Risk overall</p>
+                <p className="mt-3 text-4xl font-black">{report.dashboard.riskOverall.toFixed(1)}</p>
+              </div>
+              <div className="rounded-[28px] bg-white/10 p-5">
+                <p className="text-xs uppercase tracking-[0.22em] text-[#d9ef9b]">Opportunity overall</p>
+                <p className="mt-3 text-4xl font-black">{report.dashboard.opportunityOverall.toFixed(1)}</p>
+              </div>
+            </div>
           </div>
         </section>
 
-        <Card className="border-[#d7e8c8]">
+        <Card className="border-surface-border">
           <h2 className="text-xl font-bold text-slate-950">Startup context</h2>
           <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-2xl bg-[#f7f9f4] p-4">Stage: {report.evaluation.currentStage.replace('_', ' ')}</div>
+            <div className="rounded-2xl bg-[#f7f9f4] p-4">Stage: {report.evaluation.currentStage.replaceAll('_', ' ')}</div>
             <div className="rounded-2xl bg-[#f7f9f4] p-4">Offering: {report.evaluation.offeringType}</div>
-            <div className="rounded-2xl bg-[#f7f9f4] p-4">Launched: {report.evaluation.launched ? 'Yes' : 'No'}</div>
-            <div className="rounded-2xl bg-[#f7f9f4] p-4">Innovation: {report.evaluation.innovationApproach}</div>
+            <div className="rounded-2xl bg-[#f7f9f4] p-4">
+              Launched: {report.evaluation.launched ? 'Yes' : 'No'}
+            </div>
+            <div className="rounded-2xl bg-[#f7f9f4] p-4">
+              Innovation: {report.evaluation.innovationApproach}
+            </div>
           </div>
         </Card>
 
-        <Card className="border-[#d7e8c8]">
+        <Card className="border-surface-border">
           <h2 className="text-xl font-bold text-slate-950">Stage I and materiality</h2>
           <div className="mt-5 grid gap-3">
             {report.evaluation.stage1Topics.map((topic) => (
-              <div className="rounded-2xl bg-[#f7f9f4] p-4" key={topic.topicCode}>
-                <div className="flex items-center justify-between gap-3">
+              <div className="rounded-[28px] bg-[#f7f9f4] p-4" key={topic.topicCode}>
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <h3 className="font-bold text-slate-950">{topic.title}</h3>
-                  <Badge tone={priorityTone(topic.priorityBand)}>{topic.priorityBand.replace('_', ' ')}</Badge>
+                  <Badge tone={priorityTone(topic.priorityBand)}>{topic.priorityBand.replaceAll('_', ' ')}</Badge>
                 </div>
                 <p className="mt-2 text-sm text-slate-600">Impact score: {topic.impactScore}</p>
               </div>
@@ -57,46 +102,53 @@ export default async function ReportPage({ params }: { params: Params }) {
           </div>
         </Card>
 
-        <Card className="border-[#d7e8c8]">
-          <h2 className="text-xl font-bold text-slate-950">Stage II highlights</h2>
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
-            <div>
-              <p className="text-xs uppercase tracking-[0.22em] text-[#5d7355]">Top risks</p>
-              <div className="mt-3 grid gap-3">
-                {report.dashboard.topRisks.map((risk) => (
-                  <div className="rounded-2xl bg-[#f7f9f4] p-4" key={risk.code}>
+        <section className="grid gap-6 lg:grid-cols-2">
+          <Card className="border-surface-border">
+            <h2 className="text-xl font-bold text-slate-950">Stage II highlights</h2>
+            <div className="mt-5 grid gap-3">
+              {report.dashboard.topRisks.map((risk) => (
+                <div className="rounded-[28px] bg-[#fff5f5] p-4" key={risk.code}>
+                  <div className="flex items-center justify-between gap-3">
                     <p className="font-bold text-slate-950">{risk.title}</p>
-                    <p className="mt-2 text-sm text-slate-600">{risk.actionWindow}</p>
+                    <Badge tone="rose">{risk.score}</Badge>
                   </div>
-                ))}
-              </div>
+                  <p className="mt-2 text-sm text-slate-600">{risk.actionWindow}</p>
+                </div>
+              ))}
             </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.22em] text-[#5d7355]">Top opportunities</p>
-              <div className="mt-3 grid gap-3">
-                {report.dashboard.topOpportunities.map((item) => (
-                  <div className="rounded-2xl bg-[#f7f9f4] p-4" key={item.code}>
-                    <p className="font-bold text-slate-950">{item.title}</p>
-                    <p className="mt-2 text-sm text-slate-600">{item.actionWindow}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </Card>
+          </Card>
 
-        <Card className="border-[#d7e8c8]">
-          <h2 className="text-xl font-bold text-slate-950">Recommendations and SDGs</h2>
+          <Card className="border-surface-border">
+            <h2 className="text-xl font-bold text-slate-950">Opportunities</h2>
+            <div className="mt-5 grid gap-3">
+              {report.dashboard.topOpportunities.map((item) => (
+                <div className="rounded-[28px] bg-[#f4f9ee] p-4" key={item.code}>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-bold text-slate-950">{item.title}</p>
+                    <Badge tone="emerald">{item.score}</Badge>
+                  </div>
+                  <p className="mt-2 text-sm text-slate-600">{item.actionWindow}</p>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </section>
+
+        <Card className="border-surface-border">
+          <h2 className="text-xl font-bold text-slate-950">Recommendations and SDG alignment</h2>
           <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_0.8fr]">
             <div className="grid gap-3">
               {report.dashboard.recommendations.map((recommendation) => (
-                <div className="rounded-2xl bg-[#f7f9f4] p-4" key={recommendation.id}>
-                  <p className="font-bold text-slate-950">{recommendation.title}</p>
+                <div className="rounded-[28px] bg-[#f7f9f4] p-4" key={recommendation.id}>
+                  <p className="text-xs uppercase tracking-[0.2em] text-[#5d7355]">
+                    {recommendation.source} · {recommendation.severityBand}
+                  </p>
+                  <p className="mt-2 font-bold text-slate-950">{recommendation.title}</p>
                   <p className="mt-2 text-sm leading-7 text-slate-600">{recommendation.text}</p>
                 </div>
               ))}
             </div>
-            <div className="rounded-3xl bg-[#f7f9f4] p-5">
+            <div className="rounded-[28px] bg-[#f4f9ee] p-5">
               <p className="text-xs uppercase tracking-[0.22em] text-[#5d7355]">Relevant SDGs</p>
               <div className="mt-4 flex flex-wrap gap-2">
                 {report.sdgAlignment.items.map((sdg) => (

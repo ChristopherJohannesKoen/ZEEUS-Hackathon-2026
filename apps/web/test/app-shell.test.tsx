@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AppShell } from '../components/app-shell';
 
 vi.mock('next/navigation', () => ({
+  usePathname: () => '/app',
   useRouter: () => ({
     push: vi.fn(),
     refresh: vi.fn()

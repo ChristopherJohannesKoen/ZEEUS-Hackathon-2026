@@ -16,9 +16,9 @@ const displayFont = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: 'Ultimate Website Template',
+  title: 'ZEEUS Sustainability by Design',
   description:
-    'A hardened, Docker-first SaaS template with auth, RBAC, session security, and Projects CRUD.'
+    'A Dockerized assessment platform for startup sustainability scoring, SDG alignment, and deterministic Excel-parity reporting.'
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

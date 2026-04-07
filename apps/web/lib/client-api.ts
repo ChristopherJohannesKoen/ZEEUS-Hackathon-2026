@@ -6,7 +6,6 @@ import type {
   AuthResponse,
   BreakGlassLoginPayload,
   CreateEvaluationPayload,
-  DashboardResponse,
   EvaluationDetail,
   ForgotPasswordPayload,
   ForgotPasswordResponse,

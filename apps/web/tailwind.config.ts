@@ -10,12 +10,27 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        canvas: '#f4f1ea',
-        ink: '#0f172a',
-        accent: '#f97316'
+        canvas: '#f8faf7',
+        ink: '#163126',
+        accent: '#39b54a',
+        brand: '#39b54a',
+        'brand-light': '#8cc63f',
+        'brand-lime': '#b9e021',
+        'brand-dark': '#00654a',
+        'brand-muted': '#3fa535',
+        surface: '#f8faf7',
+        'surface-card': '#ffffff',
+        'surface-border': '#e5eddf',
+        'surface-muted': '#eff5eb'
       },
       boxShadow: {
-        card: '0 20px 60px -40px rgba(15, 23, 42, 0.35)'
+        card: '0 1px 3px 0 rgba(0,101,74,0.08), 0 1px 2px -1px rgba(0,101,74,0.04)',
+        'card-hover': '0 4px 12px 0 rgba(0,101,74,0.12), 0 2px 4px -1px rgba(0,101,74,0.08)'
+      },
+      borderRadius: {
+        xl: '0.75rem',
+        '2xl': '1rem',
+        '3xl': '1.25rem'
       }
     }
   },

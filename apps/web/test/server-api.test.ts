@@ -31,7 +31,7 @@ function jsonResponse(body: unknown, status = 200) {
 function resetCookieStore() {
   cookieStoreMock = {
     get: vi.fn((name: string) => {
-      if (name === 'ultimate_template_session') {
+      if (name === 'zeeus_assessment_session') {
         return { name, value: 'session-token' };
       }
 
@@ -52,7 +52,7 @@ describe('server-api helpers', () => {
     });
     cookiesMock.mockClear();
     resetCookieStore();
-    process.env.SESSION_COOKIE_NAME = 'ultimate_template_session';
+    process.env.SESSION_COOKIE_NAME = 'zeeus_assessment_session';
     process.env.API_ORIGIN = 'http://localhost:4000';
   });
 
@@ -81,7 +81,7 @@ describe('server-api helpers', () => {
     expect(noStoreMock).toHaveBeenCalledTimes(1);
     expect(cookiesMock).toHaveBeenCalledTimes(1);
     expect(new Headers(fetchMock.mock.calls[0]?.[1]?.headers).get('cookie')).toBe(
-      'ultimate_template_session=session-token'
+      'zeeus_assessment_session=session-token'
     );
   });
 
@@ -171,3 +171,4 @@ describe('server-api helpers', () => {
     expect(redirectMock).not.toHaveBeenCalled();
   });
 });
+

@@ -1,13 +1,15 @@
 # Kubernetes Baseline
 
-This directory is the cloud-neutral production baseline for the template.
+This directory is the optional cloud-neutral production baseline for the ZEEUS
+assessment stack.
 
 Assumptions:
 
 - `api` and `web` run in Kubernetes.
 - PostgreSQL is managed outside the cluster or by a separately governed stateful data platform.
 - Secrets are injected through Kubernetes `Secret` objects or an external secret manager.
-- The application still supports Docker Compose for local development only.
+- The application still supports Docker Compose as the primary local
+  reproduction path.
 
 Structure:
 

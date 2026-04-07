@@ -12,7 +12,7 @@ type SessionAuth = {
 };
 
 const { API_ORIGIN } = getE2EEnv();
-const sessionCookieName = process.env.SESSION_COOKIE_NAME ?? 'ultimate_template_session';
+const sessionCookieName = process.env.SESSION_COOKIE_NAME ?? 'zeeus_assessment_session';
 
 function getCookieHeader(response: Response) {
   const setCookieHeader = response.headers.get('set-cookie');
@@ -82,3 +82,4 @@ export async function updateUserRoleViaApi(auth: SessionAuth, userId: string, ro
     body: await parseJson(response)
   };
 }
+

@@ -14,8 +14,7 @@ export default async function SettingsPage() {
         <Badge tone={roleTone(user.role)}>{user.role}</Badge>
         <h1 className="text-4xl font-black tracking-tight text-slate-950">Settings</h1>
         <p className="max-w-2xl text-sm leading-7 text-slate-600">
-          This page exercises the authenticated profile API and gives future projects a baseline
-          account settings screen.
+          Manage your profile details and active sessions for the ZEEUS assessment workspace.
         </p>
       </section>
       <Card>

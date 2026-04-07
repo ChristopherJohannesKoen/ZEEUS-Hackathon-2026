@@ -11,8 +11,8 @@ const baseEnvironment = {
   ALLOW_MISSING_ORIGIN_FOR_DEV: 'false',
   API_PORT: '4000',
   API_PREFIX: 'api',
-  DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/ultimate_template?schema=public',
-  SESSION_COOKIE_NAME: 'ultimate_template_session',
+  DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/zeeus_assessment?schema=public',
+  SESSION_COOKIE_NAME: 'zeeus_assessment_session',
   SESSION_COOKIE_ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
   ARGON2_MEMORY_COST: '19456',
   RATE_LIMIT_WINDOW_MS: '60000',
@@ -149,3 +149,4 @@ describe('validateEnvironment', () => {
     ).toThrow('ENTERPRISE_DEFAULT_PROVIDER_SLUG must point to the OIDC provider');
   });
 });
+

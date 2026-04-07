@@ -1,10 +1,11 @@
 # Performance Scenarios
 
-These `k6` scripts validate the runtime characteristics that matter most for this template:
+These `k6` scripts validate the runtime characteristics that matter most for
+this repository:
 
 - session churn and repeated authenticated reads
 - protected dashboard page reads
-- idempotent project creation replay behavior
+- idempotent project creation replay behavior in the retained reference module
 - forgot-password burst handling
 
 ## Local usage

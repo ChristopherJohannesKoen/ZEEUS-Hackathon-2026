@@ -1,52 +1,53 @@
-# Deployment Runbook
+# Deployment
 
-## Container Flow
+## Primary Delivery Path
 
-- `apps/api/Dockerfile` builds the Nest application and Prisma client.
-- `apps/web/Dockerfile` builds the Next standalone server.
-- `docker-compose.yml` is the primary local orchestration file.
-- `infra/compose/docker-compose.extensions.yml` holds optional profile-based services.
-- `infra/k8s` is the production deployment baseline.
+The required baseline for this project is the Docker Compose stack:
 
-## Production Checklist
+```powershell
+Copy-Item .env.example .env
+docker compose up --build
+```
 
-1. Set production `APP_URL`, `API_ORIGIN`, `DATABASE_URL`, `SESSION_COOKIE_NAME`, and the origin policy envs.
-2. For the baseline production posture, configure OIDC and set `ENTERPRISE_DEFAULT_PROVIDER_SLUG` to the OIDC provider slug before enabling `ENTERPRISE_IDENTITY_ENABLED=true`.
-3. Enable SAML only when a deployment specifically requires it, and enable SCIM only when provisioning automation is needed.
-4. Keep local auth out of the normal production login path; break-glass remains the only allowed local recovery mechanism.
-5. Run the Prisma migration job before promoting a new API revision.
-6. Run `npm run seed` only for bootstrap environments where the initial owner must be provisioned.
-7. Build and publish `api` and `web` images from GitHub Actions.
-8. Promote the same image digest between staging and production; do not rebuild environment-specific application images.
-9. Generate SBOMs, scan artifacts, sign images, and attach provenance attestations in the release-integrity lane.
-10. Expose `/api/health` for health checks and `/api/metrics` for Prometheus scraping.
-11. Keep `EXPOSE_DEV_RESET_DETAILS=false` in every deployed environment.
-12. Enable `FEATURE_OBSERVABILITY=true` only when `OTEL_EXPORTER_OTLP_ENDPOINT` is configured and reachable.
+This starts:
 
-## CI/CD
+- `db`
+- `api`
+- `web`
 
-- `ci.yml` runs format, lint, typecheck, tests, migration smoke, build, and browser smoke.
-- `docker-images.yml` builds both images and pushes them to GHCR on `main` and tags.
-- `codeql.yml` scans the JavaScript/TypeScript codebase.
-- `dependency-review.yml` blocks risky dependency drift on pull requests.
-- `license-audit.yml` provides a repo-owned dependency license summary lane.
-- `release-integrity.yml` generates SBOMs, scans images, signs released images, and attaches provenance attestations.
+The compose path is the canonical local reproduction flow for judges and
+reviewers.
 
-Documented protected-branch baseline:
+## Containers
 
-- `quality`
-- CodeQL
-- dependency review
-- release integrity for tagged releases
-- `release-integrity.yml` also signs released images and is the baseline promotion lane for enterprise review.
+- `apps/api/Dockerfile` builds the NestJS API
+- `apps/web/Dockerfile` builds the Next.js frontend
+- `docker-compose.yml` wires the three required services together
 
-## Notes
+The API container runs migrations and seed data before launching the server.
 
-- The default template is single-tenant.
-- Public signup creates `member` users only; owner bootstrap is a seed/setup concern.
-- Keep `ALLOW_MISSING_ORIGIN_FOR_DEV=false` in deploy environments.
-- Keep `APP_ENV=staging` or `APP_ENV=production` in deployed clusters so local-only auth and reset toggles fail fast.
-- Password reset email delivery is intentionally left as an extension point, and raw reset details should remain hidden unless you explicitly opt in for local/test workflows.
-- Idempotency cleanup runs off the request path on a bounded schedule and should be monitored through logs and `ultimate_template_idempotency_expired_backlog`.
-- Optional observability services are available through the `prometheus` and `grafana` compose profiles.
-- Redis, object storage, and reverse proxy components are optional and profile-driven.
+## Health Endpoints
+
+- `GET /api/health`
+- `GET /api/docs`
+- `GET /api/metrics`
+
+Use `/api/health` for readiness checks and basic smoke testing.
+
+## Release Checklist
+
+1. Confirm `.env.example` matches the expected local defaults.
+2. Run `npm run typecheck`.
+3. Run `npm test`.
+4. Run `npm run build`.
+5. Run `docker compose up --build -d`.
+6. Verify the web app, API docs, and API health endpoints.
+7. Confirm the seeded owner can sign in and create or resume an evaluation.
+8. Confirm the dashboard, report route, and CSV export all load successfully.
+
+## Production Notes
+
+The repository still includes optional Kubernetes and observability assets under
+`infra/`, but those are secondary to the hackathon delivery baseline. The main
+priority is a reproducible Compose-based deployment that starts cleanly and
+matches the documented local setup.

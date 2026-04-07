@@ -1,4 +1,4 @@
-# Local Development Runbook
+# Local Development
 
 ## First Boot
 
@@ -10,67 +10,63 @@ npm run db:setup
 npm run dev
 ```
 
-If you use WSL, run the equivalent Linux commands inside the distro and keep Docker Desktop WSL integration enabled:
+Open:
 
-```bash
-cp .env.example .env
-npm install
-docker compose up db -d
-npm run db:setup
-npm run dev
-```
+- `http://localhost:3000`
+- `http://localhost:4000/api/docs`
+- `http://localhost:4000/api/health`
 
 ## Daily Commands
 
 - `npm run dev`: run API and web together
-- `npm run dev:services`: start only Postgres
-- `npm run db:setup`: apply local migrations and seed data
-- `npm run db:reset`: rebuild the database from scratch
+- `npm run dev:services`: start Postgres only
+- `npm run db:setup`: apply migrations and seed data
+- `npm run db:reset`: reset the database
 - `npm run prisma:generate`: regenerate Prisma client
+- `npm run typecheck`: TypeScript checks
+- `npm test`: workspace tests
+- `npm run build`: production builds
 
-## Seeded Local Account
+## Seeded Local Login
 
-Seed data provisions the initial owner through setup, not public signup.
+- Email: `owner@example.com`
+- Password: `ChangeMe123!`
 
-- email: `owner@example.com`
-- password: `ChangeMe123!`
+Public signup remains enabled for normal member accounts, but the seeded owner
+account is the fastest path for local verification.
 
-Keep these credentials in local docs only. The public login and signup pages intentionally do not render them.
+## Workbook Catalog Refresh
 
-## Environment Safety Notes
+If the workbook helper sheets change, refresh the committed scoring catalogs:
 
-- Keep `APP_ENV=local` on a developer machine unless you are explicitly running the automated test harness.
-- `ALLOW_MISSING_ORIGIN_FOR_DEV=true` is a local-only escape hatch for niche non-browser tools. Do not carry it into shared or deploy-like environments.
-- `EXPOSE_DEV_RESET_DETAILS=true` is valid only for local/test workflows and should be turned on only for the session where you need raw reset tokens or URLs.
-- If you want to emulate stricter deploy posture locally, leave `NODE_ENV=development` but switch `APP_ENV=staging`; startup validation will reject local-only security toggles.
+```powershell
+node scripts/extract-workbook-catalogs.mjs
+```
 
-## Web Security Notes
+That updates the static catalog data consumed by `packages/scoring`.
 
-- The web app now runs with a nonce-based CSP. Because of that, pages render dynamically per request instead of using static generation.
-- In development, CSP allows websocket connections, `unsafe-eval`, and inline styles only where Next.js tooling still requires them. Production keeps the stricter nonce-based policy for both scripts and styles.
-- If you add third-party scripts, fonts, or analytics later, update the CSP policy in `apps/web/middleware.ts` at the same time.
-- You can enable `CSP_REPORT_ONLY=true` to emit an additional strict nonce-based `Content-Security-Policy-Report-Only` header while validating future CSP changes locally.
-- Auth forms expose polite live error regions and field-level error associations. Keep those semantics when customizing login, signup, forgot-password, and reset-password screens.
+## Validation Checklist
 
-## Verification
+```powershell
+npm run typecheck
+npm test
+npm run build
+```
 
-- `npm run lint`
-- `npm run typecheck`
-- `npm test`
-- `npm run test:e2e`
-- `npm run docs:check`
-- `npm run build`
+For a closer end-to-end check:
+
+```powershell
+docker compose up --build -d
+docker compose ps
+```
 
 ## Troubleshooting
 
 - If Prisma complains about missing generated types, run `npm run prisma:generate`.
-- If the first admin account is missing, rerun `npm run db:setup`; owner bootstrap comes from seed data, not public signup.
-- If `npm run seed` fails with a bootstrap-owner mismatch, check whether `SEED_OWNER_EMAIL` changed after the database was already initialized. The template now refuses to silently move bootstrap ownership to a new email.
-- If auth requests fail across origins, confirm `APP_URL`, `API_ORIGIN`, and `ALLOWED_ORIGINS` match the actual local or LAN URLs.
-- If a local non-browser client cannot send `Origin` or `Referer`, set `ALLOW_MISSING_ORIGIN_FOR_DEV=true` only for that development session.
-- If you need a raw reset token or reset URL locally, set `EXPOSE_DEV_RESET_DETAILS=true` for that session only; it stays off by default.
-- If authenticated writes fail with `403`, fetch a fresh CSRF token by reloading the page or calling `GET /api/auth/csrf` from the first-party client.
-- If protected POST requests fail with `400`, confirm the client sends `Idempotency-Key` on signup, password reset completion, and project creation.
-- If you want local metrics and dashboards, start the optional observability profile and scrape `http://localhost:4000/api/metrics`.
-- If the web app cannot load seeded data, rerun `npm run db:setup`.
-- If Playwright is installed but browsers are missing, run `npx playwright install chromium`.
+- If the seeded owner is missing, rerun `npm run db:setup`.
+- If the web build on Windows warns about the native SWC package, the build
+  falls back to the wasm compiler automatically.
+- If pages cannot talk to the API, confirm `APP_URL`, `API_ORIGIN`, and the
+  running ports match the actual local URLs.
+- If you change workbook-derived logic, rerun `node scripts/extract-workbook-catalogs.mjs`
+  and then rerun tests.

@@ -1,10 +1,11 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: ultimate-template
+  name: zeeus-assessment
 spec:
   tls:
     - hosts:
         - app.example.com
         - api.example.com
-      secretName: ultimate-template-production-tls
+      secretName: zeeus-assessment-production-tls
+

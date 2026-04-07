@@ -34,7 +34,7 @@ async function configureApp(app: INestApplication) {
   const apiPrefix = configService.get<string>('API_PREFIX', 'api');
   const sessionCookieName = configService.get<string>(
     'SESSION_COOKIE_NAME',
-    'ultimate_template_session'
+    'zeeus_assessment_session'
   );
 
   app.enableCors({
@@ -84,3 +84,4 @@ export async function bootstrapApp(moduleClass: Type<unknown>) {
   await configureApp(app);
   return app;
 }
+

@@ -31,7 +31,8 @@ describe('MetricsController (e2e)', () => {
 
     expect(response.status).toBe(200);
     expect(response.headers['content-type']).toContain('text/plain');
-    expect(response.text).toContain('ultimate_template_auth_events_total');
-    expect(response.text).toContain('ultimate_template_session_events_total');
+    expect(response.text).toContain('zeeus_assessment_auth_events_total');
+    expect(response.text).toContain('zeeus_assessment_session_events_total');
   });
 });
+

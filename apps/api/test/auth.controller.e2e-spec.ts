@@ -23,7 +23,7 @@ describe('AuthController (e2e)', () => {
       expiresAt: new Date('2026-04-15T00:00:00.000Z')
     }),
     encodeSessionCookieToken: vi.fn((token: string) => `sealed-${token}`),
-    getCookieName: vi.fn().mockReturnValue('template_session'),
+    getCookieName: vi.fn().mockReturnValue('zeeus_assessment_session'),
     getCookieOptions: vi.fn().mockReturnValue({
       httpOnly: true,
       sameSite: 'lax',
@@ -78,9 +78,10 @@ describe('AuthController (e2e)', () => {
     expect(response.status).toBe(200);
     expect(response.body.user.email).toBe('owner@example.com');
     expect(setCookieHeader).toBeDefined();
-    expect(setCookieHeader?.[0]).toContain('template_session=sealed-session-token');
+    expect(setCookieHeader?.[0]).toContain('zeeus_assessment_session=sealed-session-token');
     expect(setCookieHeader?.[0]).toContain('Path=/');
     expect(setCookieHeader?.[0]).toContain('HttpOnly');
     expect(setCookieHeader?.[0]).toContain('SameSite=Lax');
   });
 });
+

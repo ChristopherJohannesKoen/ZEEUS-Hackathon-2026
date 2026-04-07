@@ -5,13 +5,14 @@ resources:
 patches:
   - target:
       kind: ConfigMap
-      name: ultimate-template-api-config
+      name: zeeus-assessment-api-config
     path: patch-api-config.yaml
   - target:
       kind: ConfigMap
-      name: ultimate-template-web-config
+      name: zeeus-assessment-web-config
     path: patch-web-config.yaml
   - target:
       kind: Ingress
-      name: ultimate-template
+      name: zeeus-assessment
     path: patch-ingress.yaml
+

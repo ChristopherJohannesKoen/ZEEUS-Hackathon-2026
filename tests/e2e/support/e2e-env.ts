@@ -46,9 +46,9 @@ export function loadE2EEnv() {
   process.env.WEB_PORT ??= '3100';
   process.env.TEMPLATE_E2E ??= 'true';
   process.env.SESSION_TOUCH_INTERVAL_MS ??= '600000';
-  process.env.POSTGRES_DB ??= 'ultimate_template_e2e';
+  process.env.POSTGRES_DB ??= 'zeeus_assessment_e2e';
   process.env.DATABASE_URL ??=
-    'postgresql://postgres:postgres@127.0.0.1:5432/ultimate_template_e2e?schema=public';
+    'postgresql://postgres:postgres@127.0.0.1:5432/zeeus_assessment_e2e?schema=public';
 
   loaded = true;
   return process.env;
@@ -71,7 +71,7 @@ export function getE2EEnv() {
     SESSION_TOUCH_INTERVAL_MS: process.env.SESSION_TOUCH_INTERVAL_MS ?? '600000',
     DATABASE_URL:
       process.env.DATABASE_URL ??
-      'postgresql://postgres:postgres@127.0.0.1:5432/ultimate_template_e2e?schema=public'
+      'postgresql://postgres:postgres@127.0.0.1:5432/zeeus_assessment_e2e?schema=public'
   };
 }
 
@@ -89,3 +89,4 @@ export function getAdminDatabaseUrl() {
   adminUrl.pathname = '/postgres';
   return adminUrl.toString();
 }
+

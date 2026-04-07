@@ -1,127 +1,105 @@
-# ZEEUS SbyD Tool — Frontend Runbook
+# ZEEUS Assessment Runbook
 
-## Quick start
+## Purpose
 
-```bash
-cd zeeus-sbyd
+This repository ships the ZEEUS hackathon assessment app as a monorepo with:
+
+- `apps/web`: Next.js assessment UI
+- `apps/api`: NestJS API
+- `packages/scoring`: deterministic scoring engine
+- `packages/db`: Prisma schema, migrations, and seed data
+- `PostgreSQL`: persistence for users, evaluations, answers, SDG mappings, and recommendations
+
+The primary product flow is:
+
+1. Landing page
+2. Login or signup
+3. Saved evaluations workspace
+4. Startup context and SDG pre-screen
+5. Stage I assessment
+6. Stage II risks and opportunities
+7. Impact summary
+8. SDG alignment
+9. Dashboard
+10. Report and export
+
+## First Boot
+
+```powershell
+Copy-Item .env.example .env
 npm install
+npm run dev:services
+npm run db:setup
 npm run dev
-# → open http://localhost:3000
 ```
 
-## Project structure
+Open:
 
-```
-src/
-├── app/                         # Next.js 14+ App Router
-│   ├── layout.tsx               # Root layout (Inter font, globals)
-│   ├── globals.css              # Tailwind v4 @theme + global styles
-│   ├── page.tsx                 # Public landing page (/)
-│   ├── login/page.tsx           # Login (mocked — any credentials work)
-│   ├── signup/page.tsx          # Signup (mocked)
-│   ├── app/                     # Protected app shell
-│   │   ├── layout.tsx           # AppShell wrapper
-│   │   ├── page.tsx             # /app — workspace overview
-│   │   ├── evaluations/         # /app/evaluations — list view
-│   │   └── evaluate/
-│   │       ├── start/           # /app/evaluate/start — new eval form
-│   │       └── [id]/            # Dynamic eval routes
-│   │           ├── layout.tsx   # Step nav
-│   │           ├── summary/     # Step 1 — startup context + SDG prescreen
-│   │           ├── stage-1/     # Step 2 — Financial + E/S/G wizard
-│   │           ├── stage-2/     # Step 3 — Risks & Opportunities
-│   │           ├── impact-summary/ # Step 4 — material topics
-│   │           ├── sdg-alignment/  # Step 5 — SDG cards + drawer
-│   │           └── dashboard/   # Step 6 — results + radar chart
-│   └── report/[id]/page.tsx     # Print-optimised full report
-│
-├── components/
-│   ├── ui/                      # Primitives
-│   │   ├── Badge.tsx            # PriorityChip, RiskChip, OpportunityChip, StatusChip, ConfidenceChip
-│   │   ├── Button.tsx           # Button variants
-│   │   ├── Card.tsx             # Card, CardHeader, ScoreCard
-│   │   ├── ProgressBar.tsx      # ProgressBar, ScoreBar
-│   │   ├── Select.tsx           # Select, Input, SegmentedControl
-│   │   └── Stepper.tsx          # Stepper, PillStepper
-│   ├── layout/
-│   │   ├── AppShell.tsx         # Sidebar + top nav
-│   │   └── ZeeusLogo.tsx        # SVG logo mark + wordmark
-│   └── features/evaluation/
-│       └── EvalNav.tsx          # Step progress nav in eval flow
-│
-├── data/
-│   ├── esg-topics.ts            # E1–E5, S1–S4, G1 definitions + financial KPIs
-│   ├── nace.ts                  # All NACE divisions + NACE→SDG map
-│   ├── risks-opportunities.ts   # 10 risks + 10 opportunities + matrices
-│   ├── sdgs.ts                  # All 17 SDGs with targets + stage→SDG map
-│   └── seed.ts                  # 3 seeded demo evaluations + MOCK_USER
-│
-├── lib/
-│   ├── scoring.ts               # All scoring helpers (deterministic, pure functions)
-│   └── utils.ts                 # cn(), formatDate(), generateId()
-│
-├── store/
-│   └── evaluationStore.ts       # Zustand store (persisted to localStorage)
-│
-└── types/
-    └── evaluation.ts            # All TypeScript types and interfaces
+- Web: `http://localhost:3000`
+- API docs: `http://localhost:4000/api/docs`
+- API health: `http://localhost:4000/api/health`
+
+Seeded local owner:
+
+- Email: `owner@example.com`
+- Password: `ChangeMe123!`
+
+## Docker Compose
+
+```powershell
+Copy-Item .env.example .env
+docker compose up --build
 ```
 
-## Scoring formula
+Services:
 
+- `db` on `5432`
+- `api` on `4000`
+- `web` on `3000`
+
+The API container runs migrations and seed data before starting the Nest server.
+
+## Source Of Truth For Scoring
+
+- Workbook helper sheets and matrices are the logic source of truth.
+- `scripts/extract-workbook-catalogs.mjs` refreshes committed catalog data under `packages/scoring/catalog`.
+- `packages/scoring` contains the pure TypeScript scoring functions used by the API and web UI.
+- Confidence and sensitivity hints are explanatory only and do not change saved scores.
+
+## Common Commands
+
+- `npm run dev`: run web and API together
+- `npm run dev:services`: start only Postgres
+- `npm run db:setup`: migrate and seed local DB
+- `npm run db:reset`: rebuild local DB from scratch
+- `npm run prisma:generate`: regenerate Prisma client
+- `npm run typecheck`: TypeScript validation
+- `npm test`: workspace test suites
+- `npm run build`: production builds
+- `node scripts/extract-workbook-catalogs.mjs`: refresh workbook-derived catalogs
+
+## Verification Checklist
+
+Run this before a demo or handoff:
+
+```powershell
+npm run typecheck
+npm test
+npm run build
+docker compose up --build -d
+docker compose ps
 ```
-E/S/G Impact Score = ((Magnitude + Scale + Irreversibility) / 3) × Likelihood
 
-Priority bands:
-  0         → Not Applicable
-  >0 – <1   → Very Low
-  ≥1 – <2   → Low
-  ≥2 – <2.5 → Relevant
-  ≥2.5 – 4  → High Priority
-```
+Then verify:
 
-## Seeded data
+- `http://localhost:3000`
+- `http://localhost:4000/api/health`
+- `http://localhost:4000/api/docs`
 
-Three demo evaluations load automatically from `src/data/seed.ts`:
+## Troubleshooting
 
-- `eval-001` — AquaPure Tech (completed, all stages filled)
-- `eval-002` — SolarCircle Platform (in progress)
-- `eval-003` — FoodLoop Connect (draft)
-
-The mock user is `Alex Müller / alex@greenventure.io`.
-
-## Auth
-
-No real auth is implemented. The login/signup pages are UI-only.
-Any form submission goes straight to `/app`.
-
-## Wiring to backend later
-
-Each of these is a clean seam:
-
-| Frontend mock                        | Backend replacement              |
-| ------------------------------------ | -------------------------------- |
-| `useEvaluationStore()` store actions | NestJS REST endpoints            |
-| `SEED_EVALUATIONS` in `seed.ts`      | PostgreSQL query via API         |
-| `generateId()`                       | UUID from DB insert              |
-| `computeDashboardSummary()`          | Move to shared package / backend |
-| `persist(zustand)`                   | Remove persist, use server state |
-
-## CSV export
-
-Click "Export CSV" on the Dashboard or Report page.
-The CSV is generated in-browser from the current evaluation state.
-
-## PDF export
-
-On the `/app/report/[id]` route, click "Export PDF" to trigger `window.print()`.
-Use Chrome's print-to-PDF for best results. Print styles are in `globals.css`.
-
-## Tech stack
-
-- Next.js 16 (App Router) + TypeScript
-- Tailwind CSS v4
-- Zustand (persisted to localStorage)
-- Recharts (radar chart on dashboard)
-- Lucide React (icons)
-- Radix UI primitives (dialogs, selects, etc.)
+- If Prisma types are missing, run `npm run prisma:generate`.
+- If the seeded owner is missing, run `npm run db:setup`.
+- If the workbook catalogs need updating, rerun `node scripts/extract-workbook-catalogs.mjs`.
+- If `next build` on Windows warns about an invalid native SWC binary, the repo already falls back to `@next/swc-wasm-nodejs` during the web build.
+- If the API cannot connect to Postgres in Docker, confirm `.env` exists and that `docker compose ps` shows `db` as healthy.

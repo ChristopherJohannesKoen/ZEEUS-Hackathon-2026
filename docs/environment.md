@@ -1,150 +1,70 @@
-# Environment Catalog
+# Environment
 
-Copy `.env.example` to `.env` and adjust values as needed.
+Copy `.env.example` to `.env` before running the project locally.
 
-For local performance validation, layer `.env.perf.example` or an untracked `.env.perf` on top of the normal env files. The perf overlay is intended for K6-driven load runs and increases rate/session ceilings without changing the strict origin, CSRF, or reset-detail rules.
+```powershell
+Copy-Item .env.example .env
+```
 
-## Core App Variables
+## Required Local Variables
 
-| Variable                          | Purpose                                                                       | Default                     |
-| --------------------------------- | ----------------------------------------------------------------------------- | --------------------------- |
-| `NODE_ENV`                        | runtime mode                                                                  | `development`               |
-| `APP_ENV`                         | deployment-security mode: `local`, `test`, `staging`, or `production`         | derived from `NODE_ENV`     |
-| `APP_URL`                         | public web origin used by CORS and password reset URLs                        | `http://localhost:3000`     |
-| `API_ORIGIN`                      | server-to-server origin for the Nest API                                      | `http://localhost:4000`     |
-| `ALLOWED_ORIGINS`                 | extra comma-separated web origins for LAN/prod access                         | empty                       |
-| `ALLOW_MISSING_ORIGIN_FOR_DEV`    | explicit local-dev escape hatch for missing `Origin`/`Referer`                | `false`                     |
-| `API_PORT`                        | Nest listen port                                                              | `4000`                      |
-| `API_PREFIX`                      | global API prefix                                                             | `api`                       |
-| `WEB_PORT`                        | web container port                                                            | `3000`                      |
-| `CSP_REPORT_ONLY`                 | emit an additional strict report-only CSP header for rollout/debug validation | `false`                     |
-| `CSP_REPORT_URI`                  | optional CSP reporting target used with report-only mode                      | empty                       |
-| `SESSION_COOKIE_NAME`             | session cookie key                                                            | `ultimate_template_session` |
-| `SESSION_COOKIE_ENCRYPTION_KEY`   | 64-hex key for encrypted session-cookie transport                             | required                    |
-| `SSO_STATE_ENCRYPTION_KEY`        | optional 64-hex key for encrypted SSO state; falls back to session key        | empty                       |
-| `SESSION_ROTATION_MS`             | session token rotation window                                                 | `43200000`                  |
-| `SESSION_TOUCH_INTERVAL_MS`       | interval before authenticated requests touch session freshness                | `600000`                    |
-| `SESSION_MAX_ACTIVE`              | maximum concurrent sessions per user                                          | `5`                         |
-| `OWNER_STEP_UP_WINDOW_MS`         | freshness window for owner step-up confirmation                               | `900000`                    |
-| `ARGON2_MEMORY_COST`              | password hashing memory cost                                                  | `19456`                     |
-| `RATE_LIMIT_WINDOW_MS`            | throttle window                                                               | `60000`                     |
-| `RATE_LIMIT_MAX`                  | throttle ceiling per window                                                   | `120`                       |
-| `IDEMPOTENCY_TTL_SECONDS`         | replay window for protected POST requests                                     | `86400`                     |
-| `IDEMPOTENCY_CLEANUP_INTERVAL_MS` | interval between scheduled expired-request cleanup runs                       | `900000`                    |
-| `IDEMPOTENCY_CLEANUP_BATCH_SIZE`  | max expired idempotency rows deleted per cleanup run                          | `500`                       |
-| `AUDIT_LOG_RETENTION_DAYS`        | audit-log retention period                                                    | `365`                       |
-| `SESSION_RETENTION_DAYS`          | expired-session retention period                                              | `30`                        |
-| `PASSWORD_RESET_RETENTION_DAYS`   | password-reset-token retention period                                         | `30`                        |
-| `IDEMPOTENCY_RETENTION_DAYS`      | idempotency-record retention period                                           | `7`                         |
-| `EXPORT_SYNC_LIMIT`               | max synchronous CSV export size                                               | `5000`                      |
-| `EXPOSE_DEV_RESET_DETAILS`        | return password reset token/url in local non-prod workflows                   | `false`                     |
+These values are enough for the default local stack:
 
-## Database Variables
+| Variable | Purpose | Default |
+| --- | --- | --- |
+| `APP_ENV` | runtime posture | `local` |
+| `APP_URL` | public web origin | `http://localhost:3000` |
+| `API_ORIGIN` | API origin used by the web tier | `http://localhost:4000` |
+| `API_PORT` | Nest listen port | `4000` |
+| `WEB_PORT` | Next listen port | `3000` |
+| `POSTGRES_USER` | Postgres username | `postgres` |
+| `POSTGRES_PASSWORD` | Postgres password | `postgres` |
+| `POSTGRES_DB` | Postgres database name | `zeeus_assessment` |
+| `DATABASE_URL` | Prisma connection string | `postgresql://postgres:postgres@localhost:5432/zeeus_assessment?schema=public` |
+| `SESSION_COOKIE_NAME` | session cookie key | `zeeus_assessment_session` |
+| `SESSION_COOKIE_ENCRYPTION_KEY` | 64-hex cookie encryption key | required |
+| `SEED_OWNER_EMAIL` | seeded owner account email | `owner@example.com` |
+| `SEED_OWNER_PASSWORD` | seeded owner account password | `ChangeMe123!` |
 
-| Variable            | Purpose                  | Default                                                                         |
-| ------------------- | ------------------------ | ------------------------------------------------------------------------------- |
-| `POSTGRES_USER`     | Postgres username        | `postgres`                                                                      |
-| `POSTGRES_PASSWORD` | Postgres password        | `postgres`                                                                      |
-| `POSTGRES_DB`       | Postgres database name   | `ultimate_template`                                                             |
-| `DATABASE_URL`      | Prisma connection string | `postgresql://postgres:postgres@localhost:5432/ultimate_template?schema=public` |
+## Assessment-Relevant Runtime Settings
 
-## Seed Variables
+| Variable | Purpose | Default |
+| --- | --- | --- |
+| `EXPORT_SYNC_LIMIT` | max synchronous CSV size | `5000` |
+| `RATE_LIMIT_WINDOW_MS` | throttle window | `60000` |
+| `RATE_LIMIT_MAX` | request ceiling per window | `120` |
+| `SESSION_ROTATION_MS` | session rotation window | `43200000` |
+| `SESSION_TOUCH_INTERVAL_MS` | session freshness write throttle | `600000` |
+| `SESSION_MAX_ACTIVE` | max concurrent sessions per user | `5` |
+| `OWNER_STEP_UP_WINDOW_MS` | freshness window for owner confirmation | `900000` |
 
-| Variable              | Purpose                       | Default             |
-| --------------------- | ----------------------------- | ------------------- |
-| `SEED_OWNER_EMAIL`    | seeded owner account email    | `owner@example.com` |
-| `SEED_OWNER_PASSWORD` | seeded owner account password | `ChangeMe123!`      |
+## Docker Compose Defaults
 
-The template's initial owner is provisioned through seeding and setup flows. Public signup always creates a `member`.
+`docker-compose.yml` injects working defaults for local use:
 
-Bootstrap ownership is stored in a singleton `BootstrapState` row. Once established, rerunning seed data with a different `SEED_OWNER_EMAIL` fails loudly instead of silently rebinding the template owner.
+- database name: `zeeus_assessment`
+- session cookie name: `zeeus_assessment_session`
+- API port: `4000`
+- web port: `3000`
 
-## Enterprise Identity Variables
+The API container runs Prisma migrate + seed before starting the server.
 
-Enterprise identity turns on through `ENTERPRISE_IDENTITY_ENABLED=true` or by configuring an enterprise provider directly.
+## Test And Perf Env Files
 
-Recommended enterprise baseline:
+- `.env.e2e.example`: Playwright and test harness defaults
+- `.env.e2e.enterprise.example`: enterprise-login test coverage
+- `.env.perf.example`: k6 performance overlay
 
-- configure OIDC first
-- set `ENTERPRISE_DEFAULT_PROVIDER_SLUG` to the OIDC provider slug
-- add SAML only when required by a target deployment
-- add SCIM only when provisioning automation is needed
+Keep those files as examples only. The normal local dev path still starts from
+`.env.example`.
 
-Core toggles:
+## Optional Inherited Variables
 
-- `ENTERPRISE_IDENTITY_ENABLED`
-- `ENTERPRISE_DEFAULT_PROVIDER_SLUG`
-- `BREAK_GLASS_LOCAL_LOGIN_ENABLED`
+The repository still contains optional envs for:
 
-OIDC inputs:
+- enterprise identity
+- feature-flagged email, storage, cache, and observability integrations
+- CSP reporting
 
-- `OIDC_PROVIDER_SLUG`
-- `OIDC_PROVIDER_DISPLAY_NAME`
-- `OIDC_ISSUER`
-- `OIDC_AUTHORIZATION_ENDPOINT`
-- `OIDC_TOKEN_ENDPOINT`
-- `OIDC_JWKS_URI`
-- `OIDC_CLIENT_ID`
-- `OIDC_CLIENT_SECRET` or `OIDC_CLIENT_SECRET_FILE`
-- `OIDC_SCOPES`
-- `OIDC_VERIFIED_DOMAINS`
-- `OIDC_GROUP_CLAIM`
-- `OIDC_EMAIL_CLAIM`
-- `OIDC_SUBJECT_CLAIM`
-- `OIDC_GROUP_ROLE_MAPPINGS`
-
-SAML inputs:
-
-- `SAML_PROVIDER_SLUG`
-- `SAML_PROVIDER_DISPLAY_NAME`
-- `SAML_SSO_URL`
-- `SAML_ENTITY_ID`
-- `SAML_CERTIFICATE_PEM` or `SAML_CERTIFICATE_PEM_FILE`
-- `SAML_VERIFIED_DOMAINS`
-- `SAML_GROUP_ATTRIBUTE`
-- `SAML_EMAIL_ATTRIBUTE`
-- `SAML_SUBJECT_ATTRIBUTE`
-- `SAML_GROUP_ROLE_MAPPINGS`
-
-SCIM input:
-
-- `SCIM_BEARER_TOKEN` or `SCIM_BEARER_TOKEN_FILE`
-
-## Feature Flags And Optional Extension Variables
-
-The default runtime still needs only web, API, and Postgres. Feature flags make optional integrations explicit and fail fast when enabled without their required credentials.
-
-| Variable                | Purpose                                          | Default |
-| ----------------------- | ------------------------------------------------ | ------- |
-| `FEATURE_EMAIL`         | enable SMTP-backed email delivery                | `false` |
-| `FEATURE_STORAGE`       | enable object-storage-backed file flows          | `false` |
-| `FEATURE_CACHE`         | enable cache/queue extensions that require Redis | `false` |
-| `FEATURE_OBSERVABILITY` | enable OTLP exporter validation                  | `false` |
-
-When a feature flag is enabled, the API validates these envs before boot:
-
-- `FEATURE_EMAIL`: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`
-- `FEATURE_STORAGE`: `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`
-- `FEATURE_CACHE`: `REDIS_URL`
-- `FEATURE_OBSERVABILITY`: `OTEL_EXPORTER_OTLP_ENDPOINT`
-
-## Security And Runtime Notes
-
-- First-party clients fetch `GET /api/auth/csrf` and send `X-CSRF-Token` on authenticated unsafe requests.
-- Missing `Origin` or `Referer` is rejected by default outside `APP_ENV=test`. Set `ALLOW_MISSING_ORIGIN_FOR_DEV=true` only for explicit `APP_ENV=local` edge cases.
-- `Idempotency-Key` is required on `POST /api/auth/signup`, `POST /api/auth/password/reset`, and `POST /api/projects`.
-- Expired idempotency records are cleaned up off the request path on a bounded schedule controlled by `IDEMPOTENCY_CLEANUP_INTERVAL_MS` and `IDEMPOTENCY_CLEANUP_BATCH_SIZE`.
-- Session freshness writes are throttled by `SESSION_TOUCH_INTERVAL_MS`; authenticated requests do not rewrite `lastUsedAt` on every hit.
-- Session tokens are opaque random values hashed server-side; the core template does not require a signing secret.
-- `SESSION_COOKIE_ENCRYPTION_KEY` and `SSO_STATE_ENCRYPTION_KEY` may be provided through direct env values or `*_FILE` secret mounts.
-- Password reset details are never exposed by default. Set `EXPOSE_DEV_RESET_DETAILS=true` only for explicit `APP_ENV=local` or `APP_ENV=test` workflows.
-- When enterprise identity is enabled in `APP_ENV=staging` or `APP_ENV=production`, local signup/login/reset flows are disabled unless break-glass is explicitly enabled.
-- `ENTERPRISE_DEFAULT_PROVIDER_SLUG` is required for staging and production enterprise deployments.
-- When OIDC and SAML are both configured for staging or production, the default provider must remain the OIDC provider.
-- `GET /api/projects/export.csv` streams the full filtered result or returns a structured `400` with `export_limit_exceeded`.
-- `GET /api/metrics` exposes Prometheus text metrics. OTLP tracing remains optional behind `FEATURE_OBSERVABILITY`.
-- Use `ALLOWED_ORIGINS` when the site must be reached from a LAN IP or a second browser origin in development.
-- Set `CSP_REPORT_ONLY=true` when you want the web app to emit an additional strict nonce-based `Content-Security-Policy-Report-Only` header for rollout/debug validation while the production enforced header stays strict by default.
-- `ALLOW_MISSING_ORIGIN_FOR_DEV=true` is invalid in `APP_ENV=staging` or `APP_ENV=production`.
-- `EXPOSE_DEV_RESET_DETAILS=true` is invalid in `APP_ENV=staging` or `APP_ENV=production`.
-- `.env.perf.example` raises `RATE_LIMIT_MAX` and `SESSION_MAX_ACTIVE` so local perf scenarios do not measure rate-limit rejection or session-cap interference instead of the critical paths themselves.
+Those are not required for the hackathon-critical stack and can stay disabled in
+local development.

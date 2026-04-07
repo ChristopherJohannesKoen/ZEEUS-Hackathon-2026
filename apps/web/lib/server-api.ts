@@ -24,7 +24,7 @@ import { redirect } from 'next/navigation';
 import { ApiRequestError, toApiError, unwrapContractResponse } from './api-error';
 
 const apiOrigin = process.env.API_ORIGIN ?? 'http://localhost:4000';
-const sessionCookieName = process.env.SESSION_COOKIE_NAME ?? 'ultimate_template_session';
+const sessionCookieName = process.env.SESSION_COOKIE_NAME ?? 'zeeus_assessment_session';
 
 const serverClient = initClient(apiContract, {
   baseUrl: `${apiOrigin}/api`,
@@ -204,3 +204,4 @@ export function getUserProfile() {
 export function getSessions() {
   return protectedServerRequest<SessionListResponse>(() => serverClient.auth.listSessions(), [200]);
 }
+

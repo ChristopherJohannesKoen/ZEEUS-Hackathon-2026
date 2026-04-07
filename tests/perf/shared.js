@@ -3,7 +3,7 @@ import { check } from 'k6';
 
 const appUrl = __ENV.APP_URL || 'http://localhost:3000';
 const apiOrigin = __ENV.API_ORIGIN || 'http://localhost:4000';
-const sessionCookieName = __ENV.SESSION_COOKIE_NAME || 'ultimate_template_session';
+const sessionCookieName = __ENV.SESSION_COOKIE_NAME || 'zeeus_assessment_session';
 const ownerEmail = __ENV.SEED_OWNER_EMAIL || 'owner@example.com';
 const ownerPassword = __ENV.SEED_OWNER_PASSWORD || 'ChangeMe123!';
 const perfUserPassword = __ENV.PERF_USER_PASSWORD || 'ChangeMe123!';
@@ -258,3 +258,4 @@ export function getPrometheusCounterValue(metricsText, metricName, labels = {}) 
 
   return 0;
 }
+

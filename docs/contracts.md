@@ -1,178 +1,74 @@
-# API Contract Guide
+# API Contracts
 
 ## Purpose
 
-`packages/contracts` is the shared website-facing API contract layer. It sits between:
+`packages/contracts` is the shared web-facing API contract for this repository.
+It keeps the Next.js app and NestJS API aligned on route shapes, payloads, and
+response schemas.
 
-- shared payload/response schemas in `packages/shared`
-- NestJS controllers in `apps/api`
-- browser and server clients in `apps/web`
+## Package Split
 
-This package exists to prevent contract drift. It is the place where route shape becomes explicit.
+- `packages/shared` owns Zod schemas, enums, DTOs, and response envelopes.
+- `packages/contracts` owns HTTP method, path, params, query, body, and status
+  surface.
 
-## Package Responsibilities
+This keeps domain types reusable while still making the actual HTTP interface
+explicit.
 
-`packages/shared` owns:
+## Current Route Groups
 
-- Zod schemas
-- shared enums
-- shared response envelopes
-- DTO-style request/response types
-
-`packages/contracts` owns:
-
-- route method
-- route path
-- path params
-- query params
-- request body
-- success status codes
-- error status surface for website-facing callers
-
-The split is deliberate:
-
-- shared schemas are reusable beyond HTTP
-- contracts describe actual HTTP behavior
-
-## Contract Structure
-
-The main contract lives in [`packages/contracts/src/index.ts`](../packages/contracts/src/index.ts).
-
-Current route groups include:
+The main contract lives in `packages/contracts/src/index.ts` and currently
+includes:
 
 - `health`
 - `auth`
 - `users`
 - `admin`
+- `evaluations`
 - `projects`
 
-The contract is intentionally aligned to the existing Nest route shapes. The website uses `/api` through Next rewrites, while the contract paths remain compatible with the API's global prefix.
+`evaluations` is the primary product slice used by the hackathon app.
+`projects` remains as a retained reference CRUD slice from the original
+baseline.
 
-## How To Add A New JSON Endpoint
+## Evaluation Routes
 
-1. Add or update the schema in `packages/shared`.
-2. Add the route in `packages/contracts`.
-3. Implement or extend the API controller/service in `apps/api`.
-4. Add a server or browser client wrapper in `apps/web/lib/server-api.ts` or `apps/web/lib/client-api.ts`.
-5. Add tests for:
-   - contract shape if needed
-   - server/client usage
-   - route behavior
+The evaluation contract covers:
 
-## Example Workflow
+- create, list, and fetch evaluations
+- update startup context
+- fetch the summary SDG pre-screen
+- save Stage I financial answers
+- save Stage I topic answers
+- save Stage II risk answers
+- save Stage II opportunity answers
+- fetch impact summary
+- fetch SDG alignment
+- fetch dashboard data
+- fetch report data
+- export CSV
 
-### 1. Shared schema
+## Client Rules
 
-Define the payload and response in `packages/shared`.
+Use the typed helpers in:
 
-### 2. Contract route
+- `apps/web/lib/server-api.ts`
+- `apps/web/lib/client-api.ts`
 
-Add the route in `packages/contracts`, including:
+Do not add raw `fetch('/api/...')` calls for ordinary JSON endpoints when a
+contract-backed helper should exist.
 
-- method
-- path
-- params/query/body
-- success responses
-- common error responses
+## Non-JSON Responses
 
-### 3. Web usage
+CSV export stays explicit as a non-JSON route. Everything else in the main
+assessment flow should stay contract-backed JSON.
 
-Use named operations instead of raw path strings.
+## Change Workflow
 
-Good:
+When adding or changing a route:
 
-```ts
-const project = await getProject(projectId);
-await updateProject(projectId, { isArchived: true });
-```
-
-Avoid:
-
-```ts
-await fetch(`/api/projects/${projectId}`, { method: 'PATCH' });
-```
-
-## JSON vs Non-JSON
-
-Business JSON endpoints belong in the contract package.
-
-Non-JSON endpoints may stay explicit outside generic JSON helpers when they are truly different in transport shape, for example:
-
-- CSV downloads
-- binary file downloads
-- empty-body endpoints with special semantics
-
-That distinction should be intentional and documented. Do not let "this endpoint is awkward" become a reason to bypass contracts for ordinary JSON routes.
-
-## Error Envelope
-
-The website assumes structured API errors match the shared envelope:
-
-```ts
-{
-  statusCode: number;
-  message: string;
-  code?: string;
-  errors: Array<{ field: string; code: string; message: string }>;
-  requestId?: string;
-}
-```
-
-High-value client behavior depends on these codes, especially:
-
-- `auth_required`
-- `forbidden`
-- `csrf_invalid`
-- `invalid_origin`
-- `not_found`
-- `upstream_error`
-- `export_limit_exceeded`
-
-If an endpoint changes its error behavior, update both the contract expectations and the consuming UI logic.
-
-## Browser Client Rules
-
-The browser client in [`apps/web/lib/client-api.ts`](../apps/web/lib/client-api.ts):
-
-- uses contract-backed operations
-- validates responses
-- attaches CSRF tokens where required
-- attaches idempotency keys where required
-- retries only for `csrf_invalid`
-
-New browser JSON calls should follow the same pattern by adding named operations, not by exporting a new generic fetch helper.
-
-## Server Client Rules
-
-The server client in [`apps/web/lib/server-api.ts`](../apps/web/lib/server-api.ts):
-
-- uses the same shared contract
-- forwards only the session cookie
-- keeps auth-sensitive reads uncached
-- redirects only on `401`
-- rethrows `403`, `404`, and upstream failures distinctly
-
-If a new route loader needs API data, add a typed server helper instead of calling `fetch` directly from the page.
-
-## Controller Integration Strategy
-
-The current API keeps the existing Nest controller structure and stable HTTP routes. The contract layer is already enforced at the web client boundary.
-
-That means:
-
-- the HTTP surface is explicit and shared
-- the website compiles against the contract
-- the API implementation can be migrated to deeper ts-rest Nest integration later without changing the public route model
-
-This staged approach keeps the codebase stable while still eliminating optimistic client-side parsing.
-
-## Review Checklist
-
-When reviewing a new JSON endpoint:
-
-- Is the payload/response schema in `packages/shared`?
-- Is the route declared in `packages/contracts`?
-- Does the web caller use a named contract-backed helper?
-- Are success and error status codes explicit?
-- Does the endpoint need CSRF or idempotency headers?
-- If it returns non-JSON, is that intentional and documented?
+1. update `packages/shared`
+2. update `packages/contracts`
+3. update the Nest controller and service
+4. update the web client helper
+5. add or update tests

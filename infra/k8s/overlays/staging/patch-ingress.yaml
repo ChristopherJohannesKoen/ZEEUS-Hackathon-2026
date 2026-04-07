@@ -1,13 +1,13 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: ultimate-template
+  name: zeeus-assessment
 spec:
   tls:
     - hosts:
         - staging-app.example.com
         - staging-api.example.com
-      secretName: ultimate-template-staging-tls
+      secretName: zeeus-assessment-staging-tls
   rules:
     - host: staging-app.example.com
       http:
@@ -16,7 +16,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: ultimate-template-web
+                name: zeeus-assessment-web
                 port:
                   number: 3000
     - host: staging-api.example.com
@@ -26,6 +26,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: ultimate-template-api
+                name: zeeus-assessment-api
                 port:
                   number: 4000
+

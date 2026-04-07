@@ -19,76 +19,76 @@ type IdempotencyCleanupMetric = {
 export class MetricsService {
   private readonly registry = new Registry();
   private readonly httpRequestsTotal = new Counter({
-    name: 'ultimate_template_http_requests_total',
+    name: 'zeeus_assessment_http_requests_total',
     help: 'HTTP requests handled by the API.',
     labelNames: ['method', 'route', 'status_code'],
     registers: [this.registry]
   });
   private readonly httpRequestDurationSeconds = new Histogram({
-    name: 'ultimate_template_http_request_duration_seconds',
+    name: 'zeeus_assessment_http_request_duration_seconds',
     help: 'HTTP request duration in seconds.',
     labelNames: ['method', 'route', 'status_code'],
     buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2, 5],
     registers: [this.registry]
   });
   private readonly authEventsTotal = new Counter({
-    name: 'ultimate_template_auth_events_total',
+    name: 'zeeus_assessment_auth_events_total',
     help: 'Authentication and password-reset lifecycle events.',
     labelNames: ['event'],
     registers: [this.registry]
   });
   private readonly sessionEventsTotal = new Counter({
-    name: 'ultimate_template_session_events_total',
+    name: 'zeeus_assessment_session_events_total',
     help: 'Session lifecycle events.',
     labelNames: ['event'],
     registers: [this.registry]
   });
   private readonly securityEventsTotal = new Counter({
-    name: 'ultimate_template_security_events_total',
+    name: 'zeeus_assessment_security_events_total',
     help: 'Security boundary events such as CSRF and origin validation failures.',
     labelNames: ['event'],
     registers: [this.registry]
   });
   private readonly ownershipEventsTotal = new Counter({
-    name: 'ultimate_template_ownership_events_total',
+    name: 'zeeus_assessment_ownership_events_total',
     help: 'Ownership bootstrap and owner-floor lifecycle events.',
     labelNames: ['event'],
     registers: [this.registry]
   });
   private readonly identityEventsTotal = new Counter({
-    name: 'ultimate_template_identity_events_total',
+    name: 'zeeus_assessment_identity_events_total',
     help: 'Enterprise identity, SSO, SCIM, and access-policy events.',
     labelNames: ['event'],
     registers: [this.registry]
   });
   private readonly idempotencyEventsTotal = new Counter({
-    name: 'ultimate_template_idempotency_events_total',
+    name: 'zeeus_assessment_idempotency_events_total',
     help: 'Idempotency request lifecycle events.',
     labelNames: ['event'],
     registers: [this.registry]
   });
   private readonly idempotencyCleanupDurationSeconds = new Histogram({
-    name: 'ultimate_template_idempotency_cleanup_duration_seconds',
+    name: 'zeeus_assessment_idempotency_cleanup_duration_seconds',
     help: 'Duration of scheduled idempotency cleanup runs.',
     labelNames: ['source'],
     buckets: [0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2],
     registers: [this.registry]
   });
   private readonly idempotencyCleanupDeletedTotal = new Counter({
-    name: 'ultimate_template_idempotency_cleanup_deleted_total',
+    name: 'zeeus_assessment_idempotency_cleanup_deleted_total',
     help: 'Expired idempotency records deleted by cleanup runs.',
     labelNames: ['source'],
     registers: [this.registry]
   });
   private readonly idempotencyExpiredBacklog = new Gauge({
-    name: 'ultimate_template_idempotency_expired_backlog',
+    name: 'zeeus_assessment_idempotency_expired_backlog',
     help: 'Expired idempotency rows remaining after the last cleanup run.',
     registers: [this.registry]
   });
 
   constructor() {
     collectDefaultMetrics({
-      prefix: 'ultimate_template_process_',
+      prefix: 'zeeus_assessment_process_',
       register: this.registry
     });
   }
@@ -149,3 +149,4 @@ export class MetricsService {
     return route?.trim() ? route : 'unmatched';
   }
 }
+

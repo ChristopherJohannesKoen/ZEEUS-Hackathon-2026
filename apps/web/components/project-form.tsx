@@ -59,7 +59,7 @@ export function ProjectForm({ mode, onSaved, project }: ProjectFormProps) {
         />
       </Field>
       <Field
-        hint="This becomes the example long-form field across the template."
+        hint="Use this field for a short project summary and next milestone."
         label="Description"
       >
         <Textarea

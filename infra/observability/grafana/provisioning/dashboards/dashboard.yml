@@ -1,11 +1,12 @@
 apiVersion: 1
 
 providers:
-  - name: Ultimate Template Dashboards
+  - name: ZEEUS Assessment Dashboards
     orgId: 1
-    folder: Ultimate Template
+    folder: ZEEUS Assessment
     type: file
     disableDeletion: false
     editable: true
     options:
       path: /etc/grafana/provisioning/dashboards/json
+

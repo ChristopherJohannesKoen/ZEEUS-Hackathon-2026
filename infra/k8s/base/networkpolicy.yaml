@@ -1,17 +1,17 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: ultimate-template-api
+  name: zeeus-assessment-api
 spec:
   podSelector:
     matchLabels:
-      app: ultimate-template-api
+      app: zeeus-assessment-api
   policyTypes: ['Ingress', 'Egress']
   ingress:
     - from:
         - podSelector:
             matchLabels:
-              app: ultimate-template-web
+              app: zeeus-assessment-web
   egress:
     - to:
         - ipBlock:
@@ -20,11 +20,11 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: ultimate-template-web
+  name: zeeus-assessment-web
 spec:
   podSelector:
     matchLabels:
-      app: ultimate-template-web
+      app: zeeus-assessment-web
   policyTypes: ['Ingress', 'Egress']
   ingress:
     - from:
@@ -33,7 +33,8 @@ spec:
     - to:
         - podSelector:
             matchLabels:
-              app: ultimate-template-api
+              app: zeeus-assessment-api
     - to:
         - ipBlock:
             cidr: 0.0.0.0/0
+

@@ -6,8 +6,9 @@ rule_files:
   - /etc/prometheus/alerts.yml
 
 scrape_configs:
-  - job_name: ultimate-template-api
+  - job_name: zeeus-assessment-api
     metrics_path: /api/metrics
     static_configs:
       - targets:
           - api:4000
+

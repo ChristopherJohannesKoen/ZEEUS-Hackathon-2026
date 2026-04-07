@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: ultimate-template-api-config
+  name: zeeus-assessment-api-config
 data:
   NODE_ENV: 'production'
   APP_ENV: 'production'
@@ -9,7 +9,7 @@ data:
   API_ORIGIN: 'https://api.example.com'
   API_PORT: '4000'
   API_PREFIX: 'api'
-  SESSION_COOKIE_NAME: 'ultimate_template_session'
+  SESSION_COOKIE_NAME: 'zeeus_assessment_session'
   RATE_LIMIT_WINDOW_MS: '60000'
   RATE_LIMIT_MAX: '120'
   SESSION_ROTATION_MS: '43200000'
@@ -51,3 +51,4 @@ data:
   FEATURE_STORAGE: 'false'
   FEATURE_CACHE: 'false'
   FEATURE_OBSERVABILITY: 'false'
+

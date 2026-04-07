@@ -27,7 +27,7 @@
       "id": 1,
       "targets": [
         {
-          "expr": "sum(rate(ultimate_template_http_requests_total[5m]))",
+          "expr": "sum(rate(zeeus_assessment_http_requests_total[5m]))",
           "legendFormat": "req/s",
           "refId": "A"
         }
@@ -55,7 +55,7 @@
       "id": 2,
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum(rate(ultimate_template_http_request_duration_seconds_bucket[5m])) by (le))",
+          "expr": "histogram_quantile(0.95, sum(rate(zeeus_assessment_http_request_duration_seconds_bucket[5m])) by (le))",
           "legendFormat": "p95",
           "refId": "A"
         }
@@ -81,7 +81,7 @@
       "id": 3,
       "targets": [
         {
-          "expr": "sum by (event) (increase(ultimate_template_auth_events_total[1h]))",
+          "expr": "sum by (event) (increase(zeeus_assessment_auth_events_total[1h]))",
           "legendFormat": "{{event}}",
           "refId": "A"
         }
@@ -107,7 +107,7 @@
       "id": 4,
       "targets": [
         {
-          "expr": "ultimate_template_idempotency_expired_backlog",
+          "expr": "zeeus_assessment_idempotency_expired_backlog",
           "legendFormat": "backlog",
           "refId": "A"
         }
@@ -119,7 +119,7 @@
   "refresh": "30s",
   "schemaVersion": 39,
   "style": "dark",
-  "tags": ["ultimate-template"],
+  "tags": ["zeeus-assessment"],
   "templating": {
     "list": []
   },
@@ -128,7 +128,8 @@
     "to": "now"
   },
   "timezone": "browser",
-  "title": "Ultimate Template Overview",
-  "uid": "ultimate-template-overview",
+  "title": "ZEEUS Assessment Overview",
+  "uid": "zeeus-assessment-overview",
   "version": 1
 }
+

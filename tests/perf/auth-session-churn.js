@@ -45,7 +45,7 @@ export default function () {
   const baselineMetrics = fetchMetricsText();
   const baselineTouches = getPrometheusCounterValue(
     baselineMetrics,
-    'ultimate_template_session_events_total',
+    'zeeus_assessment_session_events_total',
     { event: 'touched' }
   );
 
@@ -120,7 +120,7 @@ export default function () {
   const postBurstMetrics = fetchMetricsText();
   const touchedAfterBurst = getPrometheusCounterValue(
     postBurstMetrics,
-    'ultimate_template_session_events_total',
+    'zeeus_assessment_session_events_total',
     { event: 'touched' }
   );
   sessionTouchRatioOk.add(touchedAfterBurst - baselineTouches <= 1);
@@ -138,3 +138,4 @@ export default function () {
 
   sleep(1);
 }
+

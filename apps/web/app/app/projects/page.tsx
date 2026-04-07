@@ -58,12 +58,12 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Sea
     <div className="grid gap-6">
       <section className="flex flex-wrap items-start justify-between gap-4">
         <div className="space-y-2">
-          <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Reference slice</p>
+          <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Legacy module</p>
           <h1 className="text-4xl font-black tracking-tight text-slate-950">Projects</h1>
           <p className="max-w-2xl text-sm leading-7 text-slate-600">
-            This page is the template&apos;s reusable CRUD baseline: filters, cursor pagination,
-            archiving, detail editing, and CSV export against the real API. Exports stream the full
-            filtered result or fail explicitly when the synchronous limit is exceeded.
+            This retained reference CRUD module is no longer the primary product flow. It remains
+            available for baseline API and UI validation, including filters, pagination, archiving,
+            detail editing, and CSV export.
           </p>
         </div>
         <div className="flex flex-wrap gap-3">

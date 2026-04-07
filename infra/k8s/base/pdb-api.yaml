@@ -1,9 +1,10 @@
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: ultimate-template-api
+  name: zeeus-assessment-api
 spec:
   minAvailable: 1
   selector:
     matchLabels:
-      app: ultimate-template-api
+      app: zeeus-assessment-api
+

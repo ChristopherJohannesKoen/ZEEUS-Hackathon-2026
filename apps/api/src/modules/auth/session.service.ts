@@ -309,7 +309,7 @@ export class SessionService {
   }
 
   getCookieName() {
-    return this.configService.get<string>('SESSION_COOKIE_NAME', 'ultimate_template_session');
+    return this.configService.get<string>('SESSION_COOKIE_NAME', 'zeeus_assessment_session');
   }
 
   encodeSessionCookieToken(rawToken: string) {
@@ -505,3 +505,4 @@ export class SessionService {
     return Number(this.configService.get<string>('SESSION_MAX_ACTIVE', '5'));
   }
 }
+

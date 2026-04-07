@@ -463,7 +463,11 @@ export class EvaluationsService {
     evaluationId: string,
     payload: Stage1FinancialAnswersPayload
   ): Promise<Stage1FinancialAnswer> {
-    const state = await this.getOwnedEvaluationState(this.prismaService, evaluationId, currentUser.id);
+    const state = await this.getOwnedEvaluationState(
+      this.prismaService,
+      evaluationId,
+      currentUser.id
+    );
     const detail = await this.saveStage1(currentUser, evaluationId, {
       financial: payload,
       topics: state.stage1TopicAnswers.map((item: EvaluationStage1TopicRecord) =>
@@ -483,7 +487,11 @@ export class EvaluationsService {
     evaluationId: string,
     payload: SaveStage1TopicsPayload
   ): Promise<{ items: Stage1TopicAnswer[] }> {
-    const state = await this.getOwnedEvaluationState(this.prismaService, evaluationId, currentUser.id);
+    const state = await this.getOwnedEvaluationState(
+      this.prismaService,
+      evaluationId,
+      currentUser.id
+    );
     const detail = await this.saveStage1(currentUser, evaluationId, {
       financial: state.stage1Financial
         ? {
@@ -606,7 +614,11 @@ export class EvaluationsService {
     evaluationId: string,
     payload: SaveStage2RisksPayload
   ): Promise<{ items: Stage2RiskAnswer[] }> {
-    const state = await this.getOwnedEvaluationState(this.prismaService, evaluationId, currentUser.id);
+    const state = await this.getOwnedEvaluationState(
+      this.prismaService,
+      evaluationId,
+      currentUser.id
+    );
     const detail = await this.saveStage2(currentUser, evaluationId, {
       risks: payload.items,
       opportunities: state.stage2OpportunityAnswers.map((item: EvaluationStage2OpportunityRecord) =>
@@ -624,7 +636,11 @@ export class EvaluationsService {
     evaluationId: string,
     payload: SaveStage2OpportunitiesPayload
   ): Promise<{ items: Stage2OpportunityAnswer[] }> {
-    const state = await this.getOwnedEvaluationState(this.prismaService, evaluationId, currentUser.id);
+    const state = await this.getOwnedEvaluationState(
+      this.prismaService,
+      evaluationId,
+      currentUser.id
+    );
     const detail = await this.saveStage2(currentUser, evaluationId, {
       risks: state.stage2RiskAnswers.map((item: EvaluationStage2RiskRecord) =>
         this.toStage2RiskInput(item)
@@ -642,7 +658,11 @@ export class EvaluationsService {
     evaluationId: string
   ): Promise<EvaluationDetail> {
     const result = await this.prismaService.$transaction(async (transaction) => {
-      const evaluation = await this.getOwnedEvaluationMetadata(transaction, evaluationId, currentUser.id);
+      const evaluation = await this.getOwnedEvaluationMetadata(
+        transaction,
+        evaluationId,
+        currentUser.id
+      );
 
       if (evaluation.status === 'archived') {
         throw new BadRequestException('Archived evaluations must be unarchived before completion.');
@@ -662,7 +682,11 @@ export class EvaluationsService {
         }
       });
 
-      const persisted = await this.persistRevisionSnapshot(transaction, evaluationId, currentUser.id);
+      const persisted = await this.persistRevisionSnapshot(
+        transaction,
+        evaluationId,
+        currentUser.id
+      );
       return persisted.detail;
     });
 
@@ -676,7 +700,10 @@ export class EvaluationsService {
     return result;
   }
 
-  async reopenEvaluation(currentUser: SessionUser, evaluationId: string): Promise<EvaluationDetail> {
+  async reopenEvaluation(
+    currentUser: SessionUser,
+    evaluationId: string
+  ): Promise<EvaluationDetail> {
     const result = await this.prismaService.$transaction(async (transaction) => {
       await this.assertEvaluationOwnership(transaction, evaluationId, currentUser.id);
       await transaction.evaluation.update({
@@ -689,7 +716,11 @@ export class EvaluationsService {
         }
       });
 
-      const persisted = await this.persistRevisionSnapshot(transaction, evaluationId, currentUser.id);
+      const persisted = await this.persistRevisionSnapshot(
+        transaction,
+        evaluationId,
+        currentUser.id
+      );
       return persisted.detail;
     });
 
@@ -703,9 +734,16 @@ export class EvaluationsService {
     return result;
   }
 
-  async archiveEvaluation(currentUser: SessionUser, evaluationId: string): Promise<EvaluationDetail> {
+  async archiveEvaluation(
+    currentUser: SessionUser,
+    evaluationId: string
+  ): Promise<EvaluationDetail> {
     const result = await this.prismaService.$transaction(async (transaction) => {
-      const evaluation = await this.getOwnedEvaluationMetadata(transaction, evaluationId, currentUser.id);
+      const evaluation = await this.getOwnedEvaluationMetadata(
+        transaction,
+        evaluationId,
+        currentUser.id
+      );
 
       if (evaluation.status !== 'completed') {
         throw new BadRequestException('Only completed evaluations can be archived.');
@@ -720,7 +758,11 @@ export class EvaluationsService {
         }
       });
 
-      const persisted = await this.persistRevisionSnapshot(transaction, evaluationId, currentUser.id);
+      const persisted = await this.persistRevisionSnapshot(
+        transaction,
+        evaluationId,
+        currentUser.id
+      );
       return persisted.detail;
     });
 
@@ -739,7 +781,11 @@ export class EvaluationsService {
     evaluationId: string
   ): Promise<EvaluationDetail> {
     const result = await this.prismaService.$transaction(async (transaction) => {
-      const evaluation = await this.getOwnedEvaluationMetadata(transaction, evaluationId, currentUser.id);
+      const evaluation = await this.getOwnedEvaluationMetadata(
+        transaction,
+        evaluationId,
+        currentUser.id
+      );
 
       if (evaluation.status !== 'archived') {
         throw new BadRequestException('Evaluation is not archived.');
@@ -754,7 +800,11 @@ export class EvaluationsService {
         }
       });
 
-      const persisted = await this.persistRevisionSnapshot(transaction, evaluationId, currentUser.id);
+      const persisted = await this.persistRevisionSnapshot(
+        transaction,
+        evaluationId,
+        currentUser.id
+      );
       return persisted.detail;
     });
 
@@ -1091,7 +1141,9 @@ export class EvaluationsService {
     return this.getCurrentReportFromState(evaluation);
   }
 
-  private async getCurrentReportFromState(evaluation: EvaluationStateRecord): Promise<ReportResponse> {
+  private async getCurrentReportFromState(
+    evaluation: EvaluationStateRecord
+  ): Promise<ReportResponse> {
     if (!evaluation.currentRevisionId) {
       return this.buildOutputsFromState(evaluation).report;
     }
@@ -1280,9 +1332,7 @@ export class EvaluationsService {
     };
   }
 
-  private toStage1TopicInput(
-    item: EvaluationStage1TopicRecord
-  ): Stage1TopicAnswerInput {
+  private toStage1TopicInput(item: EvaluationStage1TopicRecord): Stage1TopicAnswerInput {
     return {
       topicCode: item.topicCode,
       applicable: item.applicable,
@@ -1295,9 +1345,7 @@ export class EvaluationsService {
     };
   }
 
-  private toStage2RiskInput(
-    item: EvaluationStage2RiskRecord
-  ): Stage2RiskAnswerInput {
+  private toStage2RiskInput(item: EvaluationStage2RiskRecord): Stage2RiskAnswerInput {
     return {
       riskCode: item.riskCode,
       applicable: item.applicable,

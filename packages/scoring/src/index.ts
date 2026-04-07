@@ -557,8 +557,9 @@ export function scoreStage2RiskAnswer(input: Stage2RiskAnswerInput): Stage2RiskA
 
   const ratingScore = input.applicable
     ? Number(
-        (((stageTwoLikelihoodScores[input.probability] ?? 0) *
-          (dimensionScores[input.impact] ?? 0))).toFixed(2)
+        (
+          (stageTwoLikelihoodScores[input.probability] ?? 0) * (dimensionScores[input.impact] ?? 0)
+        ).toFixed(2)
       )
     : 0;
 
@@ -584,8 +585,9 @@ export function scoreStage2OpportunityAnswer(
 
   const ratingScore = input.applicable
     ? Number(
-        (((stageTwoLikelihoodScores[input.likelihood] ?? 0) *
-          (dimensionScores[input.impact] ?? 0))).toFixed(2)
+        (
+          (stageTwoLikelihoodScores[input.likelihood] ?? 0) * (dimensionScores[input.impact] ?? 0)
+        ).toFixed(2)
       )
     : 0;
 

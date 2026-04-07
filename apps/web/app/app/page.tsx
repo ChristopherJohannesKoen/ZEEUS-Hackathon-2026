@@ -1,11 +1,6 @@
 import Link from 'next/link';
 import { Badge, Card, buttonClassName } from '@packages/ui';
-import {
-  confidenceTone,
-  evaluationStatusTone,
-  formatDate,
-  roleTone
-} from '../../lib/display';
+import { confidenceTone, evaluationStatusTone, formatDate, roleTone } from '../../lib/display';
 import { getEvaluations, requireCurrentUser } from '../../lib/server-api';
 
 export default async function DashboardPage() {
@@ -32,7 +27,9 @@ export default async function DashboardPage() {
             </span>
           </div>
           <div className="mt-6 space-y-3">
-            <h1 className="text-4xl font-black tracking-tight">Welcome back, {currentUser.name}.</h1>
+            <h1 className="text-4xl font-black tracking-tight">
+              Welcome back, {currentUser.name}.
+            </h1>
             <p className="max-w-2xl text-sm leading-7 text-white/80">
               Continue saved assessments, review materiality outputs, and move directly into the
               dashboard and report flow built for the hackathon submission.

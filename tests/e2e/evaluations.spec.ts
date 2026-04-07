@@ -37,7 +37,10 @@ test('runs the evaluation workflow through dashboard, completion, and revision h
   await page.getByTestId('stage-one-submit').click();
 
   await expect(page.getByRole('heading', { name: 'Risks and opportunities' })).toBeVisible();
-  await page.locator('[data-testid^="stage-two-risk-"][data-testid$="-applicable"]').first().check();
+  await page
+    .locator('[data-testid^="stage-two-risk-"][data-testid$="-applicable"]')
+    .first()
+    .check();
   await page
     .locator('[data-testid^="stage-two-risk-"][data-testid$="-probability"]')
     .first()

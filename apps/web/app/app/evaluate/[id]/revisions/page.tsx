@@ -33,8 +33,8 @@ export default async function EvaluationRevisionsPage({ params }: { params: Para
             </p>
             <h1 className="mt-2 text-4xl font-black text-slate-950">{evaluation.name}</h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
-              Completed states are preserved as immutable report snapshots. Reopening the
-              evaluation creates a fresh draft revision instead of changing the old one.
+              Completed states are preserved as immutable report snapshots. Reopening the evaluation
+              creates a fresh draft revision instead of changing the old one.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -78,7 +78,9 @@ export default async function EvaluationRevisionsPage({ params }: { params: Para
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
                       <div className="flex flex-wrap gap-2">
-                        <Badge tone={evaluationStatusTone(revision.status)}>{revision.status}</Badge>
+                        <Badge tone={evaluationStatusTone(revision.status)}>
+                          {revision.status}
+                        </Badge>
                         <Badge tone="slate">Revision {revision.revisionNumber}</Badge>
                       </div>
                       <h3 className="mt-3 text-xl font-bold text-slate-950">

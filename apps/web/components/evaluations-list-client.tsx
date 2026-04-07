@@ -4,12 +4,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Badge, Card, buttonClassName } from '@packages/ui';
 import type { EvaluationListItem, EvaluationStatus } from '@packages/shared';
-import {
-  confidenceTone,
-  evaluationStatusTone,
-  formatDate,
-  formatEnumLabel
-} from '../lib/display';
+import { confidenceTone, evaluationStatusTone, formatDate, formatEnumLabel } from '../lib/display';
 
 const continueRoute: Record<string, string> = {
   start: 'summary',

@@ -1,0 +1,19 @@
+node_modules
+.next
+dist
+.turbo
+.env
+.env.perf
+.env.e2e
+.env.local
+*.log
+coverage
+.prisma
+playwright-report
+test-results
+apps/web/tsconfig.tsbuildinfo
+*.tsbuildinfo
+server/
+
+# Private research/provenance working archive. Do not publish.
+references/

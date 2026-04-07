@@ -84,4 +84,3 @@ export async function bootstrapApp(moduleClass: Type<unknown>) {
   await configureApp(app);
   return app;
 }
-

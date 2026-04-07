@@ -82,4 +82,3 @@ export async function updateUserRoleViaApi(auth: SessionAuth, userId: string, ro
     body: await parseJson(response)
   };
 }
-

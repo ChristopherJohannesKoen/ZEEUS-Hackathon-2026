@@ -204,4 +204,3 @@ export function getUserProfile() {
 export function getSessions() {
   return protectedServerRequest<SessionListResponse>(() => serverClient.auth.listSessions(), [200]);
 }
-

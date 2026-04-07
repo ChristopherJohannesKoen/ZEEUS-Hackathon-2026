@@ -10,4 +10,3 @@ data:
   WEB_PORT: '3000'
   CSP_REPORT_ONLY: 'false'
   CSP_REPORT_URI: ''
-

@@ -84,4 +84,3 @@ describe('AuthController (e2e)', () => {
     expect(setCookieHeader?.[0]).toContain('SameSite=Lax');
   });
 });
-

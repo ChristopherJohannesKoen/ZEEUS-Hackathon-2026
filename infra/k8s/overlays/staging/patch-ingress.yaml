@@ -29,4 +29,3 @@ spec:
                 name: zeeus-assessment-api
                 port:
                   number: 4000
-

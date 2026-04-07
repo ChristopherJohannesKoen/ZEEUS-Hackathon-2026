@@ -51,4 +51,3 @@ data:
   FEATURE_STORAGE: 'false'
   FEATURE_CACHE: 'false'
   FEATURE_OBSERVABILITY: 'false'
-

@@ -35,4 +35,3 @@ describe('MetricsController (e2e)', () => {
     expect(response.text).toContain('zeeus_assessment_session_events_total');
   });
 });
-

@@ -171,4 +171,3 @@ describe('server-api helpers', () => {
     expect(redirectMock).not.toHaveBeenCalled();
   });
 });
-

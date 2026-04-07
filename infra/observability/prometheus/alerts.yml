@@ -18,4 +18,3 @@ groups:
         annotations:
           summary: Idempotency cleanup backlog growing
           description: Expired idempotency rows are accumulating faster than cleanup can remove them.
-

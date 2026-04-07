@@ -258,4 +258,3 @@ export function getPrometheusCounterValue(metricsText, metricName, labels = {}) 
 
   return 0;
 }
-

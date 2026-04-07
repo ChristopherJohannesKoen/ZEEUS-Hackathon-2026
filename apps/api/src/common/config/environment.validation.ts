@@ -267,4 +267,3 @@ export function validateEnvironment(rawEnvironment: Environment) {
 
   return value;
 }
-

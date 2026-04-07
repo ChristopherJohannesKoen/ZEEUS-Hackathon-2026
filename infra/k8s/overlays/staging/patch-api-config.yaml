@@ -6,4 +6,3 @@ data:
   APP_ENV: 'staging'
   APP_URL: 'https://staging-app.example.com'
   API_ORIGIN: 'https://staging-api.example.com'
-

@@ -15,4 +15,3 @@ patches:
       kind: Ingress
       name: zeeus-assessment
     path: patch-ingress.yaml
-

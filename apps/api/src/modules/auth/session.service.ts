@@ -505,4 +505,3 @@ export class SessionService {
     return Number(this.configService.get<string>('SESSION_MAX_ACTIVE', '5'));
   }
 }
-

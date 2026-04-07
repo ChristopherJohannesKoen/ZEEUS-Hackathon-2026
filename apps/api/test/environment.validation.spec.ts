@@ -149,4 +149,3 @@ describe('validateEnvironment', () => {
     ).toThrow('ENTERPRISE_DEFAULT_PROVIDER_SLUG must point to the OIDC provider');
   });
 });
-

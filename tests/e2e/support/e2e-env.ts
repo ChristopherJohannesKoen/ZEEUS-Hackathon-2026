@@ -89,4 +89,3 @@ export function getAdminDatabaseUrl() {
   adminUrl.pathname = '/postgres';
   return adminUrl.toString();
 }
-

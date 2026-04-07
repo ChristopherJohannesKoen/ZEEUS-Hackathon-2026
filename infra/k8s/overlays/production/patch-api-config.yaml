@@ -6,4 +6,3 @@ data:
   APP_ENV: 'production'
   APP_URL: 'https://app.example.com'
   API_ORIGIN: 'https://api.example.com'
-

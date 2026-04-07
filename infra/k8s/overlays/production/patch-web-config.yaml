@@ -7,4 +7,3 @@ data:
   APP_URL: 'https://app.example.com'
   API_ORIGIN: 'http://zeeus-assessment-api:4000'
   CSP_REPORT_ONLY: 'false'
-

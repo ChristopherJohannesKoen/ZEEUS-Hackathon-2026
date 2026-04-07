@@ -25,7 +25,10 @@ export default async function EvaluationRevisionComparePage({
   const query = await searchParams;
 
   try {
-    const [evaluation, revisions] = await Promise.all([getEvaluation(id), getEvaluationRevisions(id)]);
+    const [evaluation, revisions] = await Promise.all([
+      getEvaluation(id),
+      getEvaluationRevisions(id)
+    ]);
 
     if (revisions.items.length < 2) {
       return (
@@ -102,7 +105,9 @@ export default async function EvaluationRevisionComparePage({
               ) : (
                 comparison.contextChanges.map((change) => (
                   <div className="rounded-[28px] bg-[#f7f9f4] p-4" key={change.field}>
-                    <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{change.label}</p>
+                    <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                      {change.label}
+                    </p>
                     <p className="mt-2 text-sm text-slate-600">
                       {change.leftValue} → {change.rightValue}
                     </p>
@@ -117,7 +122,9 @@ export default async function EvaluationRevisionComparePage({
             <div className="mt-5 grid gap-3">
               {comparison.metricChanges.map((change) => (
                 <div className="rounded-[28px] bg-[#f7f9f4] p-4" key={change.field}>
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{change.label}</p>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                    {change.label}
+                  </p>
                   <p className="mt-2 font-semibold text-slate-950">
                     {change.leftValue} → {change.rightValue}
                   </p>
@@ -141,9 +148,10 @@ export default async function EvaluationRevisionComparePage({
                   <div className="rounded-[28px] bg-[#f7f9f4] p-4" key={change.code}>
                     <p className="font-semibold text-slate-950">{change.title}</p>
                     <p className="mt-2 text-sm text-slate-600">
-                      {change.leftBand ? formatEnumLabel(change.leftBand) : 'n/a'} ({change.leftScore ?? 'n/a'}) →
-                      {` `}
-                      {change.rightBand ? formatEnumLabel(change.rightBand) : 'n/a'} ({change.rightScore ?? 'n/a'})
+                      {change.leftBand ? formatEnumLabel(change.leftBand) : 'n/a'} (
+                      {change.leftScore ?? 'n/a'}) →{` `}
+                      {change.rightBand ? formatEnumLabel(change.rightBand) : 'n/a'} (
+                      {change.rightScore ?? 'n/a'})
                     </p>
                   </div>
                 ))
@@ -189,7 +197,8 @@ export default async function EvaluationRevisionComparePage({
                   <div className="rounded-[28px] bg-[#f7f9f4] p-4" key={change.code}>
                     <p className="font-semibold text-slate-950">{change.title}</p>
                     <p className="mt-2 text-sm text-slate-600">
-                      {change.leftLabel ?? 'n/a'} ({change.leftScore ?? 'n/a'}) → {change.rightLabel ?? 'n/a'} ({change.rightScore ?? 'n/a'})
+                      {change.leftLabel ?? 'n/a'} ({change.leftScore ?? 'n/a'}) →{' '}
+                      {change.rightLabel ?? 'n/a'} ({change.rightScore ?? 'n/a'})
                     </p>
                   </div>
                 ))
@@ -209,7 +218,8 @@ export default async function EvaluationRevisionComparePage({
                   <div className="rounded-[28px] bg-[#f7f9f4] p-4" key={change.code}>
                     <p className="font-semibold text-slate-950">{change.title}</p>
                     <p className="mt-2 text-sm text-slate-600">
-                      {change.leftLabel ?? 'n/a'} ({change.leftScore ?? 'n/a'}) → {change.rightLabel ?? 'n/a'} ({change.rightScore ?? 'n/a'})
+                      {change.leftLabel ?? 'n/a'} ({change.leftScore ?? 'n/a'}) →{' '}
+                      {change.rightLabel ?? 'n/a'} ({change.rightScore ?? 'n/a'})
                     </p>
                   </div>
                 ))

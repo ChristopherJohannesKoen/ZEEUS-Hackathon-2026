@@ -3,7 +3,11 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Card, Field, Select, Textarea } from '@packages/ui';
-import type { DashboardResponse, Recommendation, RecommendationActionStatus } from '@packages/shared';
+import type {
+  DashboardResponse,
+  Recommendation,
+  RecommendationActionStatus
+} from '@packages/shared';
 import { updateRecommendationAction } from '../lib/client-api';
 
 const actionOptions: Array<{

@@ -60,10 +60,7 @@ function resolveAuditDefaults(action: string): {
     };
   }
 
-  if (
-    action.startsWith('evaluation.') ||
-    action === 'user.profile_updated'
-  ) {
+  if (action.startsWith('evaluation.') || action === 'user.profile_updated') {
     return {
       eventCategory: 'application',
       outcome: 'success'

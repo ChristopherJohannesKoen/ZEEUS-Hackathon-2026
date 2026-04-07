@@ -357,7 +357,12 @@ export class EvaluationsService {
       targetType: 'evaluation',
       targetId: result.detail.id
     });
-    await this.logRevisionCreated(currentUser.id, result.detail.id, result.revisionId, result.revisionNumber);
+    await this.logRevisionCreated(
+      currentUser.id,
+      result.detail.id,
+      result.revisionId,
+      result.revisionNumber
+    );
 
     return result.detail;
   }
@@ -394,7 +399,12 @@ export class EvaluationsService {
       targetType: 'evaluation',
       targetId: evaluationId
     });
-    await this.logRevisionCreated(currentUser.id, evaluationId, result.revisionId, result.revisionNumber);
+    await this.logRevisionCreated(
+      currentUser.id,
+      evaluationId,
+      result.revisionId,
+      result.revisionNumber
+    );
 
     return result.detail;
   }
@@ -486,7 +496,12 @@ export class EvaluationsService {
         section: 'combined'
       }
     });
-    await this.logRevisionCreated(currentUser.id, evaluationId, result.revisionId, result.revisionNumber);
+    await this.logRevisionCreated(
+      currentUser.id,
+      evaluationId,
+      result.revisionId,
+      result.revisionNumber
+    );
 
     return result.detail;
   }
@@ -638,7 +653,12 @@ export class EvaluationsService {
         section: 'combined'
       }
     });
-    await this.logRevisionCreated(currentUser.id, evaluationId, result.revisionId, result.revisionNumber);
+    await this.logRevisionCreated(
+      currentUser.id,
+      evaluationId,
+      result.revisionId,
+      result.revisionNumber
+    );
 
     return result.detail;
   }
@@ -734,7 +754,12 @@ export class EvaluationsService {
       targetType: 'evaluation',
       targetId: evaluationId
     });
-    await this.logRevisionCreated(currentUser.id, evaluationId, result.revisionId, result.revisionNumber);
+    await this.logRevisionCreated(
+      currentUser.id,
+      evaluationId,
+      result.revisionId,
+      result.revisionNumber
+    );
 
     return result.detail;
   }
@@ -769,7 +794,12 @@ export class EvaluationsService {
       targetType: 'evaluation',
       targetId: evaluationId
     });
-    await this.logRevisionCreated(currentUser.id, evaluationId, result.revisionId, result.revisionNumber);
+    await this.logRevisionCreated(
+      currentUser.id,
+      evaluationId,
+      result.revisionId,
+      result.revisionNumber
+    );
 
     return result.detail;
   }
@@ -812,7 +842,12 @@ export class EvaluationsService {
       targetType: 'evaluation',
       targetId: evaluationId
     });
-    await this.logRevisionCreated(currentUser.id, evaluationId, result.revisionId, result.revisionNumber);
+    await this.logRevisionCreated(
+      currentUser.id,
+      evaluationId,
+      result.revisionId,
+      result.revisionNumber
+    );
 
     return result.detail;
   }
@@ -855,7 +890,12 @@ export class EvaluationsService {
       targetType: 'evaluation',
       targetId: evaluationId
     });
-    await this.logRevisionCreated(currentUser.id, evaluationId, result.revisionId, result.revisionNumber);
+    await this.logRevisionCreated(
+      currentUser.id,
+      evaluationId,
+      result.revisionId,
+      result.revisionNumber
+    );
 
     return result.detail;
   }
@@ -993,7 +1033,10 @@ export class EvaluationsService {
     });
 
     if (existing && existing.checksumSha256) {
-      const storagePath = this.resolveArtifactStoragePath(existing.checksumSha256, existing.filename);
+      const storagePath = this.resolveArtifactStoragePath(
+        existing.checksumSha256,
+        existing.filename
+      );
 
       try {
         await readFile(storagePath);
@@ -1756,11 +1799,36 @@ export class EvaluationsService {
 
   private buildMetricChanges(leftReport: ReportResponse, rightReport: ReportResponse) {
     const metrics = [
-      ['financialTotal', 'Financial total', leftReport.dashboard.financialTotal, rightReport.dashboard.financialTotal],
-      ['riskOverall', 'Risk overall', leftReport.dashboard.riskOverall, rightReport.dashboard.riskOverall],
-      ['opportunityOverall', 'Opportunity overall', leftReport.dashboard.opportunityOverall, rightReport.dashboard.opportunityOverall],
-      ['relevantTopicCount', 'Relevant topics', leftReport.impactSummary.relevantTopics.length, rightReport.impactSummary.relevantTopics.length],
-      ['highPriorityTopicCount', 'High-priority topics', leftReport.impactSummary.highPriorityTopics.length, rightReport.impactSummary.highPriorityTopics.length]
+      [
+        'financialTotal',
+        'Financial total',
+        leftReport.dashboard.financialTotal,
+        rightReport.dashboard.financialTotal
+      ],
+      [
+        'riskOverall',
+        'Risk overall',
+        leftReport.dashboard.riskOverall,
+        rightReport.dashboard.riskOverall
+      ],
+      [
+        'opportunityOverall',
+        'Opportunity overall',
+        leftReport.dashboard.opportunityOverall,
+        rightReport.dashboard.opportunityOverall
+      ],
+      [
+        'relevantTopicCount',
+        'Relevant topics',
+        leftReport.impactSummary.relevantTopics.length,
+        rightReport.impactSummary.relevantTopics.length
+      ],
+      [
+        'highPriorityTopicCount',
+        'High-priority topics',
+        leftReport.impactSummary.highPriorityTopics.length,
+        rightReport.impactSummary.highPriorityTopics.length
+      ]
     ] as const;
 
     return metrics
@@ -1775,7 +1843,9 @@ export class EvaluationsService {
   }
 
   private buildTopicChanges(leftReport: ReportResponse, rightReport: ReportResponse) {
-    const leftByCode = new Map(leftReport.evaluation.stage1Topics.map((item) => [item.topicCode, item]));
+    const leftByCode = new Map(
+      leftReport.evaluation.stage1Topics.map((item) => [item.topicCode, item])
+    );
     const rightByCode = new Map(
       rightReport.evaluation.stage1Topics.map((item) => [item.topicCode, item])
     );
@@ -1795,8 +1865,7 @@ export class EvaluationsService {
         };
       })
       .filter(
-        (change) =>
-          change.leftBand !== change.rightBand || change.leftScore !== change.rightScore
+        (change) => change.leftBand !== change.rightBand || change.leftScore !== change.rightScore
       );
   }
 
@@ -1807,11 +1876,7 @@ export class EvaluationsService {
       ratingLabel: string;
       ratingScore: number;
     } & Record<TKey, string>
-  >(
-    leftItems: TItem[],
-    rightItems: TItem[],
-    keyField: TKey
-  ) {
+  >(leftItems: TItem[], rightItems: TItem[], keyField: TKey) {
     const leftByCode = new Map(leftItems.map((item) => [String(item[keyField]), item]));
     const rightByCode = new Map(rightItems.map((item) => [String(item[keyField]), item]));
     const codes = new Set([...leftByCode.keys(), ...rightByCode.keys()]);
@@ -1830,17 +1895,22 @@ export class EvaluationsService {
         };
       })
       .filter(
-        (change) =>
-          change.leftLabel !== change.rightLabel || change.leftScore !== change.rightScore
+        (change) => change.leftLabel !== change.rightLabel || change.leftScore !== change.rightScore
       );
   }
 
   private buildRecommendationChanges(leftReport: ReportResponse, rightReport: ReportResponse) {
     const leftById = new Map(
-      leftReport.dashboard.recommendations.map((recommendation) => [recommendation.id, recommendation])
+      leftReport.dashboard.recommendations.map((recommendation) => [
+        recommendation.id,
+        recommendation
+      ])
     );
     const rightById = new Map(
-      rightReport.dashboard.recommendations.map((recommendation) => [recommendation.id, recommendation])
+      rightReport.dashboard.recommendations.map((recommendation) => [
+        recommendation.id,
+        recommendation
+      ])
     );
     const ids = new Set([...leftById.keys(), ...rightById.keys()]);
 
@@ -1861,9 +1931,7 @@ export class EvaluationsService {
       })
       .filter(
         (change) =>
-          !change.leftPresent ||
-          !change.rightPresent ||
-          change.leftStatus !== change.rightStatus
+          !change.leftPresent || !change.rightPresent || change.leftStatus !== change.rightStatus
       );
   }
 

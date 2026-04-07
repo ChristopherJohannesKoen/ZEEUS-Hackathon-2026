@@ -74,7 +74,9 @@ test('runs the evaluation workflow through dashboard, completion, and revision h
 
   await expect(page.getByRole('heading', { name: 'EcoGrid Pilot' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Review before completion' })).toBeVisible();
-  const firstRecommendationSave = page.locator('[data-testid^="recommendation-action-save-"]').first();
+  const firstRecommendationSave = page
+    .locator('[data-testid^="recommendation-action-save-"]')
+    .first();
   await page
     .locator('[data-testid^="recommendation-action-status-"]')
     .first()
@@ -90,7 +92,9 @@ test('runs the evaluation workflow through dashboard, completion, and revision h
   await page.getByRole('link', { name: 'Review before completion' }).click();
   await page.waitForURL(/\/app\/evaluate\/[^/]+\/review$/);
 
-  await expect(page.getByRole('heading', { name: 'Freeze the current deterministic result' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Freeze the current deterministic result' })
+  ).toBeVisible();
   await page.getByTestId('evaluation-complete').click();
 
   await expect(page.getByTestId('evaluation-archive')).toBeVisible();

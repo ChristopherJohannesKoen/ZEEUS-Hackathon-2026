@@ -247,7 +247,14 @@ function buildReportFixture(
       evidenceNote: item.evidenceNote
     })
   );
-  const dashboard = buildDashboard(state.id, initialSummary, financial, topics, risks, opportunities);
+  const dashboard = buildDashboard(
+    state.id,
+    initialSummary,
+    financial,
+    topics,
+    risks,
+    opportunities
+  );
   const actionsById = new Map(
     state.recommendationActions.map((action) => [
       action.recommendationId,
@@ -322,9 +329,9 @@ describe('EvaluationsService', () => {
     };
     const { service } = createService(prismaService);
 
-    await expect(service.compareRevisions(currentUser, 'evaluation_1', 4, 4)).rejects.toBeInstanceOf(
-      BadRequestException
-    );
+    await expect(
+      service.compareRevisions(currentUser, 'evaluation_1', 4, 4)
+    ).rejects.toBeInstanceOf(BadRequestException);
     expect(prismaService.evaluation.findFirst).toHaveBeenCalledWith({
       where: {
         id: 'evaluation_1',
@@ -419,10 +426,7 @@ describe('EvaluationsService', () => {
 
     const prismaService = {
       evaluation: {
-        findFirst: vi
-          .fn()
-          .mockResolvedValueOnce(initialState)
-          .mockResolvedValueOnce(refreshedState)
+        findFirst: vi.fn().mockResolvedValueOnce(initialState).mockResolvedValueOnce(refreshedState)
       },
       evaluationRecommendationAction: {
         upsert: vi.fn().mockResolvedValue(undefined)

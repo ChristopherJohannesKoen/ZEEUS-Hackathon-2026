@@ -14,13 +14,10 @@ describe('scoring package', () => {
   it('matches committed golden fixtures derived from the workbook logic', () => {
     for (const fixture of goldenFixtures.financial) {
       expect(
-        scoreFinancialAnswers(
-          fixture.input as Parameters<typeof scoreFinancialAnswers>[0]
-        ).totalScore,
+        scoreFinancialAnswers(fixture.input as Parameters<typeof scoreFinancialAnswers>[0])
+          .totalScore,
         fixture.name
-      ).toBe(
-        fixture.expected.totalScore
-      );
+      ).toBe(fixture.expected.totalScore);
     }
 
     for (const fixture of goldenFixtures.stage1Topics) {

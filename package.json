@@ -26,7 +26,7 @@
     "test:perf:auth": "node ./scripts/with-perf-env.mjs k6 run tests/perf/auth-session-churn.js",
     "test:perf:critical": "node ./scripts/with-perf-env.mjs k6 run tests/perf/api-critical-paths.js",
     "test:perf:read": "node ./scripts/with-perf-env.mjs k6 run tests/perf/dashboard-read.js",
-    "test:perf:idempotency": "node ./scripts/with-perf-env.mjs k6 run tests/perf/project-create-idempotent.js",
+    "test:perf:idempotency": "node ./scripts/with-perf-env.mjs k6 run tests/perf/evaluation-create-idempotent.js",
     "test:perf:reset": "node ./scripts/with-perf-env.mjs k6 run tests/perf/password-reset-burst.js",
     "test:perf:smoke": "node ./scripts/with-perf-env.mjs k6 run tests/perf/smoke.js",
     "perf:up": "node ./scripts/with-perf-env.mjs docker compose up --build -d --force-recreate db api web",

@@ -35,6 +35,17 @@ Open:
 Public signup remains enabled for normal member accounts, but the seeded owner
 account is the fastest path for local verification.
 
+## Product Flow Check
+
+The fastest realistic smoke path is:
+
+1. start a new evaluation
+2. complete Stage I and Stage II
+3. review the dashboard
+4. use the review step to complete the evaluation
+5. open revision history and compare the latest two revisions
+6. generate a CSV or PDF artifact and confirm it downloads
+
 ## Workbook Catalog Refresh
 
 If the workbook helper sheets change, refresh the committed scoring catalogs:
@@ -70,3 +81,5 @@ docker compose ps
   running ports match the actual local URLs.
 - If you change workbook-derived logic, rerun `node scripts/extract-workbook-catalogs.mjs`
   and then rerun tests.
+- If generated exports do not appear in revision history, confirm `ARTIFACTS_DIR`
+  exists locally or that the Docker `artifacts_data` volume is mounted.

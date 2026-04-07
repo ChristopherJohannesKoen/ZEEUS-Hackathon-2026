@@ -41,12 +41,12 @@ export default function () {
     'dashboard page loads': (response) => response.status === 200
   });
 
-  const projectsResponse = http.get(`${getAppUrl()}/app/projects`, {
+  const evaluationsResponse = http.get(`${getAppUrl()}/app/evaluations`, {
     headers,
     ...withExpectedStatuses(200)
   });
-  check(projectsResponse, {
-    'projects page loads': (response) => response.status === 200
+  check(evaluationsResponse, {
+    'evaluations page loads': (response) => response.status === 200
   });
 
   sleep(1);

@@ -1,5 +1,8 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import type { Response } from 'express';
+import { createHash } from 'node:crypto';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import path from 'node:path';
 import {
   buildDashboard,
   buildImpactSummary,
@@ -16,12 +19,15 @@ import {
 } from '@packages/scoring';
 import {
   ReportResponseSchema,
+  type CreateEvaluationArtifactPayload,
   type CreateEvaluationPayload,
   type DashboardResponse,
+  type EvaluationArtifactListResponse,
   type EvaluationContextPayload,
   type EvaluationDetail,
   type EvaluationListItem,
   type EvaluationListResponse,
+  type EvaluationRevisionCompareResponse,
   type EvaluationRevisionDetail,
   type EvaluationRevisionListResponse,
   type EvaluationRevisionSummary,
@@ -41,7 +47,8 @@ import {
   type Stage2OpportunityAnswer,
   type Stage2OpportunityAnswerInput,
   type Stage2RiskAnswer,
-  type Stage2RiskAnswerInput
+  type Stage2RiskAnswerInput,
+  type UpdateRecommendationActionPayload
 } from '@packages/shared';
 import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
@@ -62,14 +69,28 @@ const defaultFinancialPayload: Stage1FinancialAnswersPayload = {
   marketGrowthLevel: 'not_evaluated'
 };
 
+const defaultArtifactsRoot = path.resolve(process.cwd(), '.artifacts');
+
 const artifactSelect = Prisma.validator<Prisma.EvaluationArtifactSelect>()({
   id: true,
+  evaluationId: true,
+  revisionId: true,
   kind: true,
   status: true,
   filename: true,
   mimeType: true,
   byteSize: true,
-  createdAt: true
+  checksumSha256: true,
+  requestedAt: true,
+  readyAt: true,
+  failedAt: true,
+  errorMessage: true,
+  createdAt: true,
+  revision: {
+    select: {
+      revisionNumber: true
+    }
+  }
 });
 
 const evaluationStateSelect = Prisma.validator<Prisma.EvaluationSelect>()({
@@ -102,6 +123,14 @@ const evaluationStateSelect = Prisma.validator<Prisma.EvaluationSelect>()({
   artifacts: {
     select: artifactSelect,
     orderBy: [{ createdAt: 'desc' }, { id: 'desc' }]
+  },
+  recommendationActions: {
+    select: {
+      recommendationId: true,
+      status: true,
+      ownerNote: true,
+      updatedAt: true
+    }
   },
   stage1Financial: {
     select: {
@@ -196,6 +225,7 @@ type EvaluationRevisionSummaryRecord = Prisma.EvaluationRevisionGetPayload<{
 
 type DatabaseClient = Prisma.TransactionClient | PrismaService;
 type EvaluationArtifactRecord = EvaluationStateRecord['artifacts'][number];
+type EvaluationRecommendationActionRecord = EvaluationStateRecord['recommendationActions'][number];
 type EvaluationStage1TopicRecord = EvaluationStateRecord['stage1TopicAnswers'][number];
 type EvaluationStage2RiskRecord = EvaluationStateRecord['stage2RiskAnswers'][number];
 type EvaluationStage2OpportunityRecord = EvaluationStateRecord['stage2OpportunityAnswers'][number];
@@ -327,6 +357,7 @@ export class EvaluationsService {
       targetType: 'evaluation',
       targetId: result.detail.id
     });
+    await this.logRevisionCreated(currentUser.id, result.detail.id, result.revisionId, result.revisionNumber);
 
     return result.detail;
   }
@@ -363,6 +394,7 @@ export class EvaluationsService {
       targetType: 'evaluation',
       targetId: evaluationId
     });
+    await this.logRevisionCreated(currentUser.id, evaluationId, result.revisionId, result.revisionNumber);
 
     return result.detail;
   }
@@ -454,6 +486,7 @@ export class EvaluationsService {
         section: 'combined'
       }
     });
+    await this.logRevisionCreated(currentUser.id, evaluationId, result.revisionId, result.revisionNumber);
 
     return result.detail;
   }
@@ -605,6 +638,7 @@ export class EvaluationsService {
         section: 'combined'
       }
     });
+    await this.logRevisionCreated(currentUser.id, evaluationId, result.revisionId, result.revisionNumber);
 
     return result.detail;
   }
@@ -669,7 +703,11 @@ export class EvaluationsService {
       }
 
       if (evaluation.status === 'completed') {
-        return this.readCurrentDetail(transaction, evaluationId, currentUser.id);
+        return {
+          detail: await this.readCurrentDetail(transaction, evaluationId, currentUser.id),
+          revisionId: null,
+          revisionNumber: null
+        };
       }
 
       await transaction.evaluation.update({
@@ -687,7 +725,7 @@ export class EvaluationsService {
         evaluationId,
         currentUser.id
       );
-      return persisted.detail;
+      return persisted;
     });
 
     await this.auditService.log({
@@ -696,8 +734,9 @@ export class EvaluationsService {
       targetType: 'evaluation',
       targetId: evaluationId
     });
+    await this.logRevisionCreated(currentUser.id, evaluationId, result.revisionId, result.revisionNumber);
 
-    return result;
+    return result.detail;
   }
 
   async reopenEvaluation(
@@ -721,7 +760,7 @@ export class EvaluationsService {
         evaluationId,
         currentUser.id
       );
-      return persisted.detail;
+      return persisted;
     });
 
     await this.auditService.log({
@@ -730,8 +769,9 @@ export class EvaluationsService {
       targetType: 'evaluation',
       targetId: evaluationId
     });
+    await this.logRevisionCreated(currentUser.id, evaluationId, result.revisionId, result.revisionNumber);
 
-    return result;
+    return result.detail;
   }
 
   async archiveEvaluation(
@@ -763,7 +803,7 @@ export class EvaluationsService {
         evaluationId,
         currentUser.id
       );
-      return persisted.detail;
+      return persisted;
     });
 
     await this.auditService.log({
@@ -772,8 +812,9 @@ export class EvaluationsService {
       targetType: 'evaluation',
       targetId: evaluationId
     });
+    await this.logRevisionCreated(currentUser.id, evaluationId, result.revisionId, result.revisionNumber);
 
-    return result;
+    return result.detail;
   }
 
   async unarchiveEvaluation(
@@ -805,7 +846,7 @@ export class EvaluationsService {
         evaluationId,
         currentUser.id
       );
-      return persisted.detail;
+      return persisted;
     });
 
     await this.auditService.log({
@@ -814,8 +855,9 @@ export class EvaluationsService {
       targetType: 'evaluation',
       targetId: evaluationId
     });
+    await this.logRevisionCreated(currentUser.id, evaluationId, result.revisionId, result.revisionNumber);
 
-    return result;
+    return result.detail;
   }
 
   async listRevisions(
@@ -867,6 +909,299 @@ export class EvaluationsService {
     };
   }
 
+  async compareRevisions(
+    currentUser: SessionUser,
+    evaluationId: string,
+    leftRevisionNumber: number,
+    rightRevisionNumber: number
+  ): Promise<EvaluationRevisionCompareResponse> {
+    await this.assertEvaluationOwnership(this.prismaService, evaluationId, currentUser.id);
+
+    if (leftRevisionNumber === rightRevisionNumber) {
+      throw new BadRequestException('Choose two different revision numbers to compare.');
+    }
+
+    const revisions = await this.prismaService.evaluationRevision.findMany({
+      where: {
+        evaluationId,
+        revisionNumber: {
+          in: [leftRevisionNumber, rightRevisionNumber]
+        }
+      },
+      select: {
+        ...evaluationRevisionSummarySelect,
+        reportSnapshot: true
+      }
+    });
+
+    const leftRevision = revisions.find(
+      (item: EvaluationRevisionSummaryRecord & { reportSnapshot: Prisma.JsonValue }) =>
+        item.revisionNumber === leftRevisionNumber
+    );
+    const rightRevision = revisions.find(
+      (item: EvaluationRevisionSummaryRecord & { reportSnapshot: Prisma.JsonValue }) =>
+        item.revisionNumber === rightRevisionNumber
+    );
+
+    if (!leftRevision || !rightRevision) {
+      throw new NotFoundException('One or both evaluation revisions were not found.');
+    }
+
+    const leftReport = ReportResponseSchema.parse(leftRevision.reportSnapshot as unknown);
+    const rightReport = ReportResponseSchema.parse(rightRevision.reportSnapshot as unknown);
+
+    return {
+      evaluationId,
+      leftRevision: this.serializeRevisionSummary(leftRevision),
+      rightRevision: this.serializeRevisionSummary(rightRevision),
+      contextChanges: this.buildContextChanges(leftReport, rightReport),
+      metricChanges: this.buildMetricChanges(leftReport, rightReport),
+      topicChanges: this.buildTopicChanges(leftReport, rightReport),
+      riskChanges: this.buildRatedItemChanges(
+        leftReport.evaluation.stage2Risks,
+        rightReport.evaluation.stage2Risks,
+        'riskCode'
+      ),
+      opportunityChanges: this.buildRatedItemChanges(
+        leftReport.evaluation.stage2Opportunities,
+        rightReport.evaluation.stage2Opportunities,
+        'opportunityCode'
+      ),
+      recommendationChanges: this.buildRecommendationChanges(leftReport, rightReport)
+    };
+  }
+
+  async createArtifact(
+    currentUser: SessionUser,
+    evaluationId: string,
+    payload: CreateEvaluationArtifactPayload
+  ) {
+    const evaluation = await this.getOwnedEvaluationState(
+      this.prismaService,
+      evaluationId,
+      currentUser.id
+    );
+    const existing = await this.prismaService.evaluationArtifact.findFirst({
+      where: {
+        evaluationId,
+        revisionId: evaluation.currentRevisionId,
+        kind: payload.kind,
+        status: 'ready'
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      select: artifactSelect
+    });
+
+    if (existing && existing.checksumSha256) {
+      const storagePath = this.resolveArtifactStoragePath(existing.checksumSha256, existing.filename);
+
+      try {
+        await readFile(storagePath);
+        return this.serializeArtifactSummary(existing);
+      } catch {
+        // Fall through and regenerate if the binary no longer exists on disk.
+      }
+    }
+
+    const report = await this.getCurrentReportFromState(evaluation);
+    const filename = `evaluation-${evaluation.id}-revision-${evaluation.currentRevisionNumber}.${payload.kind}`;
+    const pendingArtifact = await this.prismaService.evaluationArtifact.create({
+      data: {
+        evaluationId,
+        revisionId: evaluation.currentRevisionId,
+        createdByUserId: currentUser.id,
+        kind: payload.kind,
+        filename,
+        mimeType: payload.kind === 'csv' ? 'text/csv' : 'application/pdf',
+        byteSize: 0,
+        status: 'pending',
+        requestedAt: new Date()
+      },
+      select: artifactSelect
+    });
+
+    await this.auditService.log({
+      actorId: currentUser.id,
+      action: 'artifact.requested',
+      targetType: 'evaluation_artifact',
+      targetId: pendingArtifact.id,
+      metadata: {
+        evaluationId,
+        revisionId: evaluation.currentRevisionId,
+        kind: payload.kind
+      }
+    });
+
+    try {
+      const content =
+        payload.kind === 'csv'
+          ? Buffer.from(this.buildCsvReport(report), 'utf8')
+          : this.buildPdfReport(report);
+      const checksumSha256 = createHash('sha256').update(content).digest('hex');
+      const storagePath = this.resolveArtifactStoragePath(checksumSha256, filename);
+      await mkdir(path.dirname(storagePath), { recursive: true });
+      await writeFile(storagePath, content);
+
+      const readyArtifact = await this.prismaService.evaluationArtifact.update({
+        where: {
+          id: pendingArtifact.id
+        },
+        data: {
+          status: 'ready',
+          byteSize: content.byteLength,
+          checksumSha256,
+          storageKey: storagePath,
+          readyAt: new Date(),
+          failedAt: null,
+          errorMessage: null
+        },
+        select: artifactSelect
+      });
+
+      await this.auditService.log({
+        actorId: currentUser.id,
+        action: 'artifact.ready',
+        targetType: 'evaluation_artifact',
+        targetId: readyArtifact.id,
+        metadata: {
+          evaluationId,
+          revisionId: evaluation.currentRevisionId,
+          kind: payload.kind,
+          byteSize: content.byteLength
+        }
+      });
+
+      return this.serializeArtifactSummary(readyArtifact);
+    } catch (error) {
+      await this.prismaService.evaluationArtifact.update({
+        where: {
+          id: pendingArtifact.id
+        },
+        data: {
+          status: 'failed',
+          failedAt: new Date(),
+          errorMessage: error instanceof Error ? error.message : 'Artifact generation failed.'
+        }
+      });
+
+      await this.auditService.log({
+        actorId: currentUser.id,
+        action: 'artifact.failed',
+        targetType: 'evaluation_artifact',
+        targetId: pendingArtifact.id,
+        metadata: {
+          evaluationId,
+          revisionId: evaluation.currentRevisionId,
+          kind: payload.kind,
+          error: error instanceof Error ? error.message : 'Artifact generation failed.'
+        }
+      });
+
+      throw error;
+    }
+  }
+
+  async listArtifacts(
+    currentUser: SessionUser,
+    evaluationId: string
+  ): Promise<EvaluationArtifactListResponse> {
+    await this.assertEvaluationOwnership(this.prismaService, evaluationId, currentUser.id);
+    const artifacts = await this.prismaService.evaluationArtifact.findMany({
+      where: {
+        evaluationId
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      select: artifactSelect
+    });
+
+    return {
+      items: artifacts.map((artifact: EvaluationArtifactRecord) =>
+        this.serializeArtifactSummary(artifact)
+      )
+    };
+  }
+
+  async getArtifact(currentUser: SessionUser, evaluationId: string, artifactId: string) {
+    const artifact = await this.getOwnedArtifactRecord(evaluationId, artifactId, currentUser.id);
+    return this.serializeArtifactSummary(artifact);
+  }
+
+  async downloadArtifact(
+    currentUser: SessionUser,
+    evaluationId: string,
+    artifactId: string,
+    response: Response
+  ) {
+    const artifact = await this.getOwnedArtifactRecord(evaluationId, artifactId, currentUser.id);
+
+    if (artifact.status !== 'ready' || !artifact.checksumSha256) {
+      throw new BadRequestException('The requested artifact is not ready yet.');
+    }
+
+    const storagePath = this.resolveArtifactStoragePath(artifact.checksumSha256, artifact.filename);
+    const binary = await readFile(storagePath);
+    response.setHeader('Content-Type', artifact.mimeType);
+    response.setHeader('Content-Disposition', `attachment; filename="${artifact.filename}"`);
+    response.write(binary);
+    response.end();
+  }
+
+  async updateRecommendationAction(
+    currentUser: SessionUser,
+    evaluationId: string,
+    recommendationId: string,
+    payload: UpdateRecommendationActionPayload
+  ): Promise<DashboardResponse> {
+    const evaluation = await this.getOwnedEvaluationState(
+      this.prismaService,
+      evaluationId,
+      currentUser.id
+    );
+    const report = await this.getCurrentReportFromState(evaluation);
+    const recommendation = report.dashboard.recommendations.find(
+      (item) => item.id === recommendationId
+    );
+
+    if (!recommendation) {
+      throw new NotFoundException('Recommendation not found for this evaluation.');
+    }
+
+    await this.prismaService.evaluationRecommendationAction.upsert({
+      where: {
+        evaluationId_recommendationId: {
+          evaluationId,
+          recommendationId
+        }
+      },
+      create: {
+        evaluationId,
+        recommendationId,
+        status: payload.status,
+        ownerNote: payload.ownerNote ?? null,
+        updatedByUserId: currentUser.id
+      },
+      update: {
+        status: payload.status,
+        ownerNote: payload.ownerNote ?? null,
+        updatedByUserId: currentUser.id
+      }
+    });
+
+    await this.auditService.log({
+      actorId: currentUser.id,
+      action: 'evaluation.recommendation_action_updated',
+      targetType: 'evaluation',
+      targetId: evaluationId,
+      metadata: {
+        recommendationId,
+        status: payload.status
+      }
+    });
+
+    const refreshedReport = await this.getCurrentReport(currentUser, evaluationId);
+    return refreshedReport.dashboard;
+  }
+
   async getImpactSummary(
     currentUser: SessionUser,
     evaluationId: string
@@ -893,39 +1228,13 @@ export class EvaluationsService {
   }
 
   async exportCsv(currentUser: SessionUser, evaluationId: string, response: Response) {
-    const evaluation = await this.getOwnedEvaluationState(
-      this.prismaService,
-      evaluationId,
-      currentUser.id
-    );
-    const report = await this.getCurrentReportFromState(evaluation);
-    const csv = this.buildCsvReport(report);
-    await this.recordArtifact(evaluation.id, evaluation.currentRevisionId, currentUser.id, {
-      kind: 'csv',
-      filename: `evaluation-${evaluation.id}.csv`,
-      mimeType: 'text/csv',
-      byteSize: Buffer.byteLength(csv, 'utf8')
-    });
-    response.write(csv);
-    response.end();
+    const artifact = await this.createArtifact(currentUser, evaluationId, { kind: 'csv' });
+    await this.downloadArtifact(currentUser, evaluationId, artifact.id, response);
   }
 
   async exportPdf(currentUser: SessionUser, evaluationId: string, response: Response) {
-    const evaluation = await this.getOwnedEvaluationState(
-      this.prismaService,
-      evaluationId,
-      currentUser.id
-    );
-    const report = await this.getCurrentReportFromState(evaluation);
-    const pdf = this.buildPdfReport(report);
-    await this.recordArtifact(evaluation.id, evaluation.currentRevisionId, currentUser.id, {
-      kind: 'pdf',
-      filename: `evaluation-${evaluation.id}.pdf`,
-      mimeType: 'application/pdf',
-      byteSize: pdf.byteLength
-    });
-    response.write(pdf);
-    response.end();
+    const artifact = await this.createArtifact(currentUser, evaluationId, { kind: 'pdf' });
+    await this.downloadArtifact(currentUser, evaluationId, artifact.id, response);
   }
 
   private async persistRevisionSnapshot(
@@ -989,7 +1298,8 @@ export class EvaluationsService {
     return {
       detail: outputs.detail,
       report: outputs.report,
-      revisionId: revision.id
+      revisionId: revision.id,
+      revisionNumber: nextRevisionNumber
     };
   }
 
@@ -1064,13 +1374,16 @@ export class EvaluationsService {
           (opportunityOrder.get(left.opportunityCode) ?? Number.MAX_SAFE_INTEGER) -
           (opportunityOrder.get(right.opportunityCode) ?? Number.MAX_SAFE_INTEGER)
       );
-    const dashboard = buildDashboard(
-      evaluation.id,
-      initialSummary,
-      stage1Financial,
-      stage1Topics,
-      stage2Risks,
-      stage2Opportunities
+    const dashboard = this.attachRecommendationActionsToDashboard(
+      buildDashboard(
+        evaluation.id,
+        initialSummary,
+        stage1Financial,
+        stage1Topics,
+        stage2Risks,
+        stage2Opportunities
+      ),
+      evaluation.recommendationActions
     );
     const scoringVersionInfo = overrides?.scoringVersionInfo ?? {
       scoringVersion: evaluation.scoringVersion,
@@ -1162,6 +1475,10 @@ export class EvaluationsService {
     }
 
     const report = ReportResponseSchema.parse(revision.reportSnapshot as unknown);
+    const dashboard = this.attachRecommendationActionsToDashboard(
+      report.dashboard,
+      evaluation.recommendationActions
+    );
     return {
       ...report,
       evaluation: {
@@ -1169,7 +1486,8 @@ export class EvaluationsService {
         artifacts: evaluation.artifacts.map((item: EvaluationArtifactRecord) =>
           this.serializeArtifactSummary(item)
         )
-      }
+      },
+      dashboard
     };
   }
 
@@ -1275,6 +1593,25 @@ export class EvaluationsService {
     return evaluation;
   }
 
+  private async getOwnedArtifactRecord(evaluationId: string, artifactId: string, userId: string) {
+    const artifact = await this.prismaService.evaluationArtifact.findFirst({
+      where: {
+        id: artifactId,
+        evaluationId,
+        evaluation: {
+          userId
+        }
+      },
+      select: artifactSelect
+    });
+
+    if (!artifact) {
+      throw new NotFoundException('Evaluation artifact not found.');
+    }
+
+    return artifact;
+  }
+
   private serializeEvaluationListItem(evaluation: EvaluationListRecord): EvaluationListItem {
     return {
       id: evaluation.id,
@@ -1323,13 +1660,211 @@ export class EvaluationsService {
   ): EvaluationDetail['artifacts'][number] {
     return {
       id: artifact.id,
+      evaluationId: artifact.evaluationId,
+      revisionId: artifact.revisionId,
+      revisionNumber: artifact.revision?.revisionNumber ?? null,
       kind: artifact.kind,
       status: artifact.status,
       filename: artifact.filename,
       mimeType: artifact.mimeType,
       byteSize: artifact.byteSize,
+      checksumSha256: artifact.checksumSha256,
+      requestedAt: artifact.requestedAt.toISOString(),
+      readyAt: artifact.readyAt ? artifact.readyAt.toISOString() : null,
+      failedAt: artifact.failedAt ? artifact.failedAt.toISOString() : null,
+      errorMessage: artifact.errorMessage,
       createdAt: artifact.createdAt.toISOString()
     };
+  }
+
+  private attachRecommendationActionsToDashboard(
+    dashboard: DashboardResponse,
+    actions: EvaluationRecommendationActionRecord[]
+  ): DashboardResponse {
+    const actionsByRecommendationId = new Map(
+      actions.map((action) => [
+        action.recommendationId,
+        {
+          recommendationId: action.recommendationId,
+          status: action.status,
+          ownerNote: action.ownerNote,
+          updatedAt: action.updatedAt.toISOString()
+        }
+      ])
+    );
+
+    return {
+      ...dashboard,
+      recommendations: dashboard.recommendations.map((recommendation) => ({
+        ...recommendation,
+        action: actionsByRecommendationId.get(recommendation.id) ?? null
+      }))
+    };
+  }
+
+  private resolveArtifactStoragePath(checksumSha256: string, filename: string) {
+    const artifactsRoot = process.env.ARTIFACTS_DIR
+      ? path.resolve(process.env.ARTIFACTS_DIR)
+      : defaultArtifactsRoot;
+    const extension = path.extname(filename);
+    return path.join(artifactsRoot, checksumSha256.slice(0, 2), `${checksumSha256}${extension}`);
+  }
+
+  private async logRevisionCreated(
+    actorId: string,
+    evaluationId: string,
+    revisionId: string | null,
+    revisionNumber: number | null
+  ) {
+    if (!revisionId || !revisionNumber) {
+      return;
+    }
+
+    await this.auditService.log({
+      actorId,
+      action: 'evaluation.revision_created',
+      targetType: 'evaluation_revision',
+      targetId: revisionId,
+      metadata: {
+        evaluationId,
+        revisionNumber
+      }
+    });
+  }
+
+  private buildContextChanges(leftReport: ReportResponse, rightReport: ReportResponse) {
+    const fields = [
+      ['name', 'Startup name'],
+      ['country', 'Country'],
+      ['naceDivision', 'NACE division'],
+      ['offeringType', 'Offering type'],
+      ['launched', 'Launched'],
+      ['currentStage', 'Current stage'],
+      ['innovationApproach', 'Innovation approach'],
+      ['status', 'Lifecycle status']
+    ] as const;
+
+    return fields
+      .map(([field, label]) => ({
+        field,
+        label,
+        leftValue: String(leftReport.evaluation[field]),
+        rightValue: String(rightReport.evaluation[field])
+      }))
+      .filter((change) => change.leftValue !== change.rightValue);
+  }
+
+  private buildMetricChanges(leftReport: ReportResponse, rightReport: ReportResponse) {
+    const metrics = [
+      ['financialTotal', 'Financial total', leftReport.dashboard.financialTotal, rightReport.dashboard.financialTotal],
+      ['riskOverall', 'Risk overall', leftReport.dashboard.riskOverall, rightReport.dashboard.riskOverall],
+      ['opportunityOverall', 'Opportunity overall', leftReport.dashboard.opportunityOverall, rightReport.dashboard.opportunityOverall],
+      ['relevantTopicCount', 'Relevant topics', leftReport.impactSummary.relevantTopics.length, rightReport.impactSummary.relevantTopics.length],
+      ['highPriorityTopicCount', 'High-priority topics', leftReport.impactSummary.highPriorityTopics.length, rightReport.impactSummary.highPriorityTopics.length]
+    ] as const;
+
+    return metrics
+      .map(([field, label, leftValue, rightValue]) => ({
+        field,
+        label,
+        leftValue,
+        rightValue,
+        delta: Number((rightValue - leftValue).toFixed(2))
+      }))
+      .filter((change) => change.delta !== 0);
+  }
+
+  private buildTopicChanges(leftReport: ReportResponse, rightReport: ReportResponse) {
+    const leftByCode = new Map(leftReport.evaluation.stage1Topics.map((item) => [item.topicCode, item]));
+    const rightByCode = new Map(
+      rightReport.evaluation.stage1Topics.map((item) => [item.topicCode, item])
+    );
+    const codes = new Set([...leftByCode.keys(), ...rightByCode.keys()]);
+
+    return [...codes]
+      .map((code) => {
+        const left = leftByCode.get(code);
+        const right = rightByCode.get(code);
+        return {
+          code,
+          title: right?.title ?? left?.title ?? code,
+          leftBand: left?.priorityBand ?? null,
+          rightBand: right?.priorityBand ?? null,
+          leftScore: left?.impactScore ?? null,
+          rightScore: right?.impactScore ?? null
+        };
+      })
+      .filter(
+        (change) =>
+          change.leftBand !== change.rightBand || change.leftScore !== change.rightScore
+      );
+  }
+
+  private buildRatedItemChanges<
+    TKey extends 'riskCode' | 'opportunityCode',
+    TItem extends {
+      title: string;
+      ratingLabel: string;
+      ratingScore: number;
+    } & Record<TKey, string>
+  >(
+    leftItems: TItem[],
+    rightItems: TItem[],
+    keyField: TKey
+  ) {
+    const leftByCode = new Map(leftItems.map((item) => [String(item[keyField]), item]));
+    const rightByCode = new Map(rightItems.map((item) => [String(item[keyField]), item]));
+    const codes = new Set([...leftByCode.keys(), ...rightByCode.keys()]);
+
+    return [...codes]
+      .map((code) => {
+        const left = leftByCode.get(code);
+        const right = rightByCode.get(code);
+        return {
+          code,
+          title: right?.title ?? left?.title ?? code,
+          leftLabel: left?.ratingLabel ?? null,
+          rightLabel: right?.ratingLabel ?? null,
+          leftScore: left?.ratingScore ?? null,
+          rightScore: right?.ratingScore ?? null
+        };
+      })
+      .filter(
+        (change) =>
+          change.leftLabel !== change.rightLabel || change.leftScore !== change.rightScore
+      );
+  }
+
+  private buildRecommendationChanges(leftReport: ReportResponse, rightReport: ReportResponse) {
+    const leftById = new Map(
+      leftReport.dashboard.recommendations.map((recommendation) => [recommendation.id, recommendation])
+    );
+    const rightById = new Map(
+      rightReport.dashboard.recommendations.map((recommendation) => [recommendation.id, recommendation])
+    );
+    const ids = new Set([...leftById.keys(), ...rightById.keys()]);
+
+    return [...ids]
+      .map((id) => {
+        const left = leftById.get(id);
+        const right = rightById.get(id);
+        return {
+          recommendationId: id,
+          title: right?.title ?? left?.title ?? id,
+          source: right?.source ?? left?.source ?? 'stage1',
+          severityBand: right?.severityBand ?? left?.severityBand ?? 'default',
+          leftPresent: Boolean(left),
+          rightPresent: Boolean(right),
+          leftStatus: left?.action?.status ?? null,
+          rightStatus: right?.action?.status ?? null
+        };
+      })
+      .filter(
+        (change) =>
+          !change.leftPresent ||
+          !change.rightPresent ||
+          change.leftStatus !== change.rightStatus
+      );
   }
 
   private toStage1TopicInput(item: EvaluationStage1TopicRecord): Stage1TopicAnswerInput {
@@ -1390,31 +1925,6 @@ export class EvaluationsService {
       currentStage: evaluation.currentStage,
       innovationApproach: evaluation.innovationApproach
     };
-  }
-
-  private async recordArtifact(
-    evaluationId: string,
-    revisionId: string | null,
-    createdByUserId: string,
-    input: {
-      kind: 'csv' | 'pdf' | 'ai_explanation';
-      filename: string;
-      mimeType: string;
-      byteSize: number;
-    }
-  ) {
-    await this.prismaService.evaluationArtifact.create({
-      data: {
-        evaluationId,
-        revisionId,
-        createdByUserId,
-        kind: input.kind,
-        filename: input.filename,
-        mimeType: input.mimeType,
-        byteSize: input.byteSize,
-        status: 'ready'
-      }
-    });
   }
 
   private buildCsvReport(report: ReportResponse) {

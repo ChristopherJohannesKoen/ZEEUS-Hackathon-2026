@@ -17,10 +17,12 @@ These values are enough for the default local stack:
 | `API_ORIGIN`                    | API origin used by the web tier | `http://localhost:4000`                                                        |
 | `API_PORT`                      | Nest listen port                | `4000`                                                                         |
 | `WEB_PORT`                      | Next listen port                | `3000`                                                                         |
+| `DB_PORT`                       | Postgres host port              | `5432`                                                                         |
 | `POSTGRES_USER`                 | Postgres username               | `postgres`                                                                     |
 | `POSTGRES_PASSWORD`             | Postgres password               | `postgres`                                                                     |
 | `POSTGRES_DB`                   | Postgres database name          | `zeeus_assessment`                                                             |
 | `DATABASE_URL`                  | Prisma connection string        | `postgresql://postgres:postgres@localhost:5432/zeeus_assessment?schema=public` |
+| `ARTIFACTS_DIR`                 | local artifact storage path     | `.artifacts`                                                                   |
 | `SESSION_COOKIE_NAME`           | session cookie key              | `zeeus_assessment_session`                                                     |
 | `SESSION_COOKIE_ENCRYPTION_KEY` | 64-hex cookie encryption key    | required                                                                       |
 | `SEED_OWNER_EMAIL`              | seeded owner account email      | `owner@example.com`                                                            |
@@ -46,6 +48,7 @@ These values are enough for the default local stack:
 - session cookie name: `zeeus_assessment_session`
 - API port: `4000`
 - web port: `3000`
+- artifact storage path inside the API container: `/app/.artifacts`
 
 The API container runs Prisma migrate + seed before starting the server.
 

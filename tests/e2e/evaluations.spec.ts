@@ -73,9 +73,24 @@ test('runs the evaluation workflow through dashboard, completion, and revision h
   await page.waitForURL(/\/app\/evaluate\/[^/]+\/dashboard$/);
 
   await expect(page.getByRole('heading', { name: 'EcoGrid Pilot' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Complete evaluation' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Export PDF' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Export CSV' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Review before completion' })).toBeVisible();
+  const firstRecommendationSave = page.locator('[data-testid^="recommendation-action-save-"]').first();
+  await page
+    .locator('[data-testid^="recommendation-action-status-"]')
+    .first()
+    .selectOption('in_progress');
+  await page
+    .locator('[data-testid^="recommendation-action-note-"]')
+    .first()
+    .fill('Track this with the operating team.');
+  await firstRecommendationSave.click();
+  await expect(firstRecommendationSave).toHaveText('Save action');
+  await page.getByTestId('artifact-request-csv').click();
+  await expect(page.getByTestId('artifact-request-csv')).toHaveText('Generate CSV');
+  await page.getByRole('link', { name: 'Review before completion' }).click();
+  await page.waitForURL(/\/app\/evaluate\/[^/]+\/review$/);
+
+  await expect(page.getByRole('heading', { name: 'Freeze the current deterministic result' })).toBeVisible();
   await page.getByTestId('evaluation-complete').click();
 
   await expect(page.getByTestId('evaluation-archive')).toBeVisible();
@@ -84,4 +99,11 @@ test('runs the evaluation workflow through dashboard, completion, and revision h
   await expect(page.getByRole('heading', { name: 'EcoGrid Pilot' })).toBeVisible();
   await expect(page.getByText('Saved revisions')).toBeVisible();
   await expect(page.getByRole('link', { name: 'View snapshot' }).first()).toBeVisible();
+  const compareLatestLink = page.getByRole('link', { name: 'Compare latest two' });
+  await expect(compareLatestLink).toBeVisible();
+  const compareHref = await compareLatestLink.getAttribute('href');
+  expect(compareHref).toMatch(/\/app\/evaluate\/[^/]+\/revisions\/compare\?/);
+  await page.goto(compareHref!, { waitUntil: 'domcontentloaded' });
+  await expect(page.getByRole('heading', { name: 'EcoGrid Pilot' })).toBeVisible();
+  await expect(page.getByText('Revision comparison')).toBeVisible();
 });

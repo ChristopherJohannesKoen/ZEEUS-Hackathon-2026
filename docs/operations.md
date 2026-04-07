@@ -38,6 +38,9 @@ docker compose down --remove-orphans
 The default seed creates the local owner account and populates deterministic
 lookup data used by the assessment flow.
 
+Generated CSV and PDF artifacts are stored under `ARTIFACTS_DIR`. In Docker,
+that path is backed by the `artifacts_data` volume.
+
 ## Observability
 
 The API exposes Prometheus-compatible metrics at `/api/metrics`.
@@ -49,8 +52,10 @@ they are not required for the core local stack.
 
 - create an evaluation from `/app/evaluate/start`
 - complete enough answers to reach the dashboard
+- use the review step to complete the evaluation
 - open `/app/report/[id]`
-- download CSV export
+- compare the latest two revisions
+- generate and download CSV/PDF artifacts
 - confirm saved evaluations render in `/app/evaluations`
 
 ## Common Failure Modes

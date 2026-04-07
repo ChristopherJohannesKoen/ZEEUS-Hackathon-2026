@@ -32,8 +32,9 @@ The primary assessment flow is:
 4. Stage II risks and opportunities
 5. Impact summary
 6. SDG alignment
-7. Dashboard and recommendations
-8. CSV export and print-to-PDF report
+7. Dashboard and structured recommendations
+8. Review before completion
+9. Immutable revisions, compare view, and persisted CSV/PDF artifacts
 
 Saved evaluations belong to the authenticated user and can be resumed from the
 workspace list.
@@ -54,7 +55,6 @@ Retained baseline modules:
 - `GovernanceModule`
 - `IdentityModule`
 - `ObservabilityModule`
-- `ProjectsModule`
 
 Those retained modules stay available, but they are not the main hackathon
 product slice.
@@ -65,6 +65,9 @@ The main persistence model is centered on `Evaluation` plus per-stage answer
 tables:
 
 - `Evaluation`
+- `EvaluationRevision`
+- `EvaluationArtifact`
+- `EvaluationRecommendationAction`
 - `Stage1FinancialAnswer`
 - `Stage1TopicAnswer`
 - `Stage2RiskAnswer`
@@ -74,7 +77,8 @@ tables:
 
 The evaluation row stores startup context plus denormalized summary metrics so
 the workspace list and dashboard can render without recomputing every answer
-from scratch.
+from scratch. Immutable revision snapshots preserve completed outputs, while
+artifact rows track persisted CSV/PDF generation for specific revisions.
 
 ## Deterministic Scoring Boundary
 
@@ -95,13 +99,16 @@ Priority bands remain:
 
 ## Exports
 
-- CSV export comes directly from the API for raw answers and computed scores.
-- PDF v1 is implemented as a print-optimized report route under
-  `/app/report/[id]`.
+- CSV and PDF are generated as persisted artifacts tied to the active revision.
+- Artifact binaries are stored under `ARTIFACTS_DIR` and mounted to the Docker
+  `artifacts_data` volume in the default Compose stack.
+- The report route under `/app/report/[id]` remains the branded presentation
+  view for completed results and revision snapshots.
 
 ## Delivery Baseline
 
 - Local reproducibility is centered on `docker compose up --build`.
-- The repository still contains optional observability and Kubernetes assets,
-  but the hackathon-critical delivery path is the `web + api + db` Compose
-  stack.
+- The default supported stack is `web + api + db` plus a persistent artifacts
+  volume.
+- Optional observability and Kubernetes assets remain under `infra/`, but they
+  are not part of the core assessment acceptance path.

@@ -7,21 +7,46 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
-function projectResponse(overrides: Record<string, unknown> = {}) {
+function evaluationResponse(overrides: Record<string, unknown> = {}) {
   return {
-    id: 'project_1',
-    name: 'Updated project',
-    description: 'Updated description',
-    status: 'active',
-    isArchived: false,
-    creator: {
-      id: 'user_1',
-      name: 'Template Owner',
-      email: 'owner@example.com',
-      role: 'owner'
+    id: 'evaluation_1',
+    name: 'Updated assessment',
+    country: 'South Africa',
+    naceDivision: '10 Manufacture of food products',
+    currentStage: 'validation',
+    status: 'draft',
+    currentStep: 'summary',
+    financialTotal: 0,
+    riskOverall: 0,
+    opportunityOverall: 0,
+    confidenceBand: 'low',
+    currentRevisionNumber: 1,
+    scoringVersionInfo: {
+      scoringVersion: '2026.04.ready-software.1',
+      catalogVersion: 'workbook-catalog'
     },
+    lastScoredAt: '2026-01-01T00:00:00.000Z',
+    completedAt: null,
+    archivedAt: null,
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
+    offeringType: 'product',
+    launched: true,
+    innovationApproach: 'disruptive',
+    initialSummary: {
+      currentStage: 'validation',
+      phaseGoal: 'Validate the business model.',
+      phaseConsideration: null,
+      whatToConsider: 'Check the strongest sustainability assumptions first.',
+      stageSdgs: [],
+      businessSdgs: [],
+      mergedSdgs: []
+    },
+    stage1Financial: null,
+    stage1Topics: [],
+    stage2Risks: [],
+    stage2Opportunities: [],
+    artifacts: [],
     ...overrides
   };
 }
@@ -54,19 +79,25 @@ describe('clientApiRequest', () => {
         )
       )
       .mockResolvedValueOnce(jsonResponse({ csrfToken: secondCsrfToken }))
-      .mockResolvedValueOnce(jsonResponse(projectResponse()));
+      .mockResolvedValueOnce(jsonResponse(evaluationResponse()));
 
     vi.stubGlobal('fetch', fetchMock);
 
-    const { updateProject } = await import('../lib/client-api');
+    const { updateEvaluationContext } = await import('../lib/client-api');
 
     await expect(
-      updateProject('project_1', {
-        name: 'Updated project'
+      updateEvaluationContext('evaluation_1', {
+        name: 'Updated assessment',
+        country: 'South Africa',
+        naceDivision: '10 Manufacture of food products',
+        offeringType: 'product',
+        launched: true,
+        currentStage: 'validation',
+        innovationApproach: 'disruptive'
       })
     ).resolves.toMatchObject({
-      id: 'project_1',
-      name: 'Updated project'
+      id: 'evaluation_1',
+      name: 'Updated assessment'
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(4);
@@ -86,7 +117,7 @@ describe('clientApiRequest', () => {
         jsonResponse(
           {
             statusCode: 403,
-            message: 'You do not have permission to modify this project.',
+            message: 'You do not have permission to modify this evaluation.',
             code: 'forbidden',
             errors: []
           },
@@ -96,11 +127,17 @@ describe('clientApiRequest', () => {
 
     vi.stubGlobal('fetch', fetchMock);
 
-    const { updateProject } = await import('../lib/client-api');
+    const { updateEvaluationContext } = await import('../lib/client-api');
 
     await expect(
-      updateProject('project_1', {
-        isArchived: true
+      updateEvaluationContext('evaluation_1', {
+        name: 'Updated assessment',
+        country: 'South Africa',
+        naceDivision: '10 Manufacture of food products',
+        offeringType: 'product',
+        launched: true,
+        currentStage: 'validation',
+        innovationApproach: 'disruptive'
       })
     ).rejects.toMatchObject({
       code: 'forbidden',

@@ -42,27 +42,6 @@ const roleDefaults = [
   }
 ];
 
-const projectDefaults = [
-  {
-    name: 'Launch marketing refresh',
-    description: 'Coordinate launch assets, landing updates, and release notes.',
-    status: 'active',
-    isArchived: false
-  },
-  {
-    name: 'Quarterly analytics review',
-    description: 'Audit funnel performance and identify onboarding friction.',
-    status: 'paused',
-    isArchived: false
-  },
-  {
-    name: 'Migration playbook',
-    description: 'Document the production rollout and rollback sequence.',
-    status: 'completed',
-    isArchived: true
-  }
-];
-
 const financialRecommendationTemplates = [
   {
     code: 'roi',
@@ -479,24 +458,6 @@ async function main() {
 
   for (const seedUser of otherSeedUsers) {
     await upsertSeedUser(seedUser);
-  }
-
-  for (const project of projectDefaults) {
-    const exists = await prisma.project.findFirst({
-      where: {
-        name: project.name,
-        creatorId: owner.id
-      }
-    });
-
-    if (!exists) {
-      await prisma.project.create({
-        data: {
-          ...project,
-          creatorId: owner.id
-        }
-      });
-    }
   }
 
   for (const stage of stageCatalog) {

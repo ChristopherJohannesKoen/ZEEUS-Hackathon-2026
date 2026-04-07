@@ -94,7 +94,7 @@ describe('HttpExceptionFilter', () => {
     const filter = new HttpExceptionFilter();
     const { host, response } = createHost();
 
-    filter.catch(new NotFoundException('Project not found.'), host);
+    filter.catch(new NotFoundException('Evaluation not found.'), host);
 
     expect(response.json).toHaveBeenCalledWith(
       expect.objectContaining({

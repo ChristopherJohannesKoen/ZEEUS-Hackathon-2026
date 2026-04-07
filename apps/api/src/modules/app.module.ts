@@ -21,8 +21,6 @@ import { ObservabilityModule } from './observability/observability.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { EvaluationsModule } from './evaluations/evaluations.module';
 import { EvaluationsController } from './evaluations/evaluations.controller';
-import { ProjectsModule } from './projects/projects.module';
-import { ProjectsController } from './projects/projects.controller';
 import { IdentityModule } from './identity/identity.module';
 import { IdentityController, ScimController } from './identity/identity.controller';
 import { UsersModule } from './users/users.module';
@@ -51,7 +49,6 @@ import { UsersController } from './users/users.controller';
     UsersModule,
     AdminModule,
     EvaluationsModule,
-    ProjectsModule,
     HealthModule
   ],
   providers: [
@@ -75,7 +72,6 @@ export class AppModule implements NestModule {
         UsersController,
         AdminController,
         EvaluationsController,
-        ProjectsController,
         HealthController,
         ScimController
       );

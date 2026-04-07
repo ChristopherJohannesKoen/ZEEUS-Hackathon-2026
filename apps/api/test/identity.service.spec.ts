@@ -219,7 +219,7 @@ describe('IdentityService', () => {
       })
     );
 
-    const result = await service.startLogin('enterprise-oidc', '/app/projects');
+    const result = await service.startLogin('enterprise-oidc', '/app/evaluations');
     const redirectUrl = new URL(result.redirectUrl);
 
     expect(redirectUrl.origin).toBe('https://idp.example.com');
@@ -236,7 +236,7 @@ describe('IdentityService', () => {
         action: 'auth.sso_provider_started',
         metadata: expect.objectContaining({
           provider: 'enterprise-oidc',
-          redirectTo: '/app/projects'
+          redirectTo: '/app/evaluations'
         })
       })
     );
@@ -267,7 +267,7 @@ describe('IdentityService', () => {
       provisionedBy: 'oidc'
     } as never);
 
-    const startResult = await service.startLogin('enterprise-oidc', '/app/projects');
+    const startResult = await service.startLogin('enterprise-oidc', '/app/evaluations');
     const state = new URL(startResult.redirectUrl).searchParams.get('state');
 
     if (!state) {
@@ -311,7 +311,7 @@ describe('IdentityService', () => {
       }
     );
 
-    expect(result.redirectTo).toBe('/app/projects');
+    expect(result.redirectTo).toBe('/app/evaluations');
     expect(result.user.identityProvider?.slug).toBe('enterprise-oidc');
     expect(sessionService.createSession).toHaveBeenCalledWith(
       'user_enterprise',

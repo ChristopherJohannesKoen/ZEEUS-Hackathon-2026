@@ -23,8 +23,8 @@ export const options = {
     'http_req_duration{name:auth_sessions}': ['p(95)<300'],
     'http_req_duration{name:auth_revoke}': ['p(95)<700'],
     'http_req_duration{name:auth_logout_all}': ['p(95)<700'],
-    'http_req_duration{name:projects_list}': ['p(95)<500'],
-    'http_req_duration{name:projects_get}': ['p(95)<500']
+    'http_req_duration{name:evaluations_list}': ['p(95)<500'],
+    'http_req_duration{name:evaluations_get}': ['p(95)<500']
   }
 };
 
@@ -82,29 +82,29 @@ export default function () {
     });
   }
 
-  const projectsResponse = http.get(`${getApiOrigin()}/api/projects?limit=12`, {
+  const evaluationsResponse = http.get(`${getApiOrigin()}/api/evaluations`, {
     headers: createSessionHeaders(primarySessionCookie),
     ...withExpectedStatuses(200),
     tags: {
-      name: 'projects_list'
+      name: 'evaluations_list'
     }
   });
-  check(projectsResponse, {
-    'projects list returns 200': (response) => response.status === 200
+  check(evaluationsResponse, {
+    'evaluations list returns 200': (response) => response.status === 200
   });
 
-  const projectId = projectsResponse.json('items.0.id');
+  const evaluationId = evaluationsResponse.json('items.0.id');
 
-  if (projectId) {
-    const projectResponse = http.get(`${getApiOrigin()}/api/projects/${projectId}`, {
+  if (evaluationId) {
+    const evaluationResponse = http.get(`${getApiOrigin()}/api/evaluations/${evaluationId}`, {
       headers: createSessionHeaders(primarySessionCookie),
       ...withExpectedStatuses(200),
       tags: {
-        name: 'projects_get'
+        name: 'evaluations_get'
       }
     });
-    check(projectResponse, {
-      'projects get returns 200': (response) => response.status === 200
+    check(evaluationResponse, {
+      'evaluations get returns 200': (response) => response.status === 200
     });
   }
 

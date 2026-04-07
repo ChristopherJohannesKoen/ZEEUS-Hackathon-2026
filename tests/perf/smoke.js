@@ -52,29 +52,29 @@ export default function () {
     'sessions endpoint works': (response) => response.status === 200
   });
 
-  const projectsResponse = http.get(`${getApiOrigin()}/api/projects?limit=12`, {
+  const evaluationsResponse = http.get(`${getApiOrigin()}/api/evaluations`, {
     headers: createSessionHeaders(sessionCookie),
     ...withExpectedStatuses(200),
     tags: {
-      name: 'projects_list'
+      name: 'evaluations_list'
     }
   });
-  check(projectsResponse, {
-    'projects list works': (response) => response.status === 200
+  check(evaluationsResponse, {
+    'evaluations list works': (response) => response.status === 200
   });
 
-  const projectId = projectsResponse.json('items.0.id');
+  const evaluationId = evaluationsResponse.json('items.0.id');
 
-  if (projectId) {
-    const projectResponse = http.get(`${getApiOrigin()}/api/projects/${projectId}`, {
+  if (evaluationId) {
+    const evaluationResponse = http.get(`${getApiOrigin()}/api/evaluations/${evaluationId}`, {
       headers: createSessionHeaders(sessionCookie),
       ...withExpectedStatuses(200),
       tags: {
-        name: 'projects_get'
+        name: 'evaluations_get'
       }
     });
-    check(projectResponse, {
-      'projects get works': (response) => response.status === 200
+    check(evaluationResponse, {
+      'evaluations get works': (response) => response.status === 200
     });
   }
 

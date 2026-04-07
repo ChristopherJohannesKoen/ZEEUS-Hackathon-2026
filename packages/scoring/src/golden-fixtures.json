@@ -1,0 +1,82 @@
+{
+  "financial": [
+    {
+      "name": "workbook-financial-example",
+      "input": {
+        "roiLevel": "average_or_no_benchmark",
+        "sensitivityLevel": "high_volatility",
+        "uspLevel": "strong_or_unique_usp",
+        "marketGrowthLevel": "growing"
+      },
+      "expected": {
+        "totalScore": 9
+      }
+    }
+  ],
+  "stage1Topics": [
+    {
+      "name": "relevant-threshold-example",
+      "input": {
+        "topicCode": "E1",
+        "applicable": true,
+        "magnitude": "significant",
+        "scale": "significant",
+        "irreversibility": "significant",
+        "likelihood": "likely",
+        "evidenceBasis": "estimated"
+      },
+      "expected": {
+        "impactScore": 2.25,
+        "priorityBand": "relevant"
+      }
+    },
+    {
+      "name": "high-priority-threshold-example",
+      "input": {
+        "topicCode": "E3",
+        "applicable": true,
+        "magnitude": "high",
+        "scale": "high",
+        "irreversibility": "high",
+        "likelihood": "likely",
+        "evidenceBasis": "measured"
+      },
+      "expected": {
+        "impactScore": 3,
+        "priorityBand": "high_priority"
+      }
+    }
+  ],
+  "stage2Risks": [
+    {
+      "name": "risk-matrix-example",
+      "input": {
+        "riskCode": "climate_policy_risk",
+        "applicable": true,
+        "probability": "could_occur",
+        "impact": "moderate",
+        "evidenceBasis": "estimated"
+      },
+      "expected": {
+        "ratingScore": 1,
+        "ratingLabel": "moderate"
+      }
+    }
+  ],
+  "stage2Opportunities": [
+    {
+      "name": "opportunity-matrix-example",
+      "input": {
+        "opportunityCode": "climate_transition_opportunity",
+        "applicable": true,
+        "likelihood": "likely",
+        "impact": "significant",
+        "evidenceBasis": "estimated"
+      },
+      "expected": {
+        "ratingScore": 2.25,
+        "ratingLabel": "great"
+      }
+    }
+  ]
+}

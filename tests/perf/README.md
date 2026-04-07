@@ -5,7 +5,7 @@ this repository:
 
 - session churn and repeated authenticated reads
 - protected dashboard page reads
-- idempotent project creation replay behavior in the retained reference module
+- idempotent evaluation creation replay behavior
 - forgot-password burst handling
 
 ## Local usage
@@ -43,16 +43,16 @@ Stateful scenarios bootstrap deterministic per-VU member accounts such as `k6+cr
 ## Acceptance thresholds
 
 - smoke scenario: `http_req_failed < 1%` and p95 `< 750ms`
-- critical auth/session/project API scenario:
+- critical auth/session/evaluation API scenario:
   - `POST /api/auth/login` p95 `< 500ms`
   - `GET /api/auth/me` p95 `< 300ms`
   - `GET /api/auth/sessions` p95 `< 300ms`
   - `DELETE /api/auth/sessions/:sessionId` p95 `< 700ms`
   - `POST /api/auth/logout-all` p95 `< 700ms`
-  - `GET /api/projects` p95 `< 500ms`
-  - `GET /api/projects/:id` p95 `< 500ms`
+  - `GET /api/evaluations` p95 `< 500ms`
+  - `GET /api/evaluations/:id` p95 `< 500ms`
 - dashboard read scenario: p95 `< 900ms`
-- idempotent write scenario: `POST /api/projects` p95 `< 900ms` with replayed request returning the original project id
+- idempotent write scenario: `POST /api/evaluations` p95 `< 900ms` with replayed request returning the original evaluation id
 - password-reset burst: `http_req_failed < 2%` and p95 `< 800ms`
 - auth/session churn:
   - repeated reads inside the touch window should keep `session_touch_ratio_ok > 0.99`

@@ -15,11 +15,13 @@ import {
 export function EvaluationLifecycleActions({
   evaluationId,
   status,
-  className
+  className,
+  mode = 'dashboard'
 }: {
   evaluationId: string;
   status: EvaluationStatus;
   className?: string;
+  mode?: 'dashboard' | 'review';
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -62,7 +64,7 @@ export function EvaluationLifecycleActions({
   return (
     <div className={className}>
       <div className="flex flex-wrap gap-3">
-        {(status === 'draft' || status === 'in_progress') && (
+        {mode === 'review' && (status === 'draft' || status === 'in_progress') && (
           <Button
             className="bg-[#00654A] hover:bg-[#0b7a59]"
             data-testid="evaluation-complete"
@@ -72,6 +74,15 @@ export function EvaluationLifecycleActions({
           >
             Complete evaluation
           </Button>
+        )}
+
+        {mode === 'dashboard' && (status === 'draft' || status === 'in_progress') && (
+          <Link
+            className={buttonClassName({ className: 'bg-[#00654A] hover:bg-[#0b7a59]' })}
+            href={`/app/evaluate/${evaluationId}/review`}
+          >
+            Review before completion
+          </Link>
         )}
 
         {status === 'completed' && (
@@ -117,13 +128,12 @@ export function EvaluationLifecycleActions({
         >
           Revision history
         </Link>
-        <a
+        <Link
           className={buttonClassName({ variant: 'ghost' })}
-          data-testid="evaluation-export-pdf"
-          href={`/api/evaluations/${evaluationId}/export.pdf`}
+          href={`/app/evaluate/${evaluationId}/revisions`}
         >
-          Download PDF
-        </a>
+          Artifacts
+        </Link>
       </div>
 
       {errorMessage ? (

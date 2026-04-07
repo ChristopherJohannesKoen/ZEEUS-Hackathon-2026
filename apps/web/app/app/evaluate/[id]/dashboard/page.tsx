@@ -1,8 +1,10 @@
 import Link from 'next/link';
 import { forbidden, notFound } from 'next/navigation';
 import { Badge, Card, buttonClassName } from '@packages/ui';
+import { ArtifactActions } from '../../../../../components/artifact-actions';
 import { EvaluationLifecycleActions } from '../../../../../components/evaluation-lifecycle-actions';
 import { EvaluationProgress } from '../../../../../components/evaluation-progress';
+import { RecommendationActionsBoard } from '../../../../../components/recommendation-actions-board';
 import { ApiRequestError } from '../../../../../lib/api-error';
 import { confidenceTone, priorityTone } from '../../../../../lib/display';
 import { getEvaluation, getEvaluationDashboard } from '../../../../../lib/server-api';
@@ -76,26 +78,9 @@ export default async function DashboardPage({ params }: { params: Params }) {
                 >
                   Open report
                 </Link>
-                <a
-                  className={buttonClassName({
-                    variant: 'ghost',
-                    className:
-                      'border border-white/20 text-white hover:bg-white/10 hover:text-white'
-                  })}
-                  href={`/api/evaluations/${evaluation.id}/export.csv`}
-                >
-                  Export CSV
-                </a>
-                <a
-                  className={buttonClassName({
-                    variant: 'ghost',
-                    className:
-                      'border border-white/20 text-white hover:bg-white/10 hover:text-white'
-                  })}
-                  href={`/api/evaluations/${evaluation.id}/export.pdf`}
-                >
-                  Export PDF
-                </a>
+              </div>
+              <div className="mt-4">
+                <ArtifactActions evaluationId={evaluation.id} />
               </div>
             </div>
           </Card>
@@ -264,16 +249,11 @@ export default async function DashboardPage({ params }: { params: Params }) {
             </Link>
           </div>
 
-          <div className="mt-6 grid gap-4 md:grid-cols-2">
-            {dashboard.recommendations.map((recommendation) => (
-              <div className="rounded-[28px] bg-[#f7f9f4] p-5" key={recommendation.id}>
-                <p className="text-xs uppercase tracking-[0.22em] text-[#5d7355]">
-                  {recommendation.source} / {recommendation.severityBand}
-                </p>
-                <h3 className="mt-2 text-lg font-bold text-slate-950">{recommendation.title}</h3>
-                <p className="mt-3 text-sm leading-7 text-slate-600">{recommendation.text}</p>
-              </div>
-            ))}
+          <div className="mt-6">
+            <RecommendationActionsBoard
+              evaluationId={evaluation.id}
+              recommendations={dashboard.recommendations}
+            />
           </div>
         </Card>
       </div>

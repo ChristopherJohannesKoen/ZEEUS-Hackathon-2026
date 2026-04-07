@@ -60,9 +60,19 @@ function resolveAuditDefaults(action: string): {
     };
   }
 
-  if (action.startsWith('project.') || action === 'user.profile_updated') {
+  if (
+    action.startsWith('evaluation.') ||
+    action === 'user.profile_updated'
+  ) {
     return {
       eventCategory: 'application',
+      outcome: 'success'
+    };
+  }
+
+  if (action.startsWith('artifact.')) {
+    return {
+      eventCategory: 'export',
       outcome: 'success'
     };
   }

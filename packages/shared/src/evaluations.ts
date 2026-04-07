@@ -90,6 +90,9 @@ export type EvaluationArtifactKind = z.infer<typeof EvaluationArtifactKindSchema
 export const EvaluationArtifactStatusSchema = z.enum(['pending', 'ready', 'failed']);
 export type EvaluationArtifactStatus = z.infer<typeof EvaluationArtifactStatusSchema>;
 
+export const ExportArtifactKindSchema = z.enum(['csv', 'pdf']);
+export type ExportArtifactKind = z.infer<typeof ExportArtifactKindSchema>;
+
 export const ScoringVersionInfoSchema = z.object({
   scoringVersion: z.string().min(1),
   catalogVersion: z.string().min(1)
@@ -324,14 +327,56 @@ export type Stage2OpportunityAnswer = z.infer<typeof Stage2OpportunityAnswerSche
 
 export const EvaluationArtifactSummarySchema = z.object({
   id: z.string(),
+  evaluationId: z.string(),
+  revisionId: z.string().nullable().default(null),
+  revisionNumber: z.number().int().min(1).nullable().default(null),
   kind: EvaluationArtifactKindSchema,
   status: EvaluationArtifactStatusSchema,
   filename: z.string(),
   mimeType: z.string(),
   byteSize: z.number().int().nonnegative(),
+  checksumSha256: z.string().nullable().default(null),
+  requestedAt: z.string(),
+  readyAt: z.string().nullable().default(null),
+  failedAt: z.string().nullable().default(null),
+  errorMessage: z.string().nullable().default(null),
   createdAt: z.string()
 });
 export type EvaluationArtifactSummary = z.infer<typeof EvaluationArtifactSummarySchema>;
+
+export const EvaluationArtifactListResponseSchema = z.object({
+  items: z.array(EvaluationArtifactSummarySchema)
+});
+export type EvaluationArtifactListResponse = z.infer<typeof EvaluationArtifactListResponseSchema>;
+
+export const EvaluationArtifactParamsSchema = z.object({
+  id: z.string(),
+  artifactId: z.string()
+});
+export type EvaluationArtifactParams = z.infer<typeof EvaluationArtifactParamsSchema>;
+
+export const CreateEvaluationArtifactPayloadSchema = z.object({
+  kind: ExportArtifactKindSchema
+});
+export type CreateEvaluationArtifactPayload = z.infer<typeof CreateEvaluationArtifactPayloadSchema>;
+
+export const EvaluationRecommendationActionStateSchema = z.object({
+  recommendationId: z.string(),
+  status: RecommendationActionStatusSchema,
+  ownerNote: z.string().nullable().default(null),
+  updatedAt: z.string()
+});
+export type EvaluationRecommendationActionState = z.infer<
+  typeof EvaluationRecommendationActionStateSchema
+>;
+
+export const UpdateRecommendationActionPayloadSchema = z.object({
+  status: RecommendationActionStatusSchema,
+  ownerNote: z.string().trim().max(1000).nullable().optional()
+});
+export type UpdateRecommendationActionPayload = z.infer<
+  typeof UpdateRecommendationActionPayloadSchema
+>;
 
 export const EvaluationListItemSchema = z.object({
   id: z.string(),
@@ -387,8 +432,10 @@ export const RecommendationSchema = z.object({
   id: z.string(),
   title: z.string(),
   text: z.string(),
+  evidenceToCollect: z.string().nullable().default(null),
   source: z.enum(['financial', 'stage1', 'risk', 'opportunity']),
-  severityBand: z.string()
+  severityBand: z.string(),
+  action: EvaluationRecommendationActionStateSchema.nullable().default(null)
 });
 export type Recommendation = z.infer<typeof RecommendationSchema>;
 
@@ -473,3 +520,77 @@ export const EvaluationRevisionDetailSchema = EvaluationRevisionSummarySchema.ex
   report: ReportResponseSchema
 });
 export type EvaluationRevisionDetail = z.infer<typeof EvaluationRevisionDetailSchema>;
+
+export const EvaluationRevisionCompareQuerySchema = z.object({
+  left: z.coerce.number().int().min(1),
+  right: z.coerce.number().int().min(1)
+});
+export type EvaluationRevisionCompareQuery = z.infer<typeof EvaluationRevisionCompareQuerySchema>;
+
+export const EvaluationCompareFieldChangeSchema = z.object({
+  field: z.string(),
+  label: z.string(),
+  leftValue: z.string().nullable(),
+  rightValue: z.string().nullable()
+});
+export type EvaluationCompareFieldChange = z.infer<typeof EvaluationCompareFieldChangeSchema>;
+
+export const EvaluationCompareMetricSchema = z.object({
+  field: z.string(),
+  label: z.string(),
+  leftValue: z.number().nullable(),
+  rightValue: z.number().nullable(),
+  delta: z.number().nullable()
+});
+export type EvaluationCompareMetric = z.infer<typeof EvaluationCompareMetricSchema>;
+
+export const EvaluationCompareTopicChangeSchema = z.object({
+  code: z.string(),
+  title: z.string(),
+  leftBand: z.string().nullable(),
+  rightBand: z.string().nullable(),
+  leftScore: z.number().nullable(),
+  rightScore: z.number().nullable()
+});
+export type EvaluationCompareTopicChange = z.infer<typeof EvaluationCompareTopicChangeSchema>;
+
+export const EvaluationCompareRatedItemChangeSchema = z.object({
+  code: z.string(),
+  title: z.string(),
+  leftLabel: z.string().nullable(),
+  rightLabel: z.string().nullable(),
+  leftScore: z.number().nullable(),
+  rightScore: z.number().nullable()
+});
+export type EvaluationCompareRatedItemChange = z.infer<
+  typeof EvaluationCompareRatedItemChangeSchema
+>;
+
+export const EvaluationCompareRecommendationChangeSchema = z.object({
+  recommendationId: z.string(),
+  title: z.string(),
+  source: z.enum(['financial', 'stage1', 'risk', 'opportunity']),
+  severityBand: z.string(),
+  leftPresent: z.boolean(),
+  rightPresent: z.boolean(),
+  leftStatus: RecommendationActionStatusSchema.nullable(),
+  rightStatus: RecommendationActionStatusSchema.nullable()
+});
+export type EvaluationCompareRecommendationChange = z.infer<
+  typeof EvaluationCompareRecommendationChangeSchema
+>;
+
+export const EvaluationRevisionCompareResponseSchema = z.object({
+  evaluationId: z.string(),
+  leftRevision: EvaluationRevisionSummarySchema,
+  rightRevision: EvaluationRevisionSummarySchema,
+  contextChanges: z.array(EvaluationCompareFieldChangeSchema),
+  metricChanges: z.array(EvaluationCompareMetricSchema),
+  topicChanges: z.array(EvaluationCompareTopicChangeSchema),
+  riskChanges: z.array(EvaluationCompareRatedItemChangeSchema),
+  opportunityChanges: z.array(EvaluationCompareRatedItemChangeSchema),
+  recommendationChanges: z.array(EvaluationCompareRecommendationChangeSchema)
+});
+export type EvaluationRevisionCompareResponse = z.infer<
+  typeof EvaluationRevisionCompareResponseSchema
+>;

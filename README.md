@@ -6,8 +6,9 @@ web application with:
 
 - deterministic scoring
 - saved evaluations in PostgreSQL
-- dashboard and report views
-- CSV export and print-to-PDF output
+- immutable revision history and comparison
+- dashboard, review, and report views
+- persisted CSV and PDF export artifacts
 - Docker-based local setup
 
 ## Product Scope
@@ -23,7 +24,8 @@ The implemented product flow is:
 7. Impact summary
 8. SDG alignment
 9. Results dashboard
-10. Full report and export
+10. Pre-completion review
+11. Full report, revision history, compare view, and export artifacts
 
 The scoring path stays deterministic. AI is not used to decide materiality,
 risk ratings, opportunity ratings, or final scores.
@@ -100,11 +102,13 @@ The Compose stack starts:
 - `db` on port `5432`
 - `api` on port `4000`
 - `web` on port `3000`
+- a persistent `artifacts_data` volume for generated CSV and PDF files
 
 Default runtime values:
 
 - Postgres DB: `zeeus_assessment`
 - Session cookie: `zeeus_assessment_session`
+- Artifact storage path in the API container: `/app/.artifacts`
 
 ## Scoring Summary
 
@@ -154,6 +158,7 @@ Health checks:
 - `http://localhost:4000/api/health`
 - `http://localhost:4000/api/docs`
 - `http://localhost:3000`
+- generate a CSV or PDF artifact from the dashboard or review screen and confirm it remains downloadable from revision history
 
 ## Docs
 

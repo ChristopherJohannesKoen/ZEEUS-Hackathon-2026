@@ -44,8 +44,13 @@ The evaluation contract covers:
 - fetch report data
 - complete, reopen, archive, and unarchive evaluations
 - list revision snapshots and fetch a specific revision snapshot
-- export CSV
-- export PDF
+- compare two revisions
+- request and list persisted CSV/PDF artifacts
+- download a specific artifact binary
+- update structured recommendation action status and owner notes
+
+Compatibility endpoints for direct CSV and PDF export still exist, but they now
+wrap the artifact pipeline instead of streaming throwaway files.
 
 Compatibility endpoints for split Stage I and Stage II saves still exist for one
 transition window, but the product should use the combined step routes.
@@ -62,8 +67,8 @@ contract-backed helper should exist.
 
 ## Non-JSON Responses
 
-CSV and PDF exports stay explicit as non-JSON routes. Everything else in the
-main assessment flow should stay contract-backed JSON.
+Artifact creation and listing stay contract-backed JSON. Artifact download and
+compatibility export routes remain explicit non-JSON responses.
 
 ## Change Workflow
 

@@ -3,16 +3,9 @@
   "compilerOptions": {
     "lib": ["dom", "dom.iterable", "es2022"],
     "allowJs": false,
-    "baseUrl": ".",
     "noEmit": true,
     "module": "esnext",
     "moduleResolution": "bundler",
-    "paths": {
-      "@packages/contracts": ["../../packages/contracts/src/index.ts"],
-      "@packages/scoring": ["../../packages/scoring/src/index.ts"],
-      "@packages/shared": ["../../packages/shared/src/index.ts"],
-      "@packages/ui": ["../../packages/ui/src/index.tsx"]
-    },
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",

@@ -4,12 +4,18 @@ import {
   AuthPayloadSchema,
   AuthResponseSchema,
   BreakGlassLoginPayloadSchema,
+  CreateEvaluationArtifactPayloadSchema,
   CreateEvaluationPayloadSchema,
   CsrfResponseSchema,
   DashboardResponseSchema,
+  EvaluationArtifactListResponseSchema,
+  EvaluationArtifactParamsSchema,
+  EvaluationArtifactSummarySchema,
   EvaluationDetailSchema,
   EvaluationIdParamsSchema,
   EvaluationListResponseSchema,
+  EvaluationRevisionCompareQuerySchema,
+  EvaluationRevisionCompareResponseSchema,
   EvaluationRevisionDetailSchema,
   EvaluationRevisionListResponseSchema,
   EvaluationRevisionParamsSchema,
@@ -18,11 +24,6 @@ import {
   HealthResponseSchema,
   ImpactSummaryResponseSchema,
   OkResponseSchema,
-  ProjectIdParamsSchema,
-  ProjectListQuerySchema,
-  ProjectListResponseSchema,
-  ProjectSchema,
-  ProjectUpsertPayloadSchema,
   ReportResponseSchema,
   ResetPasswordPayloadSchema,
   RevokeSessionResponseSchema,
@@ -45,6 +46,7 @@ import {
   StepUpPayloadSchema,
   StepUpResponseSchema,
   UpdateEvaluationContextPayloadSchema,
+  UpdateRecommendationActionPayloadSchema,
   UpdateProfilePayloadSchema,
   UpdateRolePayloadSchema,
   UserIdParamsSchema,
@@ -63,8 +65,6 @@ const csrfHeaderSchema = z.object({
 const idempotencyHeaderSchema = z.object({
   'idempotency-key': z.string().min(1)
 });
-
-const projectUpdatePayloadSchema = ProjectUpsertPayloadSchema.partial();
 
 const commonResponses = c.responses({
   400: ApiErrorSchema,
@@ -448,6 +448,64 @@ export const apiContract = c.router(
             200: EvaluationRevisionDetailSchema
           }
         },
+        compareRevisions: {
+          method: 'GET',
+          path: '/:id/revisions/compare',
+          pathParams: EvaluationIdParamsSchema,
+          query: EvaluationRevisionCompareQuerySchema,
+          responses: {
+            200: EvaluationRevisionCompareResponseSchema
+          }
+        },
+        createArtifact: {
+          method: 'POST',
+          path: '/:id/artifacts',
+          pathParams: EvaluationIdParamsSchema,
+          body: CreateEvaluationArtifactPayloadSchema,
+          headers: csrfHeaderSchema.merge(idempotencyHeaderSchema),
+          responses: {
+            201: EvaluationArtifactSummarySchema
+          }
+        },
+        listArtifacts: {
+          method: 'GET',
+          path: '/:id/artifacts',
+          pathParams: EvaluationIdParamsSchema,
+          responses: {
+            200: EvaluationArtifactListResponseSchema
+          }
+        },
+        getArtifact: {
+          method: 'GET',
+          path: '/:id/artifacts/:artifactId',
+          pathParams: EvaluationArtifactParamsSchema,
+          responses: {
+            200: EvaluationArtifactSummarySchema
+          }
+        },
+        downloadArtifact: {
+          method: 'GET',
+          path: '/:id/artifacts/:artifactId/download',
+          pathParams: EvaluationArtifactParamsSchema,
+          responses: {
+            200: c.otherResponse({
+              contentType: 'application/octet-stream',
+              body: z.string()
+            })
+          }
+        },
+        updateRecommendationAction: {
+          method: 'PUT',
+          path: '/:id/recommendations/:recommendationId',
+          pathParams: EvaluationIdParamsSchema.extend({
+            recommendationId: z.string()
+          }),
+          body: UpdateRecommendationActionPayloadSchema,
+          headers: csrfHeaderSchema,
+          responses: {
+            200: DashboardResponseSchema
+          }
+        },
         exportPdf: {
           method: 'GET',
           path: '/:id/export.pdf',
@@ -473,68 +531,6 @@ export const apiContract = c.router(
       },
       {
         pathPrefix: '/evaluations'
-      }
-    ),
-    projects: c.router(
-      {
-        list: {
-          method: 'GET',
-          path: '/',
-          query: ProjectListQuerySchema,
-          responses: {
-            200: ProjectListResponseSchema
-          }
-        },
-        exportCsv: {
-          method: 'GET',
-          path: '/export.csv',
-          query: ProjectListQuerySchema,
-          responses: {
-            200: c.otherResponse({
-              contentType: 'text/csv',
-              body: z.string()
-            })
-          }
-        },
-        get: {
-          method: 'GET',
-          path: '/:id',
-          pathParams: ProjectIdParamsSchema,
-          responses: {
-            200: ProjectSchema
-          }
-        },
-        create: {
-          method: 'POST',
-          path: '/',
-          body: ProjectUpsertPayloadSchema,
-          headers: csrfHeaderSchema.merge(idempotencyHeaderSchema),
-          responses: {
-            201: ProjectSchema
-          }
-        },
-        update: {
-          method: 'PATCH',
-          path: '/:id',
-          pathParams: ProjectIdParamsSchema,
-          body: projectUpdatePayloadSchema,
-          headers: csrfHeaderSchema,
-          responses: {
-            200: ProjectSchema
-          }
-        },
-        delete: {
-          method: 'DELETE',
-          path: '/:id',
-          pathParams: ProjectIdParamsSchema,
-          headers: csrfHeaderSchema,
-          responses: {
-            200: OkResponseSchema
-          }
-        }
-      },
-      {
-        pathPrefix: '/projects'
       }
     )
   },

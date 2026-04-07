@@ -8,6 +8,7 @@ const stepDefinitions = [
   { key: 'impact_summary', label: 'Impact Summary', shortLabel: 'Impact' },
   { key: 'sdg_alignment', label: 'SDG Alignment', shortLabel: 'SDGs' },
   { key: 'dashboard', label: 'Dashboard', shortLabel: 'Dashboard' },
+  { key: 'review', label: 'Review', shortLabel: 'Review' },
   { key: 'report', label: 'Report', shortLabel: 'Report' }
 ] as const;
 
@@ -22,6 +23,7 @@ export function EvaluationProgress({
     | 'impact_summary'
     | 'sdg_alignment'
     | 'dashboard'
+    | 'review'
     | 'report';
   evaluationId: string;
 }) {
@@ -32,6 +34,7 @@ export function EvaluationProgress({
     impact_summary: `/app/evaluate/${evaluationId}/impact-summary`,
     sdg_alignment: `/app/evaluate/${evaluationId}/sdg-alignment`,
     dashboard: `/app/evaluate/${evaluationId}/dashboard`,
+    review: `/app/evaluate/${evaluationId}/review`,
     report: `/app/report/${evaluationId}`
   };
 

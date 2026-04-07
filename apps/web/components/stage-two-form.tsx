@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Card, Field, Select } from '@packages/ui';
+import { Button, Card, Field, Select, Textarea } from '@packages/ui';
 import type { EvaluationDetail, Stage2OpportunityAnswer, Stage2RiskAnswer } from '@packages/shared';
 import { saveStage2 } from '../lib/client-api';
 
@@ -232,6 +232,32 @@ export function StageTwoForm({ evaluation }: { evaluation: EvaluationDetail }) {
                   <p className="mt-2 text-lg font-bold text-slate-950">{item.ratingLabel}</p>
                 </div>
               </div>
+
+              <div className="mt-4">
+                <Field
+                  hint="Optional rationale, evidence source, or trigger note behind this risk rating."
+                  label="Evidence note"
+                >
+                  <Textarea
+                    data-testid={`stage-two-risk-${item.riskCode}-evidence-note`}
+                    onChange={(event) =>
+                      setRisks((current) =>
+                        current.map((entry) =>
+                          entry.riskCode === item.riskCode
+                            ? {
+                                ...entry,
+                                evidenceNote: event.target.value
+                              }
+                            : entry
+                        )
+                      )
+                    }
+                    placeholder="Add the rationale or evidence behind this risk score."
+                    rows={3}
+                    value={item.evidenceNote ?? ''}
+                  />
+                </Field>
+              </div>
             </div>
           ))}
         </div>
@@ -356,6 +382,32 @@ export function StageTwoForm({ evaluation }: { evaluation: EvaluationDetail }) {
                   </p>
                   <p className="mt-2 text-lg font-bold text-slate-950">{item.ratingLabel}</p>
                 </div>
+              </div>
+
+              <div className="mt-4">
+                <Field
+                  hint="Optional rationale, evidence source, or supporting note behind this opportunity rating."
+                  label="Evidence note"
+                >
+                  <Textarea
+                    data-testid={`stage-two-opportunity-${item.opportunityCode}-evidence-note`}
+                    onChange={(event) =>
+                      setOpportunities((current) =>
+                        current.map((entry) =>
+                          entry.opportunityCode === item.opportunityCode
+                            ? {
+                                ...entry,
+                                evidenceNote: event.target.value
+                              }
+                            : entry
+                        )
+                      )
+                    }
+                    placeholder="Add the rationale or evidence behind this opportunity score."
+                    rows={3}
+                    value={item.evidenceNote ?? ''}
+                  />
+                </Field>
               </div>
             </div>
           ))}

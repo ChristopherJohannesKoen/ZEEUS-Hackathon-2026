@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   ApiErrorSchema,
   AuthPayloadSchema,
-  ProjectListQuerySchema,
-  ProjectUpsertPayloadSchema,
+  EvaluationArtifactStatusSchema,
+  EvaluationStatusSchema,
   SessionUserSchema,
   SsoProvidersResponseSchema,
   SignupPayloadSchema
@@ -29,23 +29,14 @@ describe('shared contracts', () => {
     ).toThrow();
   });
 
-  it('applies sensible defaults to project list queries', () => {
-    const query = ProjectListQuerySchema.parse({});
-
-    expect(query).toMatchObject({
-      includeArchived: false,
-      limit: 12
-    });
+  it('accepts the supported evaluation lifecycle states', () => {
+    expect(EvaluationStatusSchema.parse('draft')).toBe('draft');
+    expect(EvaluationStatusSchema.parse('archived')).toBe('archived');
   });
 
-  it('normalizes optional project description fields', () => {
-    const payload = ProjectUpsertPayloadSchema.parse({
-      name: 'Starter project',
-      description: '',
-      status: 'active'
-    });
-
-    expect(payload.description).toBe('');
+  it('accepts the supported artifact lifecycle states', () => {
+    expect(EvaluationArtifactStatusSchema.parse('pending')).toBe('pending');
+    expect(EvaluationArtifactStatusSchema.parse('failed')).toBe('failed');
   });
 
   it('requires a valid session user payload', () => {

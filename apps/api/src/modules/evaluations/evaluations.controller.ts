@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Put,
+  Query,
   Res,
   UseGuards,
   UseInterceptors
@@ -14,8 +15,11 @@ import {
 import { ApiCookieAuth, ApiHeader, ApiOperation, ApiProduces, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import {
+  CreateEvaluationArtifactPayloadSchema,
   CreateEvaluationPayloadSchema,
+  EvaluationArtifactParamsSchema,
   EvaluationIdParamsSchema,
+  EvaluationRevisionCompareQuerySchema,
   EvaluationRevisionParamsSchema,
   SaveStage1PayloadSchema,
   SaveStage1TopicsPayloadSchema,
@@ -23,8 +27,10 @@ import {
   SaveStage2OpportunitiesPayloadSchema,
   SaveStage2RisksPayloadSchema,
   Stage1FinancialAnswersPayloadSchema,
-  UpdateEvaluationContextPayloadSchema
+  UpdateEvaluationContextPayloadSchema,
+  UpdateRecommendationActionPayloadSchema
 } from '@packages/shared';
+import { z } from 'zod';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { SessionGuard } from '../../common/guards/session.guard';
 import type { AuthenticatedRequest } from '../../common/types/authenticated-request';
@@ -305,6 +311,24 @@ export class EvaluationsController {
     );
   }
 
+  @Get(':id/revisions/compare')
+  @ApiOperation({ summary: 'Compare two immutable revision snapshots for an evaluation' })
+  compareRevisions(
+    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
+    @Param() params: unknown,
+    @Query() query: unknown
+  ) {
+    const parsedParams = parseZodSchema(EvaluationIdParamsSchema, params);
+    const parsedQuery = parseZodSchema(EvaluationRevisionCompareQuerySchema, query);
+
+    return this.evaluationsService.compareRevisions(
+      currentUser,
+      parsedParams.id,
+      parsedQuery.left,
+      parsedQuery.right
+    );
+  }
+
   @Get(':id/revisions/:revisionNumber')
   @ApiOperation({ summary: 'Get a specific immutable revision snapshot for an evaluation' })
   getRevision(
@@ -313,6 +337,84 @@ export class EvaluationsController {
   ) {
     const parsed = parseZodSchema(EvaluationRevisionParamsSchema, params);
     return this.evaluationsService.getRevision(currentUser, parsed.id, parsed.revisionNumber);
+  }
+
+  @Post(':id/artifacts')
+  @UseInterceptors(IdempotencyInterceptor)
+  @ApiHeader({ name: 'Idempotency-Key', required: true })
+  @ApiOperation({ summary: 'Generate and persist an export artifact for the current revision' })
+  createArtifact(
+    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
+    @Param() params: unknown,
+    @Body() body: unknown
+  ) {
+    return this.evaluationsService.createArtifact(
+      currentUser,
+      parseZodSchema(EvaluationIdParamsSchema, params).id,
+      parseZodSchema(CreateEvaluationArtifactPayloadSchema, body)
+    );
+  }
+
+  @Get(':id/artifacts')
+  @ApiOperation({ summary: 'List persisted export artifacts for an evaluation' })
+  listArtifacts(
+    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
+    @Param() params: unknown
+  ) {
+    return this.evaluationsService.listArtifacts(
+      currentUser,
+      parseZodSchema(EvaluationIdParamsSchema, params).id
+    );
+  }
+
+  @Get(':id/artifacts/:artifactId')
+  @ApiOperation({ summary: 'Get metadata for a persisted evaluation artifact' })
+  getArtifact(
+    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
+    @Param() params: unknown
+  ) {
+    const parsed = parseZodSchema(EvaluationArtifactParamsSchema, params);
+    return this.evaluationsService.getArtifact(currentUser, parsed.id, parsed.artifactId);
+  }
+
+  @Get(':id/artifacts/:artifactId/download')
+  @ApiProduces('application/octet-stream')
+  @ApiOperation({ summary: 'Download a persisted evaluation artifact binary' })
+  async downloadArtifact(
+    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
+    @Param() params: unknown,
+    @Res() response: Response
+  ) {
+    const parsed = parseZodSchema(EvaluationArtifactParamsSchema, params);
+    await this.evaluationsService.downloadArtifact(
+      currentUser,
+      parsed.id,
+      parsed.artifactId,
+      response
+    );
+  }
+
+  @Put(':id/recommendations/:recommendationId')
+  @ApiOperation({ summary: 'Update the action status for a deterministic recommendation' })
+  updateRecommendationAction(
+    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
+    @Param() params: unknown,
+    @Body() body: unknown
+  ) {
+    const parsedParams = parseZodSchema(
+      z.object({
+        id: z.string(),
+        recommendationId: z.string()
+      }),
+      params
+    );
+
+    return this.evaluationsService.updateRecommendationAction(
+      currentUser,
+      parsedParams.id,
+      parsedParams.recommendationId,
+      parseZodSchema(UpdateRecommendationActionPayloadSchema, body)
+    );
   }
 
   @Get(':id/export.pdf')

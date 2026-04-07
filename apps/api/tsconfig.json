@@ -6,7 +6,6 @@
     "experimentalDecorators": true,
     "module": "commonjs",
     "outDir": "./dist",
-    "rootDir": ".",
     "sourceMap": true,
     "types": ["node"]
   },

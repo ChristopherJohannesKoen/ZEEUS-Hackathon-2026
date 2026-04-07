@@ -5,8 +5,10 @@ import type {
   AuthPayload,
   AuthResponse,
   BreakGlassLoginPayload,
+  CreateEvaluationArtifactPayload,
   CreateEvaluationPayload,
   EvaluationDetail,
+  EvaluationArtifactSummary,
   ForgotPasswordPayload,
   ForgotPasswordResponse,
   OkResponse,
@@ -15,11 +17,10 @@ import type {
   SaveStage2Payload,
   SaveStage2OpportunitiesPayload,
   SaveStage2RisksPayload,
-  Project,
-  ProjectUpsertPayload,
   ResetPasswordPayload,
   RevokeSessionResponse,
   Role,
+  DashboardResponse,
   Stage1FinancialAnswer,
   Stage1FinancialAnswersPayload,
   Stage1TopicAnswer,
@@ -27,6 +28,7 @@ import type {
   Stage2RiskAnswer,
   StepUpResponse,
   UpdateEvaluationContextPayload,
+  UpdateRecommendationActionPayload,
   UpdateProfilePayload,
   UserSummary
 } from '@packages/shared';
@@ -276,22 +278,6 @@ export function updateProfile(body: UpdateProfilePayload) {
   });
 }
 
-export function createProject(body: ProjectUpsertPayload) {
-  return executeMutation<Project>({
-    method: 'POST',
-    expectedStatuses: [201],
-    idempotent: true,
-    call: (headers) =>
-      browserClient.projects.create({
-        body,
-        headers: {
-          'idempotency-key': headers['idempotency-key']!,
-          'x-csrf-token': headers['x-csrf-token']!
-        }
-      })
-  });
-}
-
 export function createEvaluation(body: CreateEvaluationPayload) {
   return executeMutation<EvaluationDetail>({
     method: 'POST',
@@ -487,28 +473,38 @@ export function unarchiveEvaluation(evaluationId: string) {
   });
 }
 
-export function updateProject(projectId: string, body: Partial<ProjectUpsertPayload>) {
-  return executeMutation<Project>({
-    method: 'PATCH',
-    expectedStatuses: [200],
+export function requestEvaluationArtifact(
+  evaluationId: string,
+  body: CreateEvaluationArtifactPayload
+) {
+  return executeMutation<EvaluationArtifactSummary>({
+    method: 'POST',
+    expectedStatuses: [201],
+    idempotent: true,
     call: (headers) =>
-      browserClient.projects.update({
-        params: { id: projectId },
+      browserClient.evaluations.createArtifact({
+        params: { id: evaluationId },
         body,
         headers: {
+          'idempotency-key': headers['idempotency-key']!,
           'x-csrf-token': headers['x-csrf-token']!
         }
       })
   });
 }
 
-export function deleteProject(projectId: string) {
-  return executeMutation<OkResponse>({
-    method: 'DELETE',
+export function updateRecommendationAction(
+  evaluationId: string,
+  recommendationId: string,
+  body: UpdateRecommendationActionPayload
+) {
+  return executeMutation<DashboardResponse>({
+    method: 'PUT',
     expectedStatuses: [200],
     call: (headers) =>
-      browserClient.projects.delete({
-        params: { id: projectId },
+      browserClient.evaluations.updateRecommendationAction({
+        params: { id: evaluationId, recommendationId },
+        body,
         headers: {
           'x-csrf-token': headers['x-csrf-token']!
         }

@@ -2,14 +2,14 @@ import { apiContract } from '@packages/contracts';
 import type {
   AuthResponse,
   DashboardResponse,
+  EvaluationArtifactListResponse,
+  EvaluationArtifactSummary,
   EvaluationDetail,
   EvaluationListResponse,
+  EvaluationRevisionCompareResponse,
   EvaluationRevisionDetail,
   EvaluationRevisionListResponse,
   ImpactSummaryResponse,
-  Project,
-  ProjectListQuery,
-  ProjectListResponse,
   ReportResponse,
   SessionListResponse,
   SdgAlignmentResponse,
@@ -108,13 +108,6 @@ export async function requireCurrentUser() {
   return currentUser;
 }
 
-export function getProjects(query: Partial<ProjectListQuery> = {}) {
-  return protectedServerRequest<ProjectListResponse>(
-    () => serverClient.projects.list({ query }),
-    [200]
-  );
-}
-
 export function getEvaluations() {
   return protectedServerRequest<EvaluationListResponse>(
     () => serverClient.evaluations.list(),
@@ -202,11 +195,39 @@ export function getEvaluationRevision(evaluationId: string, revisionNumber: numb
   );
 }
 
-export function getProject(projectId: string) {
-  return protectedServerRequest<Project>(
+export function compareEvaluationRevisions(
+  evaluationId: string,
+  leftRevisionNumber: number,
+  rightRevisionNumber: number
+) {
+  return protectedServerRequest<EvaluationRevisionCompareResponse>(
     () =>
-      serverClient.projects.get({
-        params: { id: projectId }
+      serverClient.evaluations.compareRevisions({
+        params: { id: evaluationId },
+        query: {
+          left: leftRevisionNumber,
+          right: rightRevisionNumber
+        }
+      }),
+    [200]
+  );
+}
+
+export function getEvaluationArtifacts(evaluationId: string) {
+  return protectedServerRequest<EvaluationArtifactListResponse>(
+    () =>
+      serverClient.evaluations.listArtifacts({
+        params: { id: evaluationId }
+      }),
+    [200]
+  );
+}
+
+export function getEvaluationArtifact(evaluationId: string, artifactId: string) {
+  return protectedServerRequest<EvaluationArtifactSummary>(
+    () =>
+      serverClient.evaluations.getArtifact({
+        params: { id: evaluationId, artifactId }
       }),
     [200]
   );

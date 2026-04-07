@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { forbidden, notFound } from 'next/navigation';
 import { Badge, Card, buttonClassName } from '@packages/ui';
 import type { EvaluationArtifactSummary, EvaluationRevisionSummary } from '@packages/shared';
+import { ArtifactActions } from '../../../../../components/artifact-actions';
 import { ApiRequestError } from '../../../../../lib/api-error';
 import {
   confidenceTone,
@@ -44,12 +45,6 @@ export default async function EvaluationRevisionsPage({ params }: { params: Para
             >
               Back to dashboard
             </Link>
-            <a
-              className={buttonClassName({ variant: 'ghost' })}
-              href={`/api/evaluations/${evaluation.id}/export.pdf`}
-            >
-              Download current PDF
-            </a>
           </div>
         </section>
 
@@ -67,11 +62,24 @@ export default async function EvaluationRevisionsPage({ params }: { params: Para
             Scoring version {evaluation.scoringVersionInfo.scoringVersion} / catalog version{' '}
             {evaluation.scoringVersionInfo.catalogVersion}
           </p>
+          <div className="mt-5">
+            <ArtifactActions evaluationId={evaluation.id} />
+          </div>
         </Card>
 
         <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <Card className="border-surface-border">
-            <h2 className="text-2xl font-black text-slate-950">Saved revisions</h2>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-2xl font-black text-slate-950">Saved revisions</h2>
+              {revisions.items.length >= 2 ? (
+                <Link
+                  className={buttonClassName({ variant: 'secondary' })}
+                  href={`/app/evaluate/${evaluation.id}/revisions/compare?left=${revisions.items[1]?.revisionNumber}&right=${revisions.items[0]?.revisionNumber}`}
+                >
+                  Compare latest two
+                </Link>
+              ) : null}
+            </div>
             <div className="mt-6 grid gap-4">
               {revisions.items.map((revision: EvaluationRevisionSummary) => (
                 <div className="rounded-[28px] bg-[#f7f9f4] p-5" key={revision.id}>
@@ -101,6 +109,14 @@ export default async function EvaluationRevisionsPage({ params }: { params: Para
                     >
                       View snapshot
                     </Link>
+                    {revision.revisionNumber !== revisions.items[0]?.revisionNumber ? (
+                      <Link
+                        className={buttonClassName({ variant: 'ghost' })}
+                        href={`/app/evaluate/${evaluation.id}/revisions/compare?left=${revision.revisionNumber}&right=${revisions.items[0]?.revisionNumber}`}
+                      >
+                        Compare to latest
+                      </Link>
+                    ) : null}
                   </div>
                 </div>
               ))}
@@ -130,6 +146,16 @@ export default async function EvaluationRevisionsPage({ params }: { params: Para
                     <p className="mt-2 text-xs uppercase tracking-[0.2em] text-slate-500">
                       {formatDate(artifact.createdAt)}
                     </p>
+                    {artifact.status === 'ready' ? (
+                      <div className="mt-4">
+                        <a
+                          className={buttonClassName({ variant: 'secondary' })}
+                          href={`/api/evaluations/${evaluation.id}/artifacts/${artifact.id}/download`}
+                        >
+                          Download
+                        </a>
+                      </div>
+                    ) : null}
                   </div>
                 ))
               )}

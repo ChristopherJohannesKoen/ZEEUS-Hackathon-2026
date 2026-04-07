@@ -14,6 +14,7 @@ This starts:
 - `db`
 - `api`
 - `web`
+- a persisted `artifacts_data` volume mounted into the API container
 
 The compose path is the canonical local reproduction flow for judges and
 reviewers.
@@ -22,7 +23,8 @@ reviewers.
 
 - `apps/api/Dockerfile` builds the NestJS API
 - `apps/web/Dockerfile` builds the Next.js frontend
-- `docker-compose.yml` wires the three required services together
+- `docker-compose.yml` wires the runtime services together and mounts persisted
+  artifact storage into the API container
 
 The API container runs migrations and seed data before launching the server.
 
@@ -43,7 +45,8 @@ Use `/api/health` for readiness checks and basic smoke testing.
 5. Run `docker compose up --build -d`.
 6. Verify the web app, API docs, and API health endpoints.
 7. Confirm the seeded owner can sign in and create or resume an evaluation.
-8. Confirm the dashboard, report route, and CSV export all load successfully.
+8. Confirm the dashboard, review step, report route, and revision history all load successfully.
+9. Generate CSV and PDF artifacts and confirm they remain downloadable after `docker compose restart`.
 
 ## Production Notes
 

@@ -1,4 +1,4 @@
-import { PrismaClient, ProjectStatus, Role } from '@prisma/client';
+import { PrismaClient, Role } from '@prisma/client';
 import argon2 from 'argon2';
 import { spawn } from 'node:child_process';
 import process from 'node:process';
@@ -42,27 +42,6 @@ const seedUsers: Record<'owner' | 'admin' | 'member', SeedUser> = {
   }
 };
 
-const seedProjects = [
-  {
-    name: 'Launch marketing refresh',
-    description: 'Coordinate launch assets, landing updates, and release notes.',
-    status: ProjectStatus.active,
-    isArchived: false
-  },
-  {
-    name: 'Quarterly analytics review',
-    description: 'Audit funnel performance and identify onboarding friction.',
-    status: ProjectStatus.paused,
-    isArchived: false
-  },
-  {
-    name: 'Migration playbook',
-    description: 'Document the production rollout and rollback sequence.',
-    status: ProjectStatus.completed,
-    isArchived: true
-  }
-];
-
 function createPrismaClient(url = getE2EDatabaseUrl()) {
   return new PrismaClient({
     datasources: {
@@ -85,12 +64,19 @@ async function buildPasswordHash(password: string) {
 }
 
 async function clearTemplateData(prisma: PrismaClient) {
+  await prisma.evaluationRecommendationAction.deleteMany();
+  await prisma.evaluationArtifact.deleteMany();
+  await prisma.evaluationRevision.deleteMany();
+  await prisma.stage2OpportunityAnswer.deleteMany();
+  await prisma.stage2RiskAnswer.deleteMany();
+  await prisma.stage1TopicAnswer.deleteMany();
+  await prisma.stage1FinancialAnswer.deleteMany();
+  await prisma.evaluation.deleteMany();
   await prisma.bootstrapState.deleteMany();
   await prisma.idempotencyRequest.deleteMany();
   await prisma.passwordResetToken.deleteMany();
   await prisma.session.deleteMany();
   await prisma.auditLog.deleteMany();
-  await prisma.project.deleteMany();
   await prisma.user.deleteMany();
 }
 
@@ -128,15 +114,6 @@ async function seedBaselineData(prisma: PrismaClient) {
       bootstrapOwnerId: createdUsers.owner.id
     }
   });
-
-  for (const project of seedProjects) {
-    await prisma.project.create({
-      data: {
-        ...project,
-        creatorId: createdUsers.owner.id
-      }
-    });
-  }
 }
 
 export async function waitForPostgres(timeoutMs = 60_000) {
@@ -251,38 +228,6 @@ export async function resetDatabase(mode: ResetMode) {
 
     if (mode === 'baseline') {
       await seedBaselineData(prisma);
-    }
-  } finally {
-    await prisma.$disconnect();
-  }
-}
-
-export async function addProjectsForPagination(
-  count: number,
-  creatorEmail = seedUsers.owner.email
-) {
-  const prisma = createPrismaClient();
-
-  try {
-    const creator = await prisma.user.findUniqueOrThrow({
-      where: { email: creatorEmail }
-    });
-
-    for (let index = 1; index <= count; index += 1) {
-      await prisma.project.create({
-        data: {
-          name: `Pagination fixture ${String(index).padStart(2, '0')}`,
-          description: `Fixture project ${index} for cursor pagination coverage.`,
-          status:
-            index % 3 === 0
-              ? ProjectStatus.completed
-              : index % 2 === 0
-                ? ProjectStatus.paused
-                : ProjectStatus.active,
-          isArchived: index % 5 === 0,
-          creatorId: creator.id
-        }
-      });
     }
   } finally {
     await prisma.$disconnect();

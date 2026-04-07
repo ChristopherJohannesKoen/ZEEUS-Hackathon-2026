@@ -21,7 +21,8 @@ The primary product flow is:
 7. Impact summary
 8. SDG alignment
 9. Dashboard
-10. Report and export
+10. Review before completion
+11. Report, revisions, compare, and persisted export artifacts
 
 ## First Boot
 
@@ -56,6 +57,7 @@ Services:
 - `db` on `5432`
 - `api` on `4000`
 - `web` on `3000`
+- `artifacts_data` Docker volume for persisted CSV and PDF binaries
 
 The API container runs migrations and seed data before starting the Nest server.
 
@@ -65,6 +67,7 @@ The API container runs migrations and seed data before starting the Nest server.
 - `scripts/extract-workbook-catalogs.mjs` refreshes committed catalog data under `packages/scoring/catalog`.
 - `packages/scoring` contains the pure TypeScript scoring functions used by the API and web UI.
 - Confidence and sensitivity hints are explanatory only and do not change saved scores.
+- Completed evaluations are read from immutable revision snapshots. Reopening creates a new draft revision instead of mutating the completed result.
 
 ## Common Commands
 
@@ -95,6 +98,7 @@ Then verify:
 - `http://localhost:3000`
 - `http://localhost:4000/api/health`
 - `http://localhost:4000/api/docs`
+- create an evaluation, complete it through the review step, generate a CSV artifact, and confirm the artifact remains downloadable from revision history
 
 ## Troubleshooting
 
@@ -103,3 +107,4 @@ Then verify:
 - If the workbook catalogs need updating, rerun `node scripts/extract-workbook-catalogs.mjs`.
 - If `next build` on Windows warns about an invalid native SWC binary, the repo already falls back to `@next/swc-wasm-nodejs` during the web build.
 - If the API cannot connect to Postgres in Docker, confirm `.env` exists and that `docker compose ps` shows `db` as healthy.
+- If generated exports are missing after a container restart, confirm the `artifacts_data` volume is mounted and that `ARTIFACTS_DIR` points at `/app/.artifacts` in Compose.

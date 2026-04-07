@@ -12,14 +12,14 @@ describe('ui package', () => {
       <div>
         <Button>Save</Button>
         <EmptyState
-          action={<a href="/app/projects/new">Create project</a>}
+          action={<a href="/app/evaluate/start">Start evaluation</a>}
           description="Use the empty state when a resource list is blank."
-          title="No projects"
+          title="No evaluations"
         />
       </div>
     );
 
     expect(screen.getByRole('button', { name: 'Save' })).toBeTruthy();
-    expect(screen.getByText('Create project')).toBeTruthy();
+    expect(screen.getByText('Start evaluation')).toBeTruthy();
   });
 });

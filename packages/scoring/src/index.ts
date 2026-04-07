@@ -706,6 +706,21 @@ function buildRecommendations(
   stage2Opportunities: Stage2OpportunityAnswer[]
 ): Recommendation[] {
   const recommendations: Recommendation[] = [];
+  const evidenceHintForSource = (source: Recommendation['source']) => {
+    if (source === 'financial') {
+      return 'Collect business-case assumptions, benchmark references, and scenario notes that support the selected financial level.';
+    }
+
+    if (source === 'stage1') {
+      return 'Capture the evidence basis behind magnitude, scale, irreversibility, and likelihood so the impact score can be defended later.';
+    }
+
+    if (source === 'risk') {
+      return 'Document the triggering conditions, exposure assumptions, and any early warning indicators tied to this risk.';
+    }
+
+    return 'Record the market signal, adoption assumptions, and proof points that justify the upside rating for this opportunity.';
+  };
 
   for (const item of financial?.items ?? []) {
     if (item.recommendation) {
@@ -713,8 +728,10 @@ function buildRecommendations(
         id: `financial:${item.id}`,
         title: item.label,
         text: item.recommendation,
+        evidenceToCollect: evidenceHintForSource('financial'),
         source: 'financial',
-        severityBand: item.level
+        severityBand: item.level,
+        action: null
       });
     }
   }
@@ -731,8 +748,10 @@ function buildRecommendations(
       id: `topic:${topic.topicCode}`,
       title: topic.title,
       text: catalogEntry.guidance,
+      evidenceToCollect: evidenceHintForSource('stage1'),
       source: 'stage1',
-      severityBand: topic.priorityBand
+      severityBand: topic.priorityBand,
+      action: null
     });
   }
 
@@ -748,8 +767,10 @@ function buildRecommendations(
       id: `risk:${risk.riskCode}`,
       title: risk.title,
       text: catalogEntry.guidance,
+      evidenceToCollect: evidenceHintForSource('risk'),
       source: 'risk',
-      severityBand: risk.ratingLabel
+      severityBand: risk.ratingLabel,
+      action: null
     });
   }
 
@@ -765,8 +786,10 @@ function buildRecommendations(
       id: `opportunity:${opportunity.opportunityCode}`,
       title: opportunity.title,
       text: catalogEntry.guidance,
+      evidenceToCollect: evidenceHintForSource('opportunity'),
       source: 'opportunity',
-      severityBand: opportunity.ratingLabel
+      severityBand: opportunity.ratingLabel,
+      action: null
     });
   }
 

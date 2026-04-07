@@ -126,7 +126,7 @@ describe('server-api helpers', () => {
     });
   });
 
-  it('redirects protected API reads only when the backend returns 401', async () => {
+  it('redirects protected evaluation reads only when the backend returns 401', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       jsonResponse(
         {
@@ -141,18 +141,18 @@ describe('server-api helpers', () => {
 
     vi.stubGlobal('fetch', fetchMock);
 
-    const { getProjects } = await import('../lib/server-api');
+    const { getEvaluations } = await import('../lib/server-api');
 
-    await expect(getProjects()).rejects.toThrow('redirect:/login');
+    await expect(getEvaluations()).rejects.toThrow('redirect:/login');
     expect(redirectMock).toHaveBeenCalledWith('/login');
   });
 
-  it('preserves forbidden project responses without redirecting', async () => {
+  it('preserves forbidden evaluation responses without redirecting', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       jsonResponse(
         {
           statusCode: 403,
-          message: 'You do not have permission to modify this project.',
+          message: 'You do not have permission to access this evaluation.',
           code: 'forbidden',
           errors: []
         },
@@ -162,9 +162,9 @@ describe('server-api helpers', () => {
 
     vi.stubGlobal('fetch', fetchMock);
 
-    const { getProject } = await import('../lib/server-api');
+    const { getEvaluation } = await import('../lib/server-api');
 
-    await expect(getProject('project_1')).rejects.toMatchObject({
+    await expect(getEvaluation('evaluation_1')).rejects.toMatchObject({
       code: 'forbidden',
       statusCode: 403
     });

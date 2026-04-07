@@ -8,8 +8,46 @@ import {
   scoreStage2OpportunityAnswer,
   scoreStage2RiskAnswer
 } from './index';
+import goldenFixtures from './golden-fixtures.json';
 
 describe('scoring package', () => {
+  it('matches committed golden fixtures derived from the workbook logic', () => {
+    for (const fixture of goldenFixtures.financial) {
+      expect(
+        scoreFinancialAnswers(
+          fixture.input as Parameters<typeof scoreFinancialAnswers>[0]
+        ).totalScore,
+        fixture.name
+      ).toBe(
+        fixture.expected.totalScore
+      );
+    }
+
+    for (const fixture of goldenFixtures.stage1Topics) {
+      const result = scoreStage1TopicAnswer(
+        fixture.input as Parameters<typeof scoreStage1TopicAnswer>[0]
+      );
+      expect(result.impactScore, fixture.name).toBe(fixture.expected.impactScore);
+      expect(result.priorityBand, fixture.name).toBe(fixture.expected.priorityBand);
+    }
+
+    for (const fixture of goldenFixtures.stage2Risks) {
+      const result = scoreStage2RiskAnswer(
+        fixture.input as Parameters<typeof scoreStage2RiskAnswer>[0]
+      );
+      expect(result.ratingScore, fixture.name).toBe(fixture.expected.ratingScore);
+      expect(result.ratingLabel, fixture.name).toBe(fixture.expected.ratingLabel);
+    }
+
+    for (const fixture of goldenFixtures.stage2Opportunities) {
+      const result = scoreStage2OpportunityAnswer(
+        fixture.input as Parameters<typeof scoreStage2OpportunityAnswer>[0]
+      );
+      expect(result.ratingScore, fixture.name).toBe(fixture.expected.ratingScore);
+      expect(result.ratingLabel, fixture.name).toBe(fixture.expected.ratingLabel);
+    }
+  });
+
   it('builds the initial SDG summary with merged stage and business tags', () => {
     const summary = buildInitialSummary({
       name: 'Example Startup',
@@ -21,9 +59,12 @@ describe('scoring package', () => {
       innovationApproach: 'sustaining'
     });
 
-    expect(summary.stageSdgs.map((item) => item.number)).toContain(8);
-    expect(summary.businessSdgs.map((item) => item.number)).toContain(8);
-    expect(summary.mergedSdgs.find((item) => item.number === 8)?.sourceType).toBe('both');
+    expect(summary.stageSdgs.map((item: { number: number }) => item.number)).toContain(8);
+    expect(summary.businessSdgs.map((item: { number: number }) => item.number)).toContain(8);
+    expect(
+      summary.mergedSdgs.find((item: { number: number; sourceType: string }) => item.number === 8)
+        ?.sourceType
+    ).toBe('both');
   });
 
   it('matches the example workbook financial total', () => {

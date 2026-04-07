@@ -23,43 +23,46 @@ export const options = {
   },
   thresholds: {
     http_req_failed: ['rate<0.02'],
-    'http_req_duration{name:projects_create}': ['p(95)<900']
+    'http_req_duration{name:evaluations_create}': ['p(95)<900']
   }
 };
 
 export default function () {
   if (!cachedSessionCookie) {
-    ensurePerfUser('idempotent-project-create');
-    cachedSessionCookie = loginPerfUser('idempotent-project-create');
+    ensurePerfUser('idempotent-evaluation-create');
+    cachedSessionCookie = loginPerfUser('idempotent-evaluation-create');
     cachedCsrfToken = fetchCsrfToken(cachedSessionCookie);
   }
 
   const sessionCookie = cachedSessionCookie;
   const csrfToken = cachedCsrfToken;
-  const idempotencyKey = createIdempotencyKey('project-create');
+  const idempotencyKey = createIdempotencyKey('evaluation-create');
   const headers = createSessionHeaders(sessionCookie, csrfToken, {
     'Content-Type': 'application/json',
     'Idempotency-Key': idempotencyKey
   });
   const payload = JSON.stringify({
-    name: `Perf project ${__VU}-${__ITER}`,
-    description: 'k6 write path validation',
-    status: 'active',
-    isArchived: false
+    name: `Perf evaluation ${__VU}-${__ITER}`,
+    country: 'South Africa',
+    naceDivision: '10 Manufacture of food products',
+    offeringType: 'product',
+    launched: true,
+    currentStage: 'validation',
+    innovationApproach: 'disruptive'
   });
 
-  const firstResponse = http.post(`${getApiOrigin()}/api/projects`, payload, {
+  const firstResponse = http.post(`${getApiOrigin()}/api/evaluations`, payload, {
     headers,
     ...withExpectedStatuses(201),
     tags: {
-      name: 'projects_create'
+      name: 'evaluations_create'
     }
   });
-  const replayResponse = http.post(`${getApiOrigin()}/api/projects`, payload, {
+  const replayResponse = http.post(`${getApiOrigin()}/api/evaluations`, payload, {
     headers,
     ...withExpectedStatuses(201),
     tags: {
-      name: 'projects_create'
+      name: 'evaluations_create'
     }
   });
 

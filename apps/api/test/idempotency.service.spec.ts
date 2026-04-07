@@ -51,7 +51,7 @@ describe('IdempotencyService', () => {
       scope: 'public',
       idempotencyKey: 'key_1',
       method: 'POST',
-      path: '/api/projects',
+      path: '/api/evaluations',
       fingerprint: '{"body":{}}'
     });
 
@@ -87,7 +87,7 @@ describe('IdempotencyService', () => {
       scope: 'public',
       idempotencyKey: 'key_1',
       method: 'POST',
-      path: '/api/projects',
+      path: '/api/evaluations',
       fingerprint: '{"body":{}}'
     });
 
@@ -123,7 +123,7 @@ describe('IdempotencyService', () => {
         scope: 'public',
         idempotencyKey: 'key_1',
         method: 'POST',
-        path: '/api/projects',
+        path: '/api/evaluations',
         fingerprint: '{"body":{"name":"current"}}'
       })
     ).rejects.toBeInstanceOf(ConflictException);

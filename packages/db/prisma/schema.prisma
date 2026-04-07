@@ -20,7 +20,6 @@ model User {
   sessions            Session[]
   passwordResetTokens PasswordResetToken[]
   auditLogs           AuditLog[]           @relation("AuditActor")
-  createdProjects     Project[]            @relation("ProjectCreator")
   identities          UserIdentity[]
   groupMemberships    UserGroupMembership[]
   accessPolicyActor   AccessPolicyEvent[]  @relation("AccessPolicyActor")
@@ -123,23 +122,6 @@ model IdempotencyRequest {
   @@index([expiresAt])
 }
 
-model Project {
-  id          String        @id @default(cuid())
-  name        String
-  description String?
-  status      ProjectStatus @default(active)
-  isArchived  Boolean       @default(false)
-  creatorId   String
-  creator     User          @relation("ProjectCreator", fields: [creatorId], references: [id], onDelete: Restrict)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-
-  @@index([status])
-  @@index([isArchived])
-  @@index([creatorId])
-  @@index([updatedAt, id])
-}
-
 model Evaluation {
   id                   String                  @id @default(cuid())
   userId               String
@@ -172,6 +154,7 @@ model Evaluation {
   stage2OpportunityAnswers Stage2OpportunityAnswer[]
   revisions            EvaluationRevision[]
   artifacts            EvaluationArtifact[]
+  recommendationActions EvaluationRecommendationAction[]
   createdAt            DateTime                @default(now())
   updatedAt            DateTime                @updatedAt
 
@@ -305,16 +288,38 @@ model EvaluationArtifact {
   revisionId      String?
   revision        EvaluationRevision?      @relation(fields: [revisionId], references: [id], onDelete: SetNull)
   kind            EvaluationArtifactKind
-  status          EvaluationArtifactStatus @default(ready)
+  status          EvaluationArtifactStatus @default(pending)
   filename        String
   mimeType        String
   byteSize        Int
+  storageKey      String?
+  checksumSha256  String?
+  requestedAt     DateTime                 @default(now())
+  readyAt         DateTime?
+  failedAt        DateTime?
+  errorMessage    String?
   createdByUserId String?
   createdAt       DateTime                 @default(now())
   updatedAt       DateTime                 @updatedAt
 
   @@index([evaluationId, createdAt])
   @@index([revisionId])
+  @@index([status, kind, createdAt])
+}
+
+model EvaluationRecommendationAction {
+  id               String                     @id @default(cuid())
+  evaluationId     String
+  evaluation       Evaluation                 @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  recommendationId String
+  status           RecommendationActionStatus @default(not_started)
+  ownerNote        String?
+  updatedByUserId  String?
+  createdAt        DateTime                   @default(now())
+  updatedAt        DateTime                   @updatedAt
+
+  @@unique([evaluationId, recommendationId])
+  @@index([evaluationId, status])
 }
 
 model IdentityProviderConfig {
@@ -501,12 +506,6 @@ enum AccessPolicyOutcome {
   success
   denied
   failure
-}
-
-enum ProjectStatus {
-  active
-  paused
-  completed
 }
 
 enum IdempotencyStatus {
@@ -697,4 +696,11 @@ enum EvaluationArtifactStatus {
   pending
   ready
   failed
+}
+
+enum RecommendationActionStatus {
+  not_started
+  in_progress
+  completed
+  dismissed
 }

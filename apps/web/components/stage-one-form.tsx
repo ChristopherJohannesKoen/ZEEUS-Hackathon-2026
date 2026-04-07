@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Card, Field, Select } from '@packages/ui';
+import { Button, Card, Field, Select, Textarea } from '@packages/ui';
 import { getFinancialIndicatorOptions } from '@packages/scoring';
 import type {
   EvaluationDetail,
@@ -117,7 +117,7 @@ export function StageOneForm({ evaluation }: { evaluation: EvaluationDetail }) {
           <p className="max-w-3xl text-sm leading-7 text-slate-600">
             Financial scores use workbook lookup levels. Environmental, social, and governance
             topics use the deterministic formula{' '}
-            <strong>((Magnitude + Scale + Irreversibility) / 3) × Likelihood</strong>.
+            <strong>((Magnitude + Scale + Irreversibility) / 3) x Likelihood</strong>.
           </p>
         </div>
 
@@ -394,6 +394,32 @@ export function StageOneForm({ evaluation }: { evaluation: EvaluationDetail }) {
                 <p className="mt-4 text-xs font-semibold uppercase tracking-[0.22em] text-[#607557]">
                   Current band: {formatEnumLabel(item.priorityBand)}
                 </p>
+
+                <div className="mt-4">
+                  <Field
+                    hint="Optional context about the source, assumption, or rationale behind this topic rating."
+                    label="Evidence note"
+                  >
+                    <Textarea
+                      data-testid={`stage-one-topic-${item.topicCode}-evidence-note`}
+                      onChange={(event) =>
+                        setTopics((current) =>
+                          current.map((entry) =>
+                            entry.topicCode === item.topicCode
+                              ? {
+                                  ...entry,
+                                  evidenceNote: event.target.value
+                                }
+                              : entry
+                          )
+                        )
+                      }
+                      placeholder="Add the note that supports this saved impact assessment."
+                      rows={3}
+                      value={item.evidenceNote ?? ''}
+                    />
+                  </Field>
+                </div>
               </div>
             ))}
           </div>

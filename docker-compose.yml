@@ -53,6 +53,7 @@ services:
       IDEMPOTENCY_RETENTION_DAYS: ${IDEMPOTENCY_RETENTION_DAYS:-7}
       EXPORT_SYNC_LIMIT: ${EXPORT_SYNC_LIMIT:-5000}
       EXPOSE_DEV_RESET_DETAILS: ${EXPOSE_DEV_RESET_DETAILS:-false}
+      ARTIFACTS_DIR: /app/.artifacts
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
       ALLOW_MISSING_ORIGIN_FOR_DEV: ${ALLOW_MISSING_ORIGIN_FOR_DEV:-false}
       ENTERPRISE_IDENTITY_ENABLED: ${ENTERPRISE_IDENTITY_ENABLED:-false}
@@ -95,6 +96,8 @@ services:
         condition: service_healthy
     ports:
       - '${API_PORT:-4000}:4000'
+    volumes:
+      - artifacts_data:/app/.artifacts
     command: >-
       sh -c "
       attempts=0;
@@ -135,3 +138,4 @@ services:
 
 volumes:
   postgres_data:
+  artifacts_data:

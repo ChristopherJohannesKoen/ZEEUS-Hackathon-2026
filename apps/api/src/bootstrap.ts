@@ -44,8 +44,10 @@ async function configureApp(app: INestApplication) {
   app.setGlobalPrefix(apiPrefix);
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('Ultimate Template API')
-    .setDescription('Docker-first SaaS template API with session auth, RBAC, and Projects CRUD')
+    .setTitle('ZEEUS Assessment API')
+    .setDescription(
+      'Hackathon assessment API with deterministic scoring, saved evaluations, dashboard outputs, and export endpoints.'
+    )
     .setVersion('2.0.0')
     .addCookieAuth(sessionCookieName, {
       type: 'apiKey',

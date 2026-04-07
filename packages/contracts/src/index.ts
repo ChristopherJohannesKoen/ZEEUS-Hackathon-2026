@@ -4,24 +4,42 @@ import {
   AuthPayloadSchema,
   AuthResponseSchema,
   BreakGlassLoginPayloadSchema,
+  CreateEvaluationPayloadSchema,
   CsrfResponseSchema,
+  DashboardResponseSchema,
+  EvaluationDetailSchema,
+  EvaluationIdParamsSchema,
+  EvaluationListResponseSchema,
   ForgotPasswordPayloadSchema,
   ForgotPasswordResponseSchema,
   HealthResponseSchema,
+  ImpactSummaryResponseSchema,
   OkResponseSchema,
   ProjectIdParamsSchema,
   ProjectListQuerySchema,
   ProjectListResponseSchema,
   ProjectSchema,
   ProjectUpsertPayloadSchema,
+  ReportResponseSchema,
   ResetPasswordPayloadSchema,
   RevokeSessionResponseSchema,
+  SaveStage1TopicsPayloadSchema,
+  SaveStage2OpportunitiesPayloadSchema,
+  SaveStage2RisksPayloadSchema,
   SessionIdParamsSchema,
   SessionListResponseSchema,
+  SdgAlignmentResponseSchema,
   SsoProvidersResponseSchema,
   SignupPayloadSchema,
+  Stage1FinancialAnswerSchema,
+  Stage1FinancialAnswersPayloadSchema,
+  Stage1TopicAnswerSchema,
+  Stage2OpportunityAnswerSchema,
+  Stage2RiskAnswerSchema,
+  StageSdgSummarySchema,
   StepUpPayloadSchema,
   StepUpResponseSchema,
+  UpdateEvaluationContextPayloadSchema,
   UpdateProfilePayloadSchema,
   UpdateRolePayloadSchema,
   UserIdParamsSchema,
@@ -225,6 +243,144 @@ export const apiContract = c.router(
       },
       {
         pathPrefix: '/admin'
+      }
+    ),
+    evaluations: c.router(
+      {
+        list: {
+          method: 'GET',
+          path: '/',
+          responses: {
+            200: EvaluationListResponseSchema
+          }
+        },
+        create: {
+          method: 'POST',
+          path: '/',
+          body: CreateEvaluationPayloadSchema,
+          headers: csrfHeaderSchema,
+          responses: {
+            201: EvaluationDetailSchema
+          }
+        },
+        get: {
+          method: 'GET',
+          path: '/:id',
+          pathParams: EvaluationIdParamsSchema,
+          responses: {
+            200: EvaluationDetailSchema
+          }
+        },
+        updateContext: {
+          method: 'PATCH',
+          path: '/:id/context',
+          pathParams: EvaluationIdParamsSchema,
+          body: UpdateEvaluationContextPayloadSchema,
+          headers: csrfHeaderSchema,
+          responses: {
+            200: EvaluationDetailSchema
+          }
+        },
+        getSummary: {
+          method: 'GET',
+          path: '/:id/summary',
+          pathParams: EvaluationIdParamsSchema,
+          responses: {
+            200: StageSdgSummarySchema
+          }
+        },
+        saveStage1Financial: {
+          method: 'PUT',
+          path: '/:id/stage-1/financial',
+          pathParams: EvaluationIdParamsSchema,
+          body: Stage1FinancialAnswersPayloadSchema,
+          headers: csrfHeaderSchema,
+          responses: {
+            200: Stage1FinancialAnswerSchema
+          }
+        },
+        saveStage1Topics: {
+          method: 'PUT',
+          path: '/:id/stage-1/topics',
+          pathParams: EvaluationIdParamsSchema,
+          body: SaveStage1TopicsPayloadSchema,
+          headers: csrfHeaderSchema,
+          responses: {
+            200: z.object({
+              items: z.array(Stage1TopicAnswerSchema)
+            })
+          }
+        },
+        saveStage2Risks: {
+          method: 'PUT',
+          path: '/:id/stage-2/risks',
+          pathParams: EvaluationIdParamsSchema,
+          body: SaveStage2RisksPayloadSchema,
+          headers: csrfHeaderSchema,
+          responses: {
+            200: z.object({
+              items: z.array(Stage2RiskAnswerSchema)
+            })
+          }
+        },
+        saveStage2Opportunities: {
+          method: 'PUT',
+          path: '/:id/stage-2/opportunities',
+          pathParams: EvaluationIdParamsSchema,
+          body: SaveStage2OpportunitiesPayloadSchema,
+          headers: csrfHeaderSchema,
+          responses: {
+            200: z.object({
+              items: z.array(Stage2OpportunityAnswerSchema)
+            })
+          }
+        },
+        getImpactSummary: {
+          method: 'GET',
+          path: '/:id/impact-summary',
+          pathParams: EvaluationIdParamsSchema,
+          responses: {
+            200: ImpactSummaryResponseSchema
+          }
+        },
+        getSdgAlignment: {
+          method: 'GET',
+          path: '/:id/sdg-alignment',
+          pathParams: EvaluationIdParamsSchema,
+          responses: {
+            200: SdgAlignmentResponseSchema
+          }
+        },
+        getDashboard: {
+          method: 'GET',
+          path: '/:id/dashboard',
+          pathParams: EvaluationIdParamsSchema,
+          responses: {
+            200: DashboardResponseSchema
+          }
+        },
+        getReport: {
+          method: 'GET',
+          path: '/:id/report',
+          pathParams: EvaluationIdParamsSchema,
+          responses: {
+            200: ReportResponseSchema
+          }
+        },
+        exportCsv: {
+          method: 'GET',
+          path: '/:id/export.csv',
+          pathParams: EvaluationIdParamsSchema,
+          responses: {
+            200: c.otherResponse({
+              contentType: 'text/csv',
+              body: z.string()
+            })
+          }
+        }
+      },
+      {
+        pathPrefix: '/evaluations'
       }
     ),
     projects: c.router(

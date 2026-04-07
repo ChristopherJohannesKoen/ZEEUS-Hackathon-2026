@@ -1,35 +1,39 @@
-# Ultimate General Website Template
+# ZEEUS Hackathon Assessment Platform
 
-An opinionated full-stack SaaS template for teams that want to start from a hardened, reusable product baseline instead of rebuilding the same infrastructure on every project.
+A Dockerized single-tenant assessment platform for the ZEEUS hackathon. The app reproduces the Excel-based startup sustainability workflow as a Next.js + NestJS + PostgreSQL product with deterministic scoring, saved evaluations, dashboard outputs, and export-ready report views.
 
 ## Stack
 
-- `apps/web`: Next.js 15 App Router, Tailwind, shared UI package, nonce-based CSP with staged report-only rollout support, strict browser security headers, and server-side `/api/*` proxying
-- `apps/api`: NestJS 11, Prisma, Postgres, Swagger, session-cookie auth, CSRF protection, idempotency, RBAC, rate limiting, audit logging
-- `apps/api`: enterprise identity support with OIDC-first login, optional SAML and SCIM, break-glass login, and owner step-up confirmation
-- `apps/api`: Prometheus-compatible metrics at `/api/metrics` with optional OTLP tracing behind `FEATURE_OBSERVABILITY`
+- `apps/web`: Next.js 15 App Router, Tailwind, shared UI package, protected assessment workspace, wizard flow, dashboard, and print-friendly report route
+- `apps/api`: NestJS 11, Prisma, Postgres, Swagger, session-cookie auth, CSRF protection, idempotency, rate limiting, audit logging, and deterministic scoring-backed evaluation endpoints
+- `packages/scoring`: shared scoring engine and workbook-derived catalog package used by both the API and web
 - `packages/contracts`: shared ts-rest contract router for website-facing API calls
 - `packages/db`: shared Prisma schema, migrations, seed flow
 - `packages/shared`: shared Zod contracts and DTO types
 - `packages/ui`: reusable UI primitives and styling helpers
 - `packages/config`: shared ESLint, Prettier, and TypeScript config
 
-## What Is Included
+## What The App Does
 
-- email/password signup, login, logout, logout-all, session revocation, forgot-password, and reset-password flows
-- single-tenant roles: `owner`, `admin`, and `member`
-- authenticated dashboard shell with profile settings, session security, and admin user management
-- Projects reference slice with indexed search, filters, cursor pagination, ownership-aware mutations, detail/edit, archive, delete, and streamed CSV export
-- Docker-first local stack with Next.js, NestJS, and Postgres
-- optional observability profiles for Prometheus and Grafana
-- real lint, typecheck, unit tests, API integration tests, and Playwright auth/project/session/RBAC coverage
-- DB-backed bootstrap ownership state and owner-floor role protection for concurrent admin changes
-- markdown lint, internal doc-link validation, and k6 performance assets for auth/session/write-heavy flows
-- browser-boundary hardening with CSP, clickjacking protection, strict cookie forwarding, route-level forbidden/error states, and role-aware admin navigation
-- contract-backed web/API calls through `packages/contracts` with runtime Zod validation for JSON responses and explicit non-JSON handling for export/download paths
-- accessible auth forms with polite live error regions and field-level associations
-- CI, Docker image publishing workflow, and CodeQL scanning
-- enterprise SSO, optional SCIM provisioning, retention-aware governance cleanup, Kubernetes deployment baseline, and release-integrity workflows for SBOM, dependency review, image scanning, signing, and provenance
+- public landing page and authenticated workspace
+- startup context intake with NACE division, stage, offering type, launch status, and innovation approach
+- initial SDG pre-screen built from startup stage plus NACE business mappings
+- Stage I financial scoring and inside-out environmental, social, and governance assessment
+- Stage II outside-in sustainability risks and opportunities
+- impact summary, SDG alignment, dashboard, recommendations, CSV export, and print-to-PDF report route
+- workbook snapshot extraction script at `scripts/extract-workbook-catalogs.mjs`
+- saved evaluations backed by PostgreSQL
+- deterministic scoring only for final outputs; no AI in the scoring path
+
+## Scoring Notes
+
+- Stage I financial indicators use fixed workbook-aligned lookup levels.
+- Stage I E/S/G indicators use `((Magnitude + Scale + Irreversibility) / 3) × Likelihood`.
+- The UI preserves the requested threshold split:
+  - `>= 2` and `< 2.5` = `relevant`
+  - `>= 2.5` = `high_priority`
+- Stage II risk and opportunity outputs use deterministic matrix lookups from the shared scoring catalog.
+- Confidence and sensitivity are additive guidance signals only and do not change canonical scores.
 
 ## Quick Start
 
@@ -53,6 +57,8 @@ Seeded owner credentials come from `.env`:
 
 - email: `owner@example.com`
 - password: `ChangeMe123!`
+
+The seed also creates a sample evaluation so the dashboard and report routes have realistic data immediately after setup.
 
 `APP_ENV` is the deployment-security axis:
 
@@ -102,6 +108,7 @@ docker compose up --build
 - `npm run build`: produce production builds for every workspace
 - `npm run docker:up`: build and start the Compose stack
 - `npm run docker:down`: stop and clean up Compose containers
+- `node scripts/extract-workbook-catalogs.mjs`: snapshot helper sheets from the reference workbook into `packages/scoring/catalog/workbook-snapshot.json`
 
 ## Repository Layout
 
@@ -113,6 +120,7 @@ packages/
   config/               Shared ESLint, Prettier, and TS config
   contracts/            ts-rest API contract package
   db/                   Prisma schema, migrations, seed script
+  scoring/              Deterministic scoring engine and workbook-derived catalogs
   shared/               Zod schemas and shared DTO types
   ui/                   Reusable UI primitives
 vendor/
@@ -136,15 +144,6 @@ infra/
 scripts/
   with-env.mjs          Shared env loader for workspace commands
 ```
-
-## Extension Slots
-
-The default template keeps the runtime small: web, API, and Postgres only. Optional extension services live in [`infra/compose/docker-compose.extensions.yml`](infra/compose/docker-compose.extensions.yml) and stay off by default.
-
-- `cache`: Redis
-- `email`: Mailpit
-- `storage`: MinIO
-- `edge`: Nginx reverse proxy
 
 ## Docs
 

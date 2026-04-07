@@ -39,7 +39,7 @@ export class ProjectsService {
     const lastItem = pageItems.at(-1);
 
     return {
-      items: pageItems.map((project) => this.serializeProject(project)),
+      items: pageItems.map((project: ProjectWithCreatorRecord) => this.serializeProject(project)),
       nextCursor:
         hasMore && lastItem
           ? encodeProjectCursor({

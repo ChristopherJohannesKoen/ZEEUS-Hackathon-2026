@@ -1,0 +1,82 @@
+[
+  {
+    "topicCode": "E1",
+    "group": "environmental",
+    "title": "Climate Change",
+    "question": "How much do our activities contribute to global warming?",
+    "sdgs": [7, 11, 12, 13],
+    "guidance": "Switch to renewable electricity, identify your main emission hotspots, and redesign products and logistics for lower carbon intensity. Use basic CCF and PCF tracking to support climate-aligned planning."
+  },
+  {
+    "topicCode": "E2",
+    "group": "environmental",
+    "title": "Pollution",
+    "question": "Do our processes cause significant environmental pollution?",
+    "sdgs": [3, 11, 12, 14, 15],
+    "guidance": "Identify pollution and waste sources early, replace hazardous inputs where feasible, and use certified waste or recycling partners. Track waste, recycling, and material-intensity KPIs."
+  },
+  {
+    "topicCode": "E3",
+    "group": "environmental",
+    "title": "Water",
+    "question": "Do we threaten local ecosystems through water withdrawal?",
+    "sdgs": [6, 14, 15],
+    "guidance": "Create a clear view of operational and supplier water use, add simple monitoring, and prioritise low-water alternatives or reuse options where possible."
+  },
+  {
+    "topicCode": "E4",
+    "group": "environmental",
+    "title": "Biodiversity",
+    "question": "Do our activities destroy ecosystems or biodiversity (both fauna and flora)?",
+    "sdgs": [14, 15],
+    "guidance": "Check sourcing and site locations for biodiversity sensitivity, prefer certified responsible materials, and integrate biodiversity criteria into supplier and location decisions."
+  },
+  {
+    "topicCode": "E5",
+    "group": "environmental",
+    "title": "Circular Economy",
+    "question": "How intensive is our use of resources and waste production?",
+    "sdgs": [8, 9, 12],
+    "guidance": "Map material and waste flows, design for repair and separability, and track simple circularity KPIs such as recycled content, waste reduction, or reusable components."
+  },
+  {
+    "topicCode": "S1",
+    "group": "social",
+    "title": "Own Workforce",
+    "question": "Do our practices violate employee rights?",
+    "sdgs": [3, 4, 5, 8],
+    "guidance": "Keep labour practices explicit from the start with safe working conditions, fair treatment, basic wellbeing checks, and a clear feedback channel for the team."
+  },
+  {
+    "topicCode": "S2",
+    "group": "social",
+    "title": "Supply Chain",
+    "question": "Are there risks of labor violations in our value chain?",
+    "sdgs": [8, 12, 16],
+    "guidance": "Use a lightweight supplier code of conduct, flag higher-risk regions or materials, and require basic transparency on labour and safety practices from key suppliers."
+  },
+  {
+    "topicCode": "S3",
+    "group": "social",
+    "title": "Communities",
+    "question": "Do our actions impact local communities negatively?",
+    "sdgs": [1, 3, 4, 10, 11],
+    "guidance": "Engage early with local stakeholders, keep communication open, and show practical local value creation through jobs, partnerships, or low-disruption operations."
+  },
+  {
+    "topicCode": "S4",
+    "group": "social",
+    "title": "Consumers",
+    "question": "Do our products or services harm consumer rights?",
+    "sdgs": [3, 12],
+    "guidance": "Use clear claims, stronger QA, transparent pricing, and accessible support so product safety, fairness, and consumer trust are built in from the first launch."
+  },
+  {
+    "topicCode": "G1",
+    "group": "governance",
+    "title": "Corporate Ethics",
+    "question": "Do poor standards cause ethical violations in our company?",
+    "sdgs": [16, 17],
+    "guidance": "Assign responsibility for governance basics, keep records clean, define clear review and escalation rules, and establish simple anti-corruption and whistleblowing expectations."
+  }
+]

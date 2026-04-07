@@ -50,7 +50,7 @@ export class AdminService {
     ]);
 
     return {
-      items: items.map((user) => ({
+      items: items.map((user: (typeof items)[number]) => ({
         id: user.id,
         email: user.email,
         name: user.name,

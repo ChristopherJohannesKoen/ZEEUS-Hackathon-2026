@@ -1,0 +1,102 @@
+[
+  {
+    "stage": "ideation",
+    "workbookKey": "01_Ideation Stage",
+    "label": "Ideation Stage",
+    "phaseGoal": "Purpose-driven Vision",
+    "phaseConsideration": "Resource Awareness",
+    "productWhatToConsider": "Align product/service concept with a real social/environmental and financial need.\nThink about materials, waste, energy needed to build and distribute.",
+    "serviceWhatToConsider": "Define service values that contribute to ethical or social impact.\nConsider digital tools, human resource requirements, time efficiency.",
+    "sdgs": [3, 4, 9, 12, 13]
+  },
+  {
+    "stage": "validation",
+    "workbookKey": "02_Validation Stage (Problem/Solution Fit)",
+    "label": "Validation Stage (Problem/Solution Fit)",
+    "phaseGoal": "Customer Impact",
+    "phaseConsideration": "Inclusivity",
+    "productWhatToConsider": "Validate that your product/service improves lives without causing harm.\nEnsure solution can serve underserved or broad user groups.",
+    "serviceWhatToConsider": "Validate that your service benefits users equitably and ethically.\nDesign service to be accessible and inclusive for different communities.",
+    "sdgs": [3, 4, 5, 10, 11]
+  },
+  {
+    "stage": "prototype_mvp",
+    "workbookKey": "03_Prototype / Minimum Viable Product Development (Product/Market Fit Begins)",
+    "label": "Prototype / Minimum Viable Product Development",
+    "phaseGoal": "Efficient Use of Resources",
+    "phaseConsideration": "Waste Minimization",
+    "productWhatToConsider": "Use sustainable strategies/materials, modular design, low-impact prototyping.\nAvoid overproduction; use recyclable components.",
+    "serviceWhatToConsider": "Minimize overuse of platforms/tools, optimize human involvement.\nLimit redundancy, avoid unnecessary complexity in service delivery.",
+    "sdgs": [9, 12, 13]
+  },
+  {
+    "stage": "pre_launch",
+    "workbookKey": "04_Pre-Launch / Market Entry Preparation",
+    "label": "Pre-Launch / Market Entry Preparation",
+    "phaseGoal": "Ethical Supply Chain / Tools",
+    "phaseConsideration": "Team & Culture Values",
+    "productWhatToConsider": "Source responsibly (e.g., fair labor, low emissions suppliers).\nInstill sustainability values in team decisions.",
+    "serviceWhatToConsider": "Choose ethical digital infrastructure (hosting, APIs, etc.).\nTrain service team in sustainable practices and inclusive service.",
+    "sdgs": [5, 8, 10, 12, 17]
+  },
+  {
+    "stage": "launch",
+    "workbookKey": "05_Launch / Early Commercial Activity",
+    "label": "Launch / Early Commercial Activity",
+    "phaseGoal": "Eco-Conscious Operations",
+    "phaseConsideration": "Transparent Communication",
+    "productWhatToConsider": "Minimize shipping, packaging, energy in delivery.\nMarket product sustainability honestly.",
+    "serviceWhatToConsider": "Reduce travel, optimize virtual or hybrid service models.\nBe transparent about the service’s limitations and values.",
+    "sdgs": [9, 12, 13, 16]
+  },
+  {
+    "stage": "product_market_fit",
+    "workbookKey": "06_Product-Market Fit (PMF)",
+    "label": "Product-Market Fit",
+    "phaseGoal": "Customer Education & Engagement",
+    "phaseConsideration": "Feedback for Impact",
+    "productWhatToConsider": "Educate users on sustainable use, maintenance, and disposal.\nUse customer feedback to improve environmental/social impact.",
+    "serviceWhatToConsider": "Train users on best practices for efficiency, ethical use.\nGet feedback on inclusivity, accessibility, and value of the service.",
+    "sdgs": [4, 9, 12, 17]
+  },
+  {
+    "stage": "growth_channel_fit",
+    "workbookKey": "07_Growth & Channel Fit",
+    "label": "Growth & Channel Fit",
+    "phaseGoal": "Sustainable Scaling",
+    "phaseConsideration": "Energy & Emissions",
+    "productWhatToConsider": "Ensure supply chain, production, and logistics scale responsibly.\nMonitor and reduce carbon footprint of production and delivery.",
+    "serviceWhatToConsider": "Ensure team and systems scale without harming people or overusing resources.\nUse carbon-efficient tools, promote remote service where possible.",
+    "sdgs": [7, 8, 9, 13]
+  },
+  {
+    "stage": "revenue_validation",
+    "workbookKey": "08_Revenue Validation / Business Model Fit",
+    "label": "Revenue Validation / Business Model Fit",
+    "phaseGoal": "Circular or Regenerative Model",
+    "phaseConsideration": "Financial Sustainability",
+    "productWhatToConsider": "Explore reuse, recycling, or refurbishing and other potential uses\nAchieve margins without exploiting resources or people.",
+    "serviceWhatToConsider": "Offer sustainable service models (e.g., shared economy, pay-as-you-go).\nEnsure pricing reflects ethical labor and long-term viability.",
+    "sdgs": [1, 8, 11, 12]
+  },
+  {
+    "stage": "operational_foundation",
+    "workbookKey": "09_Operational Foundation",
+    "label": "Operational Foundation",
+    "phaseGoal": "Culture & Policy Alignment",
+    "phaseConsideration": null,
+    "productWhatToConsider": "Create policies on sustainability, diversity, and ethics.",
+    "serviceWhatToConsider": "Embed sustainability in service manuals, onboarding, and policies.",
+    "sdgs": [5, 10, 16]
+  },
+  {
+    "stage": "early_scale",
+    "workbookKey": "10_Early Scale / Fundraising Readiness",
+    "label": "Early Scale / Fundraising Readiness",
+    "phaseGoal": "Social Responsibility & Governance (ESG)",
+    "phaseConsideration": null,
+    "productWhatToConsider": "Set up ESG reporting if raising funds or entering regulated markets.",
+    "serviceWhatToConsider": "Establish governance for service quality, ethics, and impact.",
+    "sdgs": [13, 16, 17]
+  }
+]

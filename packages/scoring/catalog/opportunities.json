@@ -1,0 +1,50 @@
+[
+  {
+    "opportunityCode": "climate_transition_opportunity",
+    "group": "Climate (E1,E2)",
+    "title": "Climate transition upside",
+    "question": "How can we benefit from the transition to climate neutrality and low-emission solutions?",
+    "sdgs": [7, 9, 13],
+    "guidance": "Use climate metrics to position the venture as part of the low-carbon transition, highlight CO₂ reduction in pitches and tenders, and explore green funding or climate-tech partnerships."
+  },
+  {
+    "opportunityCode": "water_reputation_opportunity",
+    "group": "Water/Biodiversity (E3,E4)",
+    "title": "Water stewardship upside",
+    "question": "Can we gain image benefits from water-saving processes?",
+    "sdgs": [6, 12],
+    "guidance": "Show water-efficient processes clearly, use simple water metrics, and integrate responsible water use into the ESG roadmap and external communication."
+  },
+  {
+    "opportunityCode": "biodiversity_reputation_opportunity",
+    "group": "Water/Biodiversity (E3,E4)",
+    "title": "Biodiversity reputation upside",
+    "question": "Can biodiversity action improve our reputation?",
+    "sdgs": [12, 15],
+    "guidance": "Communicate certified sourcing and visible nature-positive actions, and connect those steps to trust, ESG storytelling, and brand differentiation."
+  },
+  {
+    "opportunityCode": "circular_efficiency_opportunity",
+    "group": "Circular Economy (E5)",
+    "title": "Circular economy upside",
+    "question": "Can circular practices strengthen our brand and efficiency?",
+    "sdgs": [9, 12, 13],
+    "guidance": "Make circular features explicit, track circularity KPIs, and use recycled materials, reuse loops, or repairability as both a cost and brand differentiator."
+  },
+  {
+    "opportunityCode": "community_reputation_opportunity",
+    "group": "Communities (S3)",
+    "title": "Community investment upside",
+    "question": "Do we use community investment to improve our reputation?",
+    "sdgs": [10, 11],
+    "guidance": "Build partnerships that create local value, share success stories, and connect community engagement to reputation, trust, and long-term market access."
+  },
+  {
+    "opportunityCode": "governance_trust_opportunity",
+    "group": "Consumers & Governance (S4,G1)",
+    "title": "Governance and consumer trust upside",
+    "question": "How can stronger governance (clear product claims, data/privacy-by-design, accessible T&Cs) build consumer trust and unlock preferred partner status or premium pricing?",
+    "sdgs": [12, 16],
+    "guidance": "Present transparent claims, simple onboarding, accessible terms, and strong data practices so governance becomes a trust and procurement advantage rather than only a control layer."
+  }
+]

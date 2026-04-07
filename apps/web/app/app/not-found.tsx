@@ -11,8 +11,8 @@ export default function AppNotFoundPage() {
           The requested resource no longer exists or the URL is incorrect.
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
-          <Link className={buttonClassName({})} href="/app/projects">
-            Back to projects
+          <Link className={buttonClassName({})} href="/app/evaluations">
+            Back to evaluations
           </Link>
           <Link className={buttonClassName({ variant: 'secondary' })} href="/app">
             Dashboard

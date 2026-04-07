@@ -25,6 +25,7 @@ model User {
   groupMemberships    UserGroupMembership[]
   accessPolicyActor   AccessPolicyEvent[]  @relation("AccessPolicyActor")
   accessPolicyTarget  AccessPolicyEvent[]  @relation("AccessPolicyTarget")
+  evaluations         Evaluation[]
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
 
@@ -137,6 +138,130 @@ model Project {
   @@index([isArchived])
   @@index([creatorId])
   @@index([updatedAt, id])
+}
+
+model Evaluation {
+  id                   String                  @id @default(cuid())
+  userId               String
+  user                 User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name                 String
+  country              String
+  naceDivision         String
+  offeringType         OfferingType
+  launched             Boolean
+  currentStage         StartupStage
+  innovationApproach   InnovationApproach
+  status               EvaluationStatus        @default(draft)
+  currentStep          EvaluationStep          @default(start)
+  financialTotal       Int                     @default(0)
+  riskOverall          Float                   @default(0)
+  opportunityOverall   Float                   @default(0)
+  confidenceBand       ConfidenceBand          @default(low)
+  relevantTopicCount   Int                     @default(0)
+  highPriorityTopicCount Int                   @default(0)
+  stage1Financial      Stage1FinancialAnswer?
+  stage1TopicAnswers   Stage1TopicAnswer[]
+  stage2RiskAnswers    Stage2RiskAnswer[]
+  stage2OpportunityAnswers Stage2OpportunityAnswer[]
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+
+  @@index([userId, updatedAt])
+}
+
+model Stage1FinancialAnswer {
+  evaluationId      String                  @id
+  evaluation        Evaluation              @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  roiLevel          FinancialRoiLevel
+  sensitivityLevel  FinancialSensitivityLevel
+  uspLevel          FinancialUspLevel
+  marketGrowthLevel FinancialMarketGrowthLevel
+  totalScore        Int
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+}
+
+model Stage1TopicAnswer {
+  id              String                @id @default(cuid())
+  evaluationId    String
+  evaluation      Evaluation            @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  topicCode       TopicCode
+  applicable      Boolean               @default(true)
+  magnitude       ImpactDimensionLevel
+  scale           ImpactDimensionLevel
+  irreversibility ImpactDimensionLevel
+  likelihood      ImpactLikelihoodLevel
+  evidenceBasis   EvidenceBasis
+  impactScore     Float                 @default(0)
+  priorityBand    PriorityBand          @default(not_applicable)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  @@unique([evaluationId, topicCode])
+  @@index([priorityBand])
+}
+
+model Stage2RiskAnswer {
+  id            String                @id @default(cuid())
+  evaluationId  String
+  evaluation    Evaluation            @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  riskCode      RiskCode
+  applicable    Boolean               @default(true)
+  probability   RiskProbabilityLevel
+  impact        ImpactDimensionLevel
+  evidenceBasis EvidenceBasis
+  ratingLabel   RiskRatingLabel       @default(neutral)
+  ratingScore   Float                 @default(0)
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  @@unique([evaluationId, riskCode])
+  @@index([ratingLabel])
+}
+
+model Stage2OpportunityAnswer {
+  id              String                 @id @default(cuid())
+  evaluationId    String
+  evaluation      Evaluation             @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  opportunityCode OpportunityCode
+  applicable      Boolean                @default(true)
+  likelihood      RiskProbabilityLevel
+  impact          ImpactDimensionLevel
+  evidenceBasis   EvidenceBasis
+  ratingLabel     OpportunityRatingLabel @default(neutral)
+  ratingScore     Float                  @default(0)
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+
+  @@unique([evaluationId, opportunityCode])
+  @@index([ratingLabel])
+}
+
+model SdgMapping {
+  id                String        @id @default(cuid())
+  sourceType        SdgSourceType
+  startupStage      StartupStage?
+  naceDivisionCode  String?
+  naceDivisionLabel String?
+  sdgNumber         Int
+  sdgName           String
+  createdAt         DateTime      @default(now())
+
+  @@index([sourceType, startupStage, sdgNumber])
+  @@index([sourceType, naceDivisionCode, sdgNumber])
+}
+
+model RecommendationTemplate {
+  id                 String             @id @default(cuid())
+  code               String
+  recommendationType RecommendationType
+  severityBand       String
+  title              String
+  text               String
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@unique([code, recommendationType, severityBand])
 }
 
 model IdentityProviderConfig {
@@ -334,4 +459,176 @@ enum ProjectStatus {
 enum IdempotencyStatus {
   pending
   completed
+}
+
+enum OfferingType {
+  product
+  service
+}
+
+enum StartupStage {
+  ideation
+  validation
+  prototype_mvp
+  pre_launch
+  launch
+  product_market_fit
+  growth_channel_fit
+  revenue_validation
+  operational_foundation
+  early_scale
+}
+
+enum InnovationApproach {
+  sustaining
+  disruptive
+}
+
+enum EvaluationStatus {
+  draft
+  in_progress
+  completed
+}
+
+enum EvaluationStep {
+  start
+  summary
+  stage_1
+  stage_2
+  impact_summary
+  sdg_alignment
+  dashboard
+  report
+}
+
+enum FinancialRoiLevel {
+  not_evaluated
+  below_industry_average
+  average_or_no_benchmark
+  above_industry_average
+}
+
+enum FinancialSensitivityLevel {
+  not_evaluated
+  high_volatility
+  moderate_volatility
+  low_volatility
+}
+
+enum FinancialUspLevel {
+  not_evaluated
+  no_usp
+  weak_or_moderate_usp
+  strong_or_unique_usp
+}
+
+enum FinancialMarketGrowthLevel {
+  not_evaluated
+  shrinking
+  mature
+  growing
+}
+
+enum TopicCode {
+  E1
+  E2
+  E3
+  E4
+  E5
+  S1
+  S2
+  S3
+  S4
+  G1
+}
+
+enum EvidenceBasis {
+  measured
+  estimated
+  assumed
+}
+
+enum PriorityBand {
+  not_applicable
+  very_low
+  low
+  relevant
+  high_priority
+}
+
+enum ImpactDimensionLevel {
+  low
+  moderate
+  significant
+  high
+  na
+}
+
+enum ImpactLikelihoodLevel {
+  very_unlikely
+  unlikely
+  likely
+  very_likely
+  na
+}
+
+enum RiskProbabilityLevel {
+  rare
+  could_occur
+  likely
+  very_likely
+  na
+}
+
+enum RiskCode {
+  climate_policy_risk
+  water_scarcity_risk
+  biodiversity_regulation_risk
+  resource_scarcity_risk
+  community_stability_risk
+  consumer_governance_risk
+}
+
+enum OpportunityCode {
+  climate_transition_opportunity
+  water_reputation_opportunity
+  biodiversity_reputation_opportunity
+  circular_efficiency_opportunity
+  community_reputation_opportunity
+  governance_trust_opportunity
+}
+
+enum RiskRatingLabel {
+  neutral
+  sustainable
+  moderate
+  severe
+  critical
+}
+
+enum OpportunityRatingLabel {
+  neutral
+  small
+  reasonable
+  sustainable
+  great
+}
+
+enum ConfidenceBand {
+  high
+  moderate
+  low
+}
+
+enum SdgSourceType {
+  stage
+  business
+  both
+}
+
+enum RecommendationType {
+  financial
+  stage1
+  risk
+  opportunity
 }

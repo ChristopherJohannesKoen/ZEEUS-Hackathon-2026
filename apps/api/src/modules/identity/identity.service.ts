@@ -161,7 +161,12 @@ function textValue(value: unknown): string | undefined {
 }
 
 function isSerializableConflict(error: unknown) {
-  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034';
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    const prismaError = error as Prisma.PrismaClientKnownRequestError;
+    return prismaError.code === 'P2034';
+  }
+
+  return false;
 }
 
 @Injectable()
@@ -472,7 +477,7 @@ export class IdentityService implements OnModuleInit {
     });
 
     const resources = await Promise.all(
-      identities.map((identity) =>
+      identities.map((identity: (typeof identities)[number]) =>
         this.toScimUser(identity.user, provider, identity.externalSubject)
       )
     );
@@ -502,13 +507,13 @@ export class IdentityService implements OnModuleInit {
       }
     });
 
-    const resources = groups.map((group) =>
+    const resources = groups.map((group: (typeof groups)[number]) =>
       ScimGroupSchema.parse({
         schemas: ['urn:ietf:params:scim:schemas:core:2.0:Group'],
         id: group.externalId,
         externalId: group.externalId,
         displayName: group.name,
-        members: group.memberships.map((membership) => ({
+        members: group.memberships.map((membership: (typeof group.memberships)[number]) => ({
           value: membership.user.email,
           display: membership.user.name
         }))
@@ -652,7 +657,7 @@ export class IdentityService implements OnModuleInit {
       }
     });
 
-    const userIds = identities.map((identity) => identity.userId);
+    const userIds = identities.map((identity: (typeof identities)[number]) => identity.userId);
     await this.prismaService.userGroupMembership.deleteMany({
       where: {
         userGroupId: group.id,
@@ -664,7 +669,7 @@ export class IdentityService implements OnModuleInit {
 
     if (userIds.length > 0) {
       await this.prismaService.userGroupMembership.createMany({
-        data: userIds.map((userId) => ({
+        data: userIds.map((userId: string) => ({
           userId,
           userGroupId: group.id
         })),
@@ -1235,11 +1240,11 @@ export class IdentityService implements OnModuleInit {
       }
     });
 
-    if (mappings.some((mapping) => mapping.role === 'admin')) {
+    if (mappings.some((mapping: (typeof mappings)[number]) => mapping.role === 'admin')) {
       return 'admin';
     }
 
-    if (mappings.some((mapping) => mapping.role === 'member')) {
+    if (mappings.some((mapping: (typeof mappings)[number]) => mapping.role === 'member')) {
       return 'member';
     }
 
@@ -1262,7 +1267,9 @@ export class IdentityService implements OnModuleInit {
       }
     });
 
-    const existingGroupMap = new Map(existingGroups.map((group) => [group.externalId, group]));
+    const existingGroupMap = new Map<string, (typeof existingGroups)[number]>(
+      existingGroups.map((group: (typeof existingGroups)[number]) => [group.externalId, group] as const)
+    );
     const groupIds: string[] = [];
 
     for (const externalId of groups) {
@@ -1346,7 +1353,7 @@ export class IdentityService implements OnModuleInit {
         familyName: name.familyName
       },
       emails: [{ value: user.email, primary: true }],
-      groups: memberships.map((membership) => ({
+      groups: memberships.map((membership: (typeof memberships)[number]) => ({
         value: membership.userGroup.externalId,
         display: membership.userGroup.name
       }))

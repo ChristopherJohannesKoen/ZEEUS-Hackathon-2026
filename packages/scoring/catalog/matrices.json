@@ -1,0 +1,76 @@
+{
+  "riskMatrix": {
+    "na": {
+      "na": "neutral",
+      "rare": "sustainable",
+      "could_occur": "sustainable",
+      "likely": "moderate",
+      "very_likely": "severe"
+    },
+    "low": {
+      "na": "neutral",
+      "rare": "sustainable",
+      "could_occur": "moderate",
+      "likely": "severe",
+      "very_likely": "critical"
+    },
+    "moderate": {
+      "na": "neutral",
+      "rare": "sustainable",
+      "could_occur": "moderate",
+      "likely": "moderate",
+      "very_likely": "severe"
+    },
+    "significant": {
+      "na": "neutral",
+      "rare": "sustainable",
+      "could_occur": "moderate",
+      "likely": "severe",
+      "very_likely": "critical"
+    },
+    "high": {
+      "na": "neutral",
+      "rare": "moderate",
+      "could_occur": "severe",
+      "likely": "severe",
+      "very_likely": "critical"
+    }
+  },
+  "opportunityMatrix": {
+    "na": {
+      "na": "neutral",
+      "rare": "small",
+      "could_occur": "small",
+      "likely": "small",
+      "very_likely": "reasonable"
+    },
+    "low": {
+      "na": "neutral",
+      "rare": "small",
+      "could_occur": "reasonable",
+      "likely": "sustainable",
+      "very_likely": "great"
+    },
+    "moderate": {
+      "na": "neutral",
+      "rare": "reasonable",
+      "could_occur": "reasonable",
+      "likely": "sustainable",
+      "very_likely": "great"
+    },
+    "significant": {
+      "na": "neutral",
+      "rare": "reasonable",
+      "could_occur": "reasonable",
+      "likely": "great",
+      "very_likely": "great"
+    },
+    "high": {
+      "na": "neutral",
+      "rare": "sustainable",
+      "could_occur": "sustainable",
+      "likely": "great",
+      "very_likely": "great"
+    }
+  }
+}

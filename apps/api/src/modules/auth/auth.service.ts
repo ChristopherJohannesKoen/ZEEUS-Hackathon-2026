@@ -76,8 +76,11 @@ export class AuthService {
 
       return this.createAuthResult(user, metadata);
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        throw new ConflictException('An account with this email already exists.');
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        const prismaError = error as Prisma.PrismaClientKnownRequestError;
+        if (prismaError.code === 'P2002') {
+          throw new ConflictException('An account with this email already exists.');
+        }
       }
 
       throw error;

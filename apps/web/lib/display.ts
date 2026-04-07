@@ -16,3 +16,25 @@ export function projectTone(status: string) {
   if (status === 'paused') return 'amber';
   return 'slate';
 }
+
+export function evaluationStatusTone(status: string) {
+  if (status === 'completed') return 'emerald';
+  if (status === 'in_progress') return 'amber';
+  return 'slate';
+}
+
+export function priorityTone(priorityBand: string) {
+  if (priorityBand === 'high_priority') return 'rose';
+  if (priorityBand === 'relevant') return 'amber';
+  return 'slate';
+}
+
+export function confidenceTone(confidenceBand: string) {
+  if (confidenceBand === 'high') return 'emerald';
+  if (confidenceBand === 'moderate') return 'amber';
+  return 'rose';
+}
+
+export function formatEnumLabel(value: string) {
+  return value.replaceAll('_', ' ');
+}

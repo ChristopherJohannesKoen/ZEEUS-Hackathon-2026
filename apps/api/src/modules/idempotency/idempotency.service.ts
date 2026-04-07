@@ -50,40 +50,44 @@ export class IdempotencyService {
         recordId: record.id
       };
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-        const existingRecord = await this.prismaService.idempotencyRequest.findUnique({
-          where: {
-            scope_idempotencyKey_method_path: {
-              scope: input.scope,
-              idempotencyKey: input.idempotencyKey,
-              method: input.method,
-              path: input.path
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        const prismaError = error as Prisma.PrismaClientKnownRequestError;
+
+        if (prismaError.code === 'P2002') {
+          const existingRecord = await this.prismaService.idempotencyRequest.findUnique({
+            where: {
+              scope_idempotencyKey_method_path: {
+                scope: input.scope,
+                idempotencyKey: input.idempotencyKey,
+                method: input.method,
+                path: input.path
+              }
             }
+          });
+
+          if (!existingRecord) {
+            throw new ConflictException('Unable to resolve the idempotent request state.');
           }
-        });
 
-        if (!existingRecord) {
-          throw new ConflictException('Unable to resolve the idempotent request state.');
+          if (existingRecord.fingerprint !== input.fingerprint) {
+            this.metricsService.recordIdempotencyEvent('fingerprint_mismatch');
+            throw new ConflictException(
+              'This Idempotency-Key has already been used for a different request payload.'
+            );
+          }
+
+          if (existingRecord.status === 'completed') {
+            this.metricsService.recordIdempotencyEvent('replay');
+            return {
+              kind: 'replay',
+              statusCode: existingRecord.responseStatusCode ?? 200,
+              body: existingRecord.responseBody ?? null
+            };
+          }
+
+          this.metricsService.recordIdempotencyEvent('conflict');
+          throw new ConflictException('A matching request is already in progress.');
         }
-
-        if (existingRecord.fingerprint !== input.fingerprint) {
-          this.metricsService.recordIdempotencyEvent('fingerprint_mismatch');
-          throw new ConflictException(
-            'This Idempotency-Key has already been used for a different request payload.'
-          );
-        }
-
-        if (existingRecord.status === 'completed') {
-          this.metricsService.recordIdempotencyEvent('replay');
-          return {
-            kind: 'replay',
-            statusCode: existingRecord.responseStatusCode ?? 200,
-            body: existingRecord.responseBody ?? null
-          };
-        }
-
-        this.metricsService.recordIdempotencyEvent('conflict');
-        throw new ConflictException('A matching request is already in progress.');
       }
 
       throw error;
@@ -134,7 +138,7 @@ export class IdempotencyService {
       await this.prismaService.idempotencyRequest.deleteMany({
         where: {
           id: {
-            in: ids.map((record) => record.id)
+            in: ids.map((record: (typeof ids)[number]) => record.id)
           }
         }
       });

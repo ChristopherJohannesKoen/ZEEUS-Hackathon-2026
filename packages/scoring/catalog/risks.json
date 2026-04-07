@@ -1,0 +1,50 @@
+[
+  {
+    "riskCode": "climate_policy_risk",
+    "group": "Climate (E1,E2)",
+    "title": "Climate policy and environmental harm exposure",
+    "question": "What financial risks arise from stricter climate policy or penalties for environmental harm?",
+    "sdgs": [7, 12, 13],
+    "guidance": "Map exposure to energy, transport, and material costs, track upcoming regulations, and use basic carbon accounting to spot emission hotspots before they become cost or compliance problems."
+  },
+  {
+    "riskCode": "water_scarcity_risk",
+    "group": "Water/Biodiversity (E3,E4)",
+    "title": "Water scarcity exposure",
+    "question": "How does water scarcity affect our operations?",
+    "sdgs": [6, 12],
+    "guidance": "Check whether your sites or suppliers sit in water-stressed regions, introduce water-saving practices, and prioritise suppliers with responsible water management."
+  },
+  {
+    "riskCode": "biodiversity_regulation_risk",
+    "group": "Water/Biodiversity (E3,E4)",
+    "title": "Biodiversity regulation exposure",
+    "question": "What constraints do biodiversity regulations create?",
+    "sdgs": [12, 15],
+    "guidance": "Screen site and supplier locations for biodiversity sensitivity, choose certified responsible sources, and document nature-related constraints before scaling."
+  },
+  {
+    "riskCode": "resource_scarcity_risk",
+    "group": "Circular Economy (E5)",
+    "title": "Resource scarcity exposure",
+    "question": "How does resource scarcity affect our business model?",
+    "sdgs": [9, 12],
+    "guidance": "Map critical materials, check supply stability and recyclability, and use circular design principles to reduce exposure to scarce inputs and waste-heavy operations."
+  },
+  {
+    "riskCode": "community_stability_risk",
+    "group": "Communities (S3)",
+    "title": "Community and site stability exposure",
+    "question": "What social risks affect our site stability?",
+    "sdgs": [3, 11],
+    "guidance": "Engage with local stakeholders early, keep feedback channels open, and make local value creation visible to reduce social friction around the site or operating model."
+  },
+  {
+    "riskCode": "consumer_governance_risk",
+    "group": "Consumers & Governance (S4,G1)",
+    "title": "Consumer protection and governance exposure",
+    "question": "What is the probability that evolving consumer protection and AI/advertising regulations will trigger complaints, fines, or loss of market access for our product?",
+    "sdgs": [12, 16],
+    "guidance": "Assign ownership for consumer protection and governance basics, simplify claims and pricing, review privacy and consent practices, and track complaints or false-claim signals."
+  }
+]

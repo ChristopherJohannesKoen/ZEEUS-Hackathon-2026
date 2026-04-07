@@ -59,6 +59,11 @@ export const AuditActionSchema = z.enum([
   'governance.retention_cleanup',
   'user.profile_updated',
   'user.role_updated',
+  'evaluation.created',
+  'evaluation.context_updated',
+  'evaluation.stage_1_saved',
+  'evaluation.stage_2_saved',
+  'evaluation.deleted',
   'project.created',
   'project.updated',
   'project.archived',
@@ -353,3 +358,5 @@ export type ScimUserListResponse = z.infer<typeof ScimUserListResponseSchema>;
 
 export const ScimGroupListResponseSchema = ScimListResponseSchema(ScimGroupSchema);
 export type ScimGroupListResponse = z.infer<typeof ScimGroupListResponseSchema>;
+
+export * from './evaluations';

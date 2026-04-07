@@ -7,7 +7,7 @@
     "lint": "node ../../scripts/with-env.mjs prisma validate --schema ./prisma/schema.prisma",
     "typecheck": "node ../../scripts/with-env.mjs prisma validate --schema ./prisma/schema.prisma",
     "test": "node ../../scripts/with-env.mjs node ./prisma/seed.mjs --dry-run",
-    "prisma:generate": "node ../../scripts/with-env.mjs prisma generate --schema ./prisma/schema.prisma",
+    "prisma:generate": "node ../../scripts/with-env.mjs prisma generate --schema ./prisma/schema.prisma && node ../../scripts/sync-prisma-client-files.mjs",
     "prisma:migrate:dev": "node ../../scripts/with-env.mjs prisma migrate dev --schema ./prisma/schema.prisma",
     "prisma:migrate:deploy": "node ../../scripts/with-env.mjs prisma migrate deploy --schema ./prisma/schema.prisma",
     "prisma:reset": "node ../../scripts/with-env.mjs prisma migrate reset --force --skip-generate --skip-seed --schema ./prisma/schema.prisma && npm run prisma:generate && npm run seed",

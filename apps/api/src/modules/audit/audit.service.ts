@@ -7,7 +7,8 @@ import { RequestContextService } from '../../common/request-context/request-cont
 
 function isSerializableConflict(error: unknown) {
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
-    return error.code === 'P2034';
+    const prismaError = error as Prisma.PrismaClientKnownRequestError;
+    return prismaError.code === 'P2034';
   }
 
   return error instanceof Prisma.PrismaClientUnknownRequestError;

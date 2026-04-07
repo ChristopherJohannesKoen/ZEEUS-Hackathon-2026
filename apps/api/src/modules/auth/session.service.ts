@@ -83,7 +83,7 @@ export class SessionService {
         await transaction.session.deleteMany({
           where: {
             id: {
-              in: overflowSessions.map((session) => session.id)
+              in: overflowSessions.map((session: (typeof overflowSessions)[number]) => session.id)
             }
           }
         });
@@ -129,7 +129,7 @@ export class SessionService {
     });
 
     return {
-      items: sessions.map((session) =>
+      items: sessions.map((session: (typeof sessions)[number]) =>
         this.toSessionSummary(
           {
             ...session,

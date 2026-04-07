@@ -24,6 +24,8 @@
     "@opentelemetry/exporter-trace-otlp-http": "^0.206.0",
     "@opentelemetry/sdk-node": "^0.206.0",
     "@packages/contracts": "file:../../packages/contracts",
+    "@packages/scoring": "file:../../packages/scoring",
+    "@packages/shared": "file:../../packages/shared",
     "@prisma/client": "^6.6.0",
     "@ts-rest/nest": "^3.52.1",
     "@xmldom/xmldom": "^0.9.8",

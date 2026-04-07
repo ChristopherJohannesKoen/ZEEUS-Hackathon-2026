@@ -1,10 +1,17 @@
 import { apiContract } from '@packages/contracts';
 import type {
   AuthResponse,
+  DashboardResponse,
+  EvaluationDetail,
+  EvaluationListResponse,
+  ImpactSummaryResponse,
   Project,
   ProjectListQuery,
   ProjectListResponse,
+  ReportResponse,
   SessionListResponse,
+  SdgAlignmentResponse,
+  StageSdgSummary,
   SsoProvidersResponse,
   UserListQuery,
   UserListResponse,
@@ -102,6 +109,70 @@ export async function requireCurrentUser() {
 export function getProjects(query: Partial<ProjectListQuery> = {}) {
   return protectedServerRequest<ProjectListResponse>(
     () => serverClient.projects.list({ query }),
+    [200]
+  );
+}
+
+export function getEvaluations() {
+  return protectedServerRequest<EvaluationListResponse>(() => serverClient.evaluations.list(), [200]);
+}
+
+export function getEvaluation(evaluationId: string) {
+  return protectedServerRequest<EvaluationDetail>(
+    () =>
+      serverClient.evaluations.get({
+        params: { id: evaluationId }
+      }),
+    [200]
+  );
+}
+
+export function getEvaluationSummary(evaluationId: string) {
+  return protectedServerRequest<StageSdgSummary>(
+    () =>
+      serverClient.evaluations.getSummary({
+        params: { id: evaluationId }
+      }),
+    [200]
+  );
+}
+
+export function getImpactSummary(evaluationId: string) {
+  return protectedServerRequest<ImpactSummaryResponse>(
+    () =>
+      serverClient.evaluations.getImpactSummary({
+        params: { id: evaluationId }
+      }),
+    [200]
+  );
+}
+
+export function getSdgAlignment(evaluationId: string) {
+  return protectedServerRequest<SdgAlignmentResponse>(
+    () =>
+      serverClient.evaluations.getSdgAlignment({
+        params: { id: evaluationId }
+      }),
+    [200]
+  );
+}
+
+export function getEvaluationDashboard(evaluationId: string) {
+  return protectedServerRequest<DashboardResponse>(
+    () =>
+      serverClient.evaluations.getDashboard({
+        params: { id: evaluationId }
+      }),
+    [200]
+  );
+}
+
+export function getEvaluationReport(evaluationId: string) {
+  return protectedServerRequest<ReportResponse>(
+    () =>
+      serverClient.evaluations.getReport({
+        params: { id: evaluationId }
+      }),
     [200]
   );
 }

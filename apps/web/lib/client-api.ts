@@ -5,15 +5,27 @@ import type {
   AuthPayload,
   AuthResponse,
   BreakGlassLoginPayload,
+  CreateEvaluationPayload,
+  DashboardResponse,
+  EvaluationDetail,
   ForgotPasswordPayload,
   ForgotPasswordResponse,
   OkResponse,
+  SaveStage1TopicsPayload,
+  SaveStage2OpportunitiesPayload,
+  SaveStage2RisksPayload,
   Project,
   ProjectUpsertPayload,
   ResetPasswordPayload,
   RevokeSessionResponse,
   Role,
+  Stage1FinancialAnswer,
+  Stage1FinancialAnswersPayload,
+  Stage1TopicAnswer,
+  Stage2OpportunityAnswer,
+  Stage2RiskAnswer,
   StepUpResponse,
+  UpdateEvaluationContextPayload,
   UpdateProfilePayload,
   UserSummary
 } from '@packages/shared';
@@ -273,6 +285,104 @@ export function createProject(body: ProjectUpsertPayload) {
         body,
         headers: {
           'idempotency-key': headers['idempotency-key']!,
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export function createEvaluation(body: CreateEvaluationPayload) {
+  return executeMutation<EvaluationDetail>({
+    method: 'POST',
+    expectedStatuses: [201],
+    call: (headers) =>
+      browserClient.evaluations.create({
+        body,
+        headers: {
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export function updateEvaluationContext(
+  evaluationId: string,
+  body: UpdateEvaluationContextPayload
+) {
+  return executeMutation<EvaluationDetail>({
+    method: 'PATCH',
+    expectedStatuses: [200],
+    call: (headers) =>
+      browserClient.evaluations.updateContext({
+        params: { id: evaluationId },
+        body,
+        headers: {
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export function saveStage1Financial(
+  evaluationId: string,
+  body: Stage1FinancialAnswersPayload
+) {
+  return executeMutation<Stage1FinancialAnswer>({
+    method: 'PUT',
+    expectedStatuses: [200],
+    call: (headers) =>
+      browserClient.evaluations.saveStage1Financial({
+        params: { id: evaluationId },
+        body,
+        headers: {
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export function saveStage1Topics(evaluationId: string, body: SaveStage1TopicsPayload) {
+  return executeMutation<{ items: Stage1TopicAnswer[] }>({
+    method: 'PUT',
+    expectedStatuses: [200],
+    call: (headers) =>
+      browserClient.evaluations.saveStage1Topics({
+        params: { id: evaluationId },
+        body,
+        headers: {
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export function saveStage2Risks(evaluationId: string, body: SaveStage2RisksPayload) {
+  return executeMutation<{ items: Stage2RiskAnswer[] }>({
+    method: 'PUT',
+    expectedStatuses: [200],
+    call: (headers) =>
+      browserClient.evaluations.saveStage2Risks({
+        params: { id: evaluationId },
+        body,
+        headers: {
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export function saveStage2Opportunities(
+  evaluationId: string,
+  body: SaveStage2OpportunitiesPayload
+) {
+  return executeMutation<{ items: Stage2OpportunityAnswer[] }>({
+    method: 'PUT',
+    expectedStatuses: [200],
+    call: (headers) =>
+      browserClient.evaluations.saveStage2Opportunities({
+        params: { id: evaluationId },
+        body,
+        headers: {
           'x-csrf-token': headers['x-csrf-token']!
         }
       })

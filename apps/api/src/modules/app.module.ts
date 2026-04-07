@@ -19,6 +19,8 @@ import { HealthModule } from './health/health.module';
 import { HealthController } from './health/health.controller';
 import { ObservabilityModule } from './observability/observability.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { EvaluationsModule } from './evaluations/evaluations.module';
+import { EvaluationsController } from './evaluations/evaluations.controller';
 import { ProjectsModule } from './projects/projects.module';
 import { ProjectsController } from './projects/projects.controller';
 import { IdentityModule } from './identity/identity.module';
@@ -48,6 +50,7 @@ import { UsersController } from './users/users.controller';
     IdentityModule,
     UsersModule,
     AdminModule,
+    EvaluationsModule,
     ProjectsModule,
     HealthModule
   ],
@@ -71,6 +74,7 @@ export class AppModule implements NestModule {
         IdentityController,
         UsersController,
         AdminController,
+        EvaluationsController,
         ProjectsController,
         HealthController,
         ScimController

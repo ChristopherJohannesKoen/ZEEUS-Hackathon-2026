@@ -1,18 +1,18 @@
-"use client";
-import { use } from "react";
-import Link from "next/link";
-import { useEvaluationStore } from "@/store/evaluationStore";
-import { computeDashboardSummary, calcImpactScore, scoreToBand } from "@/lib/scoring";
-import { ESG_TOPICS } from "@/data/esg-topics";
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { PriorityChip, ConfidenceChip } from "@/components/ui/Badge";
-import { ScoreBar } from "@/components/ui/ProgressBar";
-import {
-  ArrowRight, Leaf, Users, AlertCircle, CheckCircle2, Info, TrendingUp
-} from "lucide-react";
+'use client';
+import { use } from 'react';
+import Link from 'next/link';
+import { useEvaluationStore } from '@/store/evaluationStore';
+import { computeDashboardSummary, calcImpactScore, scoreToBand } from '@/lib/scoring';
+import { ESG_TOPICS } from '@/data/esg-topics';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { PriorityChip, ConfidenceChip } from '@/components/ui/Badge';
+import { ScoreBar } from '@/components/ui/ProgressBar';
+import { ArrowRight, Leaf, Users, AlertCircle, CheckCircle2, Info, TrendingUp } from 'lucide-react';
 
-interface Props { params: Promise<{ id: string }> }
+interface Props {
+  params: Promise<{ id: string }>;
+}
 
 export default function ImpactSummaryPage({ params }: Props) {
   const { id } = use(params);
@@ -30,24 +30,25 @@ export default function ImpactSummaryPage({ params }: Props) {
     );
   }
 
-  const summary = evaluation?.stage1 && evaluation?.stage2
-    ? computeDashboardSummary(evaluation as import('@/types/evaluation').Evaluation)
-    : null;
+  const summary =
+    evaluation?.stage1 && evaluation?.stage2
+      ? computeDashboardSummary(evaluation as import('@/types/evaluation').Evaluation)
+      : null;
 
-  const envTopics = ESG_TOPICS.filter((t) => t.category === "E");
-  const socTopics = ESG_TOPICS.filter((t) => t.category === "S" || t.category === "G");
+  const envTopics = ESG_TOPICS.filter((t) => t.category === 'E');
+  const socTopics = ESG_TOPICS.filter((t) => t.category === 'S' || t.category === 'G');
 
   function getScore(topicId: string) {
-    const section = envTopics.find((t) => t.id === topicId) ? "environmental" : "social";
-    const assessment = evaluation!.stage1![section as "environmental" | "social"][topicId];
+    const section = envTopics.find((t) => t.id === topicId) ? 'environmental' : 'social';
+    const assessment = evaluation!.stage1![section as 'environmental' | 'social'][topicId];
     return assessment ? calcImpactScore(assessment) : 0;
   }
 
   const allTopicScores = summary ? [...summary.environmentalScores, ...summary.socialScores] : [];
   const materialTopics = allTopicScores.filter((t) => t.rawScore >= 2);
-  const highPriorityTopics = allTopicScores.filter((t) => t.band === "high");
-  const lowTopics = allTopicScores.filter((t) => t.band === "low" || t.band === "verylow");
-  const naTopics = allTopicScores.filter((t) => t.band === "na");
+  const highPriorityTopics = allTopicScores.filter((t) => t.band === 'high');
+  const lowTopics = allTopicScores.filter((t) => t.band === 'low' || t.band === 'verylow');
+  const naTopics = allTopicScores.filter((t) => t.band === 'na');
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-8">
@@ -73,11 +74,11 @@ export default function ImpactSummaryPage({ params }: Props) {
             <span className="text-gray-600">Assessment confidence:</span>
             <ConfidenceChip level={summary.confidenceBand} />
             <span className="text-xs text-gray-500">
-              {summary.confidenceBand === "Low"
-                ? "Many inputs are assumed — adding measured/estimated data will improve confidence."
-                : summary.confidenceBand === "Moderate"
-                ? "Mix of estimated and assumed inputs — review key topics carefully."
-                : "Good input quality — most topics based on measured or estimated data."}
+              {summary.confidenceBand === 'Low'
+                ? 'Many inputs are assumed — adding measured/estimated data will improve confidence.'
+                : summary.confidenceBand === 'Moderate'
+                  ? 'Mix of estimated and assumed inputs — review key topics carefully.'
+                  : 'Good input quality — most topics based on measured or estimated data.'}
             </span>
           </div>
         </div>
@@ -89,16 +90,22 @@ export default function ImpactSummaryPage({ params }: Props) {
           <div className="flex items-center gap-2 mb-3">
             <AlertCircle size={16} className="text-red-600" />
             <h2 className="font-bold text-red-800">
-              {highPriorityTopics.length} High-Priority {highPriorityTopics.length === 1 ? "Topic" : "Topics"}
+              {highPriorityTopics.length} High-Priority{' '}
+              {highPriorityTopics.length === 1 ? 'Topic' : 'Topics'}
             </h2>
           </div>
           <div className="space-y-2">
             {highPriorityTopics.map((t) => {
               const def = ESG_TOPICS.find((e) => e.id === t.topicId);
               return (
-                <div key={t.topicId} className="flex items-center justify-between bg-white rounded-xl px-4 py-2.5 border border-red-100">
+                <div
+                  key={t.topicId}
+                  className="flex items-center justify-between bg-white rounded-xl px-4 py-2.5 border border-red-100"
+                >
                   <div>
-                    <span className="font-bold text-sm text-red-900">{t.topicId} — {def?.title}</span>
+                    <span className="font-bold text-sm text-red-900">
+                      {t.topicId} — {def?.title}
+                    </span>
                     <p className="text-xs text-red-700 mt-0.5 italic">"{def?.question}"</p>
                   </div>
                   <PriorityChip band={t.band} score={t.rawScore} />
@@ -107,31 +114,36 @@ export default function ImpactSummaryPage({ params }: Props) {
             })}
           </div>
           <p className="text-xs text-red-700 mt-3">
-            These topics require strategic action. Build measurable plans and embed them in your product design now.
+            These topics require strategic action. Build measurable plans and embed them in your
+            product design now.
           </p>
         </div>
       )}
 
       {/* Material topics */}
-      {materialTopics.filter((t) => t.band !== "high").length > 0 && (
+      {materialTopics.filter((t) => t.band !== 'high').length > 0 && (
         <Card className="mb-6">
           <h2 className="font-bold text-amber-800 mb-3 flex items-center gap-2">
             <AlertCircle size={15} className="text-amber-600" />
             Relevant Material Topics
           </h2>
           <div className="space-y-2">
-            {materialTopics.filter((t) => t.band !== "high").map((t) => {
-              const def = ESG_TOPICS.find((e) => e.id === t.topicId);
-              return (
-                <div key={t.topicId} className="flex items-center justify-between">
-                  <span className="text-sm text-gray-800">{t.topicId} — {def?.title}</span>
-                  <div className="flex items-center gap-3">
-                    <ScoreBar score={t.rawScore} className="w-24" />
-                    <PriorityChip band={t.band} score={t.rawScore} />
+            {materialTopics
+              .filter((t) => t.band !== 'high')
+              .map((t) => {
+                const def = ESG_TOPICS.find((e) => e.id === t.topicId);
+                return (
+                  <div key={t.topicId} className="flex items-center justify-between">
+                    <span className="text-sm text-gray-800">
+                      {t.topicId} — {def?.title}
+                    </span>
+                    <div className="flex items-center gap-3">
+                      <ScoreBar score={t.rawScore} className="w-24" />
+                      <PriorityChip band={t.band} score={t.rawScore} />
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
           </div>
         </Card>
       )}
@@ -147,7 +159,7 @@ export default function ImpactSummaryPage({ params }: Props) {
             const score = getScore(topic.id);
             const assessment = evaluation.stage1!.environmental[topic.id];
             if (!assessment) return null;
-            const band = assessment.applicable ? scoreToBand(score, true) : "na" as const;
+            const band = assessment.applicable ? scoreToBand(score, true) : ('na' as const);
             return (
               <div key={topic.id} className="flex items-center gap-3">
                 <div className="w-8 text-xs font-bold text-gray-500">{topic.id}</div>
@@ -175,7 +187,7 @@ export default function ImpactSummaryPage({ params }: Props) {
             const score = getScore(topic.id);
             const assessment = evaluation.stage1!.social[topic.id];
             if (!assessment) return null;
-            const band = assessment.applicable ? scoreToBand(score, true) : "na" as const;
+            const band = assessment.applicable ? scoreToBand(score, true) : ('na' as const);
             return (
               <div key={topic.id} className="flex items-center gap-3">
                 <div className="w-8 text-xs font-bold text-gray-500">{topic.id}</div>
@@ -202,13 +214,15 @@ export default function ImpactSummaryPage({ params }: Props) {
           {materialTopics.length > 0 && (
             <li className="flex items-start gap-2">
               <span className="text-brand mt-0.5">→</span>
-              Review the {materialTopics.length} material topic{materialTopics.length > 1 ? "s" : ""} and set near-term improvement targets.
+              Review the {materialTopics.length} material topic
+              {materialTopics.length > 1 ? 's' : ''} and set near-term improvement targets.
             </li>
           )}
           {highPriorityTopics.length > 0 && (
             <li className="flex items-start gap-2">
               <span className="text-brand mt-0.5">→</span>
-              Build explicit design choices around {highPriorityTopics.map(t => t.topicId).join(", ")} — these are your hot spots.
+              Build explicit design choices around{' '}
+              {highPriorityTopics.map((t) => t.topicId).join(', ')} — these are your hot spots.
             </li>
           )}
           {naTopics.length > 0 && (

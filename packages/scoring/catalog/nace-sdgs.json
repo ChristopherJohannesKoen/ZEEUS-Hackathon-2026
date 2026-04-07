@@ -1,9 +1,17 @@
 [
-  { "code": "01", "division": "Crop and animal production, hunting and related service activities", "sdgs": [2, 12, 13, 15] },
+  {
+    "code": "01",
+    "division": "Crop and animal production, hunting and related service activities",
+    "sdgs": [2, 12, 13, 15]
+  },
   { "code": "02", "division": "Forestry and logging", "sdgs": [12, 13, 15] },
   { "code": "03", "division": "Fishing and aquaculture", "sdgs": [2, 12, 14] },
   { "code": "05", "division": "Mining of coal and lignite", "sdgs": [8, 12, 13, 15] },
-  { "code": "06", "division": "Extraction of crude petroleum and natural gas", "sdgs": [7, 12, 13] },
+  {
+    "code": "06",
+    "division": "Extraction of crude petroleum and natural gas",
+    "sdgs": [7, 12, 13]
+  },
   { "code": "07", "division": "Mining of metal ores", "sdgs": [8, 12, 13] },
   { "code": "08", "division": "Other mining and quarrying", "sdgs": [8, 12, 13] },
   { "code": "09", "division": "Mining support service activities", "sdgs": [8, 12, 13] },
@@ -12,31 +20,87 @@
   { "code": "12", "division": "Manufacture of tobacco products", "sdgs": [3, 12] },
   { "code": "13", "division": "Manufacture of textiles", "sdgs": [8, 12] },
   { "code": "14", "division": "Manufacture of wearing apparel", "sdgs": [8, 12] },
-  { "code": "15", "division": "Manufacture of leather and related products of other materials", "sdgs": [8, 12] },
-  { "code": "16", "division": "Manufacture of wood and of products of wood and cork, except furniture; manufacture of articles of straw and plaiting materials", "sdgs": [8, 12, 13, 15] },
+  {
+    "code": "15",
+    "division": "Manufacture of leather and related products of other materials",
+    "sdgs": [8, 12]
+  },
+  {
+    "code": "16",
+    "division": "Manufacture of wood and of products of wood and cork, except furniture; manufacture of articles of straw and plaiting materials",
+    "sdgs": [8, 12, 13, 15]
+  },
   { "code": "17", "division": "Manufacture of paper and paper products", "sdgs": [8, 12, 13, 15] },
   { "code": "18", "division": "Printing and reproduction of recorded media", "sdgs": [12] },
-  { "code": "19", "division": "Manufacture of coke and refined petroleum products", "sdgs": [7, 12, 13] },
-  { "code": "20", "division": "Manufacture of chemicals and chemical products", "sdgs": [3, 12, 13] },
-  { "code": "21", "division": "Manufacture of basic pharmaceutical products and pharmaceutical preparations", "sdgs": [3, 9, 12] },
+  {
+    "code": "19",
+    "division": "Manufacture of coke and refined petroleum products",
+    "sdgs": [7, 12, 13]
+  },
+  {
+    "code": "20",
+    "division": "Manufacture of chemicals and chemical products",
+    "sdgs": [3, 12, 13]
+  },
+  {
+    "code": "21",
+    "division": "Manufacture of basic pharmaceutical products and pharmaceutical preparations",
+    "sdgs": [3, 9, 12]
+  },
   { "code": "22", "division": "Manufacture of rubber and plastic products", "sdgs": [12, 13] },
-  { "code": "23", "division": "Manufacture of other non-metallic mineral products", "sdgs": [12, 13] },
+  {
+    "code": "23",
+    "division": "Manufacture of other non-metallic mineral products",
+    "sdgs": [12, 13]
+  },
   { "code": "24", "division": "Manufacture of basic metals", "sdgs": [8, 12] },
-  { "code": "25", "division": "Manufacture of fabricated metal products, except machinery and equipment", "sdgs": [8, 12] },
-  { "code": "26", "division": "Manufacture of computer, electronic and optical products", "sdgs": [9, 12] },
+  {
+    "code": "25",
+    "division": "Manufacture of fabricated metal products, except machinery and equipment",
+    "sdgs": [8, 12]
+  },
+  {
+    "code": "26",
+    "division": "Manufacture of computer, electronic and optical products",
+    "sdgs": [9, 12]
+  },
   { "code": "27", "division": "Manufacture of electrical equipment", "sdgs": [9, 12] },
   { "code": "28", "division": "Manufacture of machinery and equipment n.e.c.", "sdgs": [9, 12] },
-  { "code": "29", "division": "Manufacture of motor vehicles, trailers and semi-trailers", "sdgs": [9, 11, 13] },
+  {
+    "code": "29",
+    "division": "Manufacture of motor vehicles, trailers and semi-trailers",
+    "sdgs": [9, 11, 13]
+  },
   { "code": "30", "division": "Manufacture of other transport equipment", "sdgs": [9, 11, 13] },
   { "code": "31", "division": "Manufacture of furniture", "sdgs": [12] },
   { "code": "32", "division": "Other manufacturing", "sdgs": [12] },
-  { "code": "33", "division": "Repair, maintenance and installation of machinery and equipment", "sdgs": [9, 12] },
-  { "code": "35", "division": "Electricity, gas, steam and air conditioning supply", "sdgs": [7, 13] },
+  {
+    "code": "33",
+    "division": "Repair, maintenance and installation of machinery and equipment",
+    "sdgs": [9, 12]
+  },
+  {
+    "code": "35",
+    "division": "Electricity, gas, steam and air conditioning supply",
+    "sdgs": [7, 13]
+  },
   { "code": "36", "division": "Water collection, treatment and supply", "sdgs": [6, 12] },
   { "code": "37", "division": "Sewerage", "sdgs": [6, 12] },
-  { "code": "38", "division": "Waste collection, recovery and disposal activities", "sdgs": [11, 12, 13] },
-  { "code": "39", "division": "Remediation activities and other waste management service activities", "sdgs": [6, 12, 13, 15] },
-  { "code": "41", "division": "Construction of residential and non-residential buildings", "sdgs": [9, 11, 12] },
+  {
+    "code": "38",
+    "division": "Waste collection, recovery and disposal activities",
+    "sdgs": [11, 12, 13]
+  },
+  {
+    "code": "39",
+    "division": "Remediation activities and other waste management service activities",
+    "sdgs": [6, 12, 13, 15]
+  },
+  {
+    "code": "41",
+    "division": "Construction of residential and non-residential buildings",
+    "sdgs": [9, 11, 12]
+  },
   { "code": "42", "division": "Civil engineering", "sdgs": [9, 11] },
   { "code": "43", "division": "Specialised construction activities", "sdgs": [9, 11] },
   { "code": "46", "division": "Wholesale trade", "sdgs": [8, 12] },
@@ -44,46 +108,134 @@
   { "code": "49", "division": "Land transport and transport via pipelines", "sdgs": [9, 11, 13] },
   { "code": "50", "division": "Water transport", "sdgs": [9, 13, 14] },
   { "code": "51", "division": "Air transport", "sdgs": [9, 13] },
-  { "code": "52", "division": "Warehousing, storage and support activities for transportation", "sdgs": [9, 12] },
+  {
+    "code": "52",
+    "division": "Warehousing, storage and support activities for transportation",
+    "sdgs": [9, 12]
+  },
   { "code": "53", "division": "Postal and courier activities", "sdgs": [9] },
   { "code": "55", "division": "Accommodation", "sdgs": [8, 12] },
   { "code": "56", "division": "Food and beverage service activities", "sdgs": [3, 8, 12] },
   { "code": "58", "division": "Publishing activities", "sdgs": [4, 9, 16] },
-  { "code": "59", "division": "Motion picture, video and television programme production, sound recording and music publishing activities", "sdgs": [4, 5, 16] },
-  { "code": "60", "division": "Programming, broadcasting, news agency and other content distribution activities", "sdgs": [4, 9, 16] },
+  {
+    "code": "59",
+    "division": "Motion picture, video and television programme production, sound recording and music publishing activities",
+    "sdgs": [4, 5, 16]
+  },
+  {
+    "code": "60",
+    "division": "Programming, broadcasting, news agency and other content distribution activities",
+    "sdgs": [4, 9, 16]
+  },
   { "code": "61", "division": "Telecommunication", "sdgs": [9, 17] },
-  { "code": "62", "division": "Computer programming, consultancy and related activities", "sdgs": [8, 9] },
-  { "code": "63", "division": "Computing infrastructure, data processing, hosting and other information service activities", "sdgs": [9, 12] },
-  { "code": "64", "division": "Financial service activities, except insurance and pension funding", "sdgs": [8, 9, 10] },
-  { "code": "65", "division": "Insurance, reinsurance and pension funding, except compulsory social security", "sdgs": [1, 8] },
-  { "code": "66", "division": "Activities auxiliary to financial services and insurance activities", "sdgs": [8, 10] },
+  {
+    "code": "62",
+    "division": "Computer programming, consultancy and related activities",
+    "sdgs": [8, 9]
+  },
+  {
+    "code": "63",
+    "division": "Computing infrastructure, data processing, hosting and other information service activities",
+    "sdgs": [9, 12]
+  },
+  {
+    "code": "64",
+    "division": "Financial service activities, except insurance and pension funding",
+    "sdgs": [8, 9, 10]
+  },
+  {
+    "code": "65",
+    "division": "Insurance, reinsurance and pension funding, except compulsory social security",
+    "sdgs": [1, 8]
+  },
+  {
+    "code": "66",
+    "division": "Activities auxiliary to financial services and insurance activities",
+    "sdgs": [8, 10]
+  },
   { "code": "68", "division": "Real estate activities", "sdgs": [11, 12, 13] },
   { "code": "69", "division": "Legal and accounting activities", "sdgs": [16] },
-  { "code": "70", "division": "Activities of head offices and management consultancy", "sdgs": [8, 9, 12] },
-  { "code": "71", "division": "Architectural and engineering activities; technical testing and analysis", "sdgs": [9, 11, 13] },
+  {
+    "code": "70",
+    "division": "Activities of head offices and management consultancy",
+    "sdgs": [8, 9, 12]
+  },
+  {
+    "code": "71",
+    "division": "Architectural and engineering activities; technical testing and analysis",
+    "sdgs": [9, 11, 13]
+  },
   { "code": "72", "division": "Scientific research and development", "sdgs": [9, 17] },
-  { "code": "73", "division": "Activities of advertising, market research and public relations", "sdgs": [12, 16] },
-  { "code": "74", "division": "Other professional, scientific and technical activities", "sdgs": [8, 9] },
+  {
+    "code": "73",
+    "division": "Activities of advertising, market research and public relations",
+    "sdgs": [12, 16]
+  },
+  {
+    "code": "74",
+    "division": "Other professional, scientific and technical activities",
+    "sdgs": [8, 9]
+  },
   { "code": "75", "division": "Veterinary activities", "sdgs": [3, 15] },
   { "code": "77", "division": "Rental and leasing activities", "sdgs": [11, 12] },
   { "code": "78", "division": "Employment activities", "sdgs": [8, 10] },
-  { "code": "79", "division": "Travel agency, tour operator and other reservation service and related activities", "sdgs": [8, 12] },
+  {
+    "code": "79",
+    "division": "Travel agency, tour operator and other reservation service and related activities",
+    "sdgs": [8, 12]
+  },
   { "code": "80", "division": "Investigation and security activities", "sdgs": [16] },
-  { "code": "81", "division": "Services to buildings and landscape activities", "sdgs": [11, 13, 15] },
-  { "code": "82", "division": "Office administrative, office support and other business support activities", "sdgs": [8] },
-  { "code": "84", "division": "Public administration and defence; compulsory social security", "sdgs": [16] },
+  {
+    "code": "81",
+    "division": "Services to buildings and landscape activities",
+    "sdgs": [11, 13, 15]
+  },
+  {
+    "code": "82",
+    "division": "Office administrative, office support and other business support activities",
+    "sdgs": [8]
+  },
+  {
+    "code": "84",
+    "division": "Public administration and defence; compulsory social security",
+    "sdgs": [16]
+  },
   { "code": "85", "division": "Education", "sdgs": [4] },
   { "code": "86", "division": "Human health activities", "sdgs": [3] },
   { "code": "87", "division": "Residential care activities", "sdgs": [3, 10] },
   { "code": "88", "division": "Social work activities without accommodation", "sdgs": [1, 3, 10] },
   { "code": "90", "division": "Arts creation and performing arts activities", "sdgs": [4, 11] },
-  { "code": "91", "division": "Libraries, archives, museums and other cultural activities", "sdgs": [4, 11] },
+  {
+    "code": "91",
+    "division": "Libraries, archives, museums and other cultural activities",
+    "sdgs": [4, 11]
+  },
   { "code": "92", "division": "Gambling and betting activities", "sdgs": [3, 16] },
-  { "code": "93", "division": "Sports activities and amusement and recreation activities", "sdgs": [3, 11] },
+  {
+    "code": "93",
+    "division": "Sports activities and amusement and recreation activities",
+    "sdgs": [3, 11]
+  },
   { "code": "94", "division": "Activities of membership organisations", "sdgs": [16, 17] },
-  { "code": "95", "division": "Repair and maintenance of computers, personal and household goods, and motor vehicles and motorcycles", "sdgs": [12] },
+  {
+    "code": "95",
+    "division": "Repair and maintenance of computers, personal and household goods, and motor vehicles and motorcycles",
+    "sdgs": [12]
+  },
   { "code": "96", "division": "Personal service activities", "sdgs": [8] },
-  { "code": "97", "division": "Activities of households as employers of domestic personnel", "sdgs": [8] },
-  { "code": "98", "division": "Undifferentiated goods- and service-producing activities of private households for own use", "sdgs": [12] },
-  { "code": "99", "division": "Activities of extraterritorial organisations and bodies", "sdgs": [17] }
+  {
+    "code": "97",
+    "division": "Activities of households as employers of domestic personnel",
+    "sdgs": [8]
+  },
+  {
+    "code": "98",
+    "division": "Undifferentiated goods- and service-producing activities of private households for own use",
+    "sdgs": [12]
+  },
+  {
+    "code": "99",
+    "division": "Activities of extraterritorial organisations and bodies",
+    "sdgs": [17]
+  }
 ]

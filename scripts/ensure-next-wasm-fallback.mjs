@@ -5,7 +5,14 @@ import { fileURLToPath } from 'node:url';
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDirectory, '..');
 const sourceDirectory = path.join(repoRoot, 'node_modules', '@next', 'swc-wasm-nodejs');
-const targetDirectory = path.join(repoRoot, 'node_modules', 'next', 'wasm', '@next', 'swc-wasm-nodejs');
+const targetDirectory = path.join(
+  repoRoot,
+  'node_modules',
+  'next',
+  'wasm',
+  '@next',
+  'swc-wasm-nodejs'
+);
 const filesToCopy = ['package.json', 'README.md', 'wasm.d.ts', 'wasm.js', 'wasm_bg.wasm'];
 
 async function fileExists(filePath) {
@@ -31,5 +38,7 @@ if (await fileExists(sourceDirectory)) {
 
   console.log('Prepared Next.js wasm fallback package.');
 } else {
-  console.warn('Skipped Next.js wasm fallback preparation because @next/swc-wasm-nodejs is missing.');
+  console.warn(
+    'Skipped Next.js wasm fallback preparation because @next/swc-wasm-nodejs is missing.'
+  );
 }

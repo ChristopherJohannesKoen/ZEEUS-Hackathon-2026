@@ -1,16 +1,16 @@
-"use client";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
-import { Check, ChevronRight } from "lucide-react";
+'use client';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { cn } from '@/lib/utils';
+import { Check, ChevronRight } from 'lucide-react';
 
 export const EVAL_STEPS = [
-  { key: "summary", label: "Summary", shortLabel: "Summary" },
-  { key: "stage-1", label: "Stage I — Assessment", shortLabel: "Stage I" },
-  { key: "stage-2", label: "Stage II — Risks & Opportunities", shortLabel: "Stage II" },
-  { key: "impact-summary", label: "Impact Summary", shortLabel: "Impact" },
-  { key: "sdg-alignment", label: "SDG Alignment", shortLabel: "SDGs" },
-  { key: "dashboard", label: "Dashboard", shortLabel: "Dashboard" },
+  { key: 'summary', label: 'Summary', shortLabel: 'Summary' },
+  { key: 'stage-1', label: 'Stage I — Assessment', shortLabel: 'Stage I' },
+  { key: 'stage-2', label: 'Stage II — Risks & Opportunities', shortLabel: 'Stage II' },
+  { key: 'impact-summary', label: 'Impact Summary', shortLabel: 'Impact' },
+  { key: 'sdg-alignment', label: 'SDG Alignment', shortLabel: 'SDGs' },
+  { key: 'dashboard', label: 'Dashboard', shortLabel: 'Dashboard' }
 ];
 
 interface EvalNavProps {
@@ -36,18 +36,18 @@ export function EvalNav({ evalId, currentStep, completedSteps = [] }: EvalNavPro
                 <Link
                   href={`/app/evaluate/${evalId}/${step.key}`}
                   className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200",
-                    isActive && "text-brand-dark bg-brand/10",
-                    isDone && "text-brand hover:bg-brand/5",
-                    isPending && "text-gray-400 hover:text-gray-600"
+                    'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200',
+                    isActive && 'text-brand-dark bg-brand/10',
+                    isDone && 'text-brand hover:bg-brand/5',
+                    isPending && 'text-gray-400 hover:text-gray-600'
                   )}
                 >
                   <span
                     className={cn(
-                      "flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold",
-                      isActive && "bg-brand-dark text-white",
-                      isDone && "bg-brand text-white",
-                      isPending && "bg-surface-border text-gray-400"
+                      'flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold',
+                      isActive && 'bg-brand-dark text-white',
+                      isDone && 'bg-brand text-white',
+                      isPending && 'bg-surface-border text-gray-400'
                     )}
                   >
                     {isDone ? <Check size={10} strokeWidth={3} /> : index + 1}
@@ -72,10 +72,10 @@ export function EvalNav({ evalId, currentStep, completedSteps = [] }: EvalNavPro
               <div
                 key={i}
                 className={cn(
-                  "h-1.5 rounded-full transition-all",
-                  i < currentIndex && "bg-brand w-3",
-                  i === currentIndex && "bg-brand-dark w-5",
-                  i > currentIndex && "bg-surface-border w-3"
+                  'h-1.5 rounded-full transition-all',
+                  i < currentIndex && 'bg-brand w-3',
+                  i === currentIndex && 'bg-brand-dark w-5',
+                  i > currentIndex && 'bg-surface-border w-3'
                 )}
               />
             ))}

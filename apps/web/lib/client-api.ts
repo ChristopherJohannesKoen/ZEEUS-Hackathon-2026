@@ -322,10 +322,7 @@ export function updateEvaluationContext(
   });
 }
 
-export function saveStage1Financial(
-  evaluationId: string,
-  body: Stage1FinancialAnswersPayload
-) {
+export function saveStage1Financial(evaluationId: string, body: Stage1FinancialAnswersPayload) {
   return executeMutation<Stage1FinancialAnswer>({
     method: 'PUT',
     expectedStatuses: [200],

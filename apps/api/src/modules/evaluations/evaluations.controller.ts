@@ -1,14 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Patch,
-  Post,
-  Put,
-  Res,
-  UseGuards
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Put, Res, UseGuards } from '@nestjs/common';
 import { ApiCookieAuth, ApiOperation, ApiProduces, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import {
@@ -195,7 +185,9 @@ export class EvaluationsController {
 
   @Get(':id/export.csv')
   @ApiProduces('text/csv')
-  @ApiOperation({ summary: 'Export raw answers and computed scores for a single evaluation as CSV' })
+  @ApiOperation({
+    summary: 'Export raw answers and computed scores for a single evaluation as CSV'
+  })
   async exportCsv(
     @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
     @Param() params: unknown,
@@ -203,7 +195,10 @@ export class EvaluationsController {
   ) {
     const evaluationId = parseZodSchema(EvaluationIdParamsSchema, params).id;
     response.setHeader('Content-Type', 'text/csv');
-    response.setHeader('Content-Disposition', `attachment; filename="evaluation-${evaluationId}.csv"`);
+    response.setHeader(
+      'Content-Disposition',
+      `attachment; filename="evaluation-${evaluationId}.csv"`
+    );
     await this.evaluationsService.exportCsv(currentUser, evaluationId, response);
   }
 }

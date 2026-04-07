@@ -1,10 +1,10 @@
-"use client";
+'use client';
 // ─────────────────────────────────────────────────────────────────────────────
 // Zustand store – frontend mock for all evaluation state
 // Replace each action with API calls when wiring to the real backend.
 // ─────────────────────────────────────────────────────────────────────────────
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type {
   Evaluation,
   StartupContext,
@@ -14,18 +14,15 @@ import type {
   MockUser,
   ESGTopicAssessment,
   RiskItem,
-  OpportunityItem,
-} from "@/types/evaluation";
-import { SEED_EVALUATIONS, MOCK_USER } from "@/data/seed";
-import { generateId } from "@/lib/utils";
-import {
-  calcRiskRating,
-  calcOpportunityRating,
-} from "@/lib/scoring";
-import { ESG_TOPICS } from "@/data/esg-topics";
-import { RISK_DEFINITIONS, OPPORTUNITY_DEFINITIONS } from "@/data/risks-opportunities";
-import { NACE_SDG_MAP } from "@/data/nace";
-import { STAGE_SDG_MAP } from "@/data/sdgs";
+  OpportunityItem
+} from '@/types/evaluation';
+import { SEED_EVALUATIONS, MOCK_USER } from '@/data/seed';
+import { generateId } from '@/lib/utils';
+import { calcRiskRating, calcOpportunityRating } from '@/lib/scoring';
+import { ESG_TOPICS } from '@/data/esg-topics';
+import { RISK_DEFINITIONS, OPPORTUNITY_DEFINITIONS } from '@/data/risks-opportunities';
+import { NACE_SDG_MAP } from '@/data/nace';
+import { STAGE_SDG_MAP } from '@/data/sdgs';
 
 interface EvaluationState {
   currentUser: MockUser;
@@ -39,13 +36,18 @@ interface EvaluationState {
   updateStage1: (id: string, data: Stage1Data) => void;
   updateStage2: (id: string, data: Stage2Data) => void;
   updateSDGAlignment: (id: string, alignment: SDGAlignment[]) => void;
-  updateStatus: (id: string, status: Evaluation["status"]) => void;
+  updateStatus: (id: string, status: Evaluation['status']) => void;
   deleteEvaluation: (id: string) => void;
   duplicateEvaluation: (id: string) => string;
   updateESGTopic: (evalId: string, topicId: string, data: Partial<ESGTopicAssessment>) => void;
   updateRiskItem: (evalId: string, itemId: string, probability: number, impact: number) => void;
   updateRiskApplicable: (evalId: string, itemId: string, applicable: boolean) => void;
-  updateOpportunityItem: (evalId: string, itemId: string, likelihood: number, impact: number) => void;
+  updateOpportunityItem: (
+    evalId: string,
+    itemId: string,
+    likelihood: number,
+    impact: number
+  ) => void;
   updateOpportunityApplicable: (evalId: string, itemId: string, applicable: boolean) => void;
   getEvaluation: (id: string) => Evaluation | undefined;
   computeSDGAlignment: (id: string) => SDGAlignment[];
@@ -62,16 +64,16 @@ function emptyStage1(): Stage1Data {
     scale: 1,
     irreversibility: 1,
     likelihood: 0.5,
-    evidenceBasis: "assumed",
+    evidenceBasis: 'assumed'
   });
 
-  const envTopics = ESG_TOPICS.filter((t) => t.category === "E");
-  const socTopics = ESG_TOPICS.filter((t) => t.category === "S" || t.category === "G");
+  const envTopics = ESG_TOPICS.filter((t) => t.category === 'E');
+  const socTopics = ESG_TOPICS.filter((t) => t.category === 'S' || t.category === 'G');
 
   return {
     financial: { roiIrrNpv: 0, sensitivityAnalysis: 0, uspStrategicFit: 0, marketGrowth: 0 },
     environmental: Object.fromEntries(envTopics.map((t) => [t.id, emptyESG(t.id)])),
-    social: Object.fromEntries(socTopics.map((t) => [t.id, emptyESG(t.id)])),
+    social: Object.fromEntries(socTopics.map((t) => [t.id, emptyESG(t.id)]))
   };
 }
 
@@ -81,15 +83,29 @@ function emptyStage2(): Stage2Data {
     risks: Object.fromEntries(
       RISK_DEFINITIONS.map((r) => [
         r.id,
-        { itemId: r.id, applicable: true, probability: 0, impact: 0, ratingScore: 0, ratingLabel: "Neutral" as const },
+        {
+          itemId: r.id,
+          applicable: true,
+          probability: 0,
+          impact: 0,
+          ratingScore: 0,
+          ratingLabel: 'Neutral' as const
+        }
       ])
     ),
     opportunities: Object.fromEntries(
       OPPORTUNITY_DEFINITIONS.map((o) => [
         o.id,
-        { itemId: o.id, applicable: true, likelihood: 0, impact: 0, ratingScore: 0, ratingLabel: "Neutral" as const },
+        {
+          itemId: o.id,
+          applicable: true,
+          likelihood: 0,
+          impact: 0,
+          ratingScore: 0,
+          ratingLabel: 'Neutral' as const
+        }
       ])
-    ),
+    )
   };
 }
 
@@ -110,14 +126,14 @@ export const useEvaluationStore = create<EvaluationState>()(
         const newEval: Evaluation = {
           id,
           userId: get().currentUser.id,
-          status: "draft",
+          status: 'draft',
           createdAt: now,
           updatedAt: now,
-          context,
+          context
         };
         set((state) => ({
           evaluations: [newEval, ...state.evaluations],
-          activeEvaluationId: id,
+          activeEvaluationId: id
         }));
         return id;
       },
@@ -126,47 +142,43 @@ export const useEvaluationStore = create<EvaluationState>()(
         set((state) => ({
           evaluations: state.evaluations.map((e) =>
             e.id === id ? { ...e, context, updatedAt: new Date().toISOString() } : e
-          ),
+          )
         })),
 
       updateStatus: (id, status) =>
         set((state) => ({
           evaluations: state.evaluations.map((e) =>
             e.id === id ? { ...e, status, updatedAt: new Date().toISOString() } : e
-          ),
+          )
         })),
 
       updateStage1: (id, data) =>
         set((state) => ({
           evaluations: state.evaluations.map((e) =>
             e.id === id
-              ? { ...e, stage1: data, status: "in_progress", updatedAt: new Date().toISOString() }
+              ? { ...e, stage1: data, status: 'in_progress', updatedAt: new Date().toISOString() }
               : e
-          ),
+          )
         })),
 
       updateStage2: (id, data) =>
         set((state) => ({
           evaluations: state.evaluations.map((e) =>
-            e.id === id
-              ? { ...e, stage2: data, updatedAt: new Date().toISOString() }
-              : e
-          ),
+            e.id === id ? { ...e, stage2: data, updatedAt: new Date().toISOString() } : e
+          )
         })),
 
       updateSDGAlignment: (id, alignment) =>
         set((state) => ({
           evaluations: state.evaluations.map((e) =>
-            e.id === id
-              ? { ...e, sdgAlignment: alignment, updatedAt: new Date().toISOString() }
-              : e
-          ),
+            e.id === id ? { ...e, sdgAlignment: alignment, updatedAt: new Date().toISOString() } : e
+          )
         })),
 
       deleteEvaluation: (id) =>
         set((state) => ({
           evaluations: state.evaluations.filter((e) => e.id !== id),
-          activeEvaluationId: state.activeEvaluationId === id ? null : state.activeEvaluationId,
+          activeEvaluationId: state.activeEvaluationId === id ? null : state.activeEvaluationId
         })),
 
       duplicateEvaluation: (id) => {
@@ -177,13 +189,13 @@ export const useEvaluationStore = create<EvaluationState>()(
         const copy: Evaluation = {
           ...JSON.parse(JSON.stringify(original)),
           id: newId,
-          status: "draft",
+          status: 'draft',
           createdAt: now,
           updatedAt: now,
           context: {
             ...original.context,
-            name: `${original.context.name} (Copy)`,
-          },
+            name: `${original.context.name} (Copy)`
+          }
         };
         set((state) => ({ evaluations: [copy, ...state.evaluations] }));
         return newId;
@@ -195,22 +207,22 @@ export const useEvaluationStore = create<EvaluationState>()(
           evaluations: state.evaluations.map((e) => {
             if (e.id !== evalId || !e.stage1) return e;
             const category = ESG_TOPICS.find((t) => t.id === topicId)?.category;
-            const section = category === "E" ? "environmental" : "social";
+            const section = category === 'E' ? 'environmental' : 'social';
             return {
               ...e,
               updatedAt: new Date().toISOString(),
               stage1: {
                 ...e.stage1,
                 [section]: {
-                  ...e.stage1[section as "environmental" | "social"],
+                  ...e.stage1[section as 'environmental' | 'social'],
                   [topicId]: {
-                    ...e.stage1[section as "environmental" | "social"][topicId],
-                    ...data,
-                  },
-                },
-              },
+                    ...e.stage1[section as 'environmental' | 'social'][topicId],
+                    ...data
+                  }
+                }
+              }
             };
-          }),
+          })
         })),
 
       updateRiskItem: (evalId, itemId, probability, impact) => {
@@ -220,16 +232,22 @@ export const useEvaluationStore = create<EvaluationState>()(
         set((state) => ({
           evaluations: state.evaluations.map((e) => {
             if (e.id !== evalId || !e.stage2) return e;
-            const updated: import('@/types/evaluation').RiskItem = { ...e.stage2.risks[itemId], probability: prob, impact: imp, ratingScore, ratingLabel };
+            const updated: import('@/types/evaluation').RiskItem = {
+              ...e.stage2.risks[itemId],
+              probability: prob,
+              impact: imp,
+              ratingScore,
+              ratingLabel
+            };
             return {
               ...e,
               updatedAt: new Date().toISOString(),
               stage2: {
                 ...e.stage2,
-                risks: { ...e.stage2.risks, [itemId]: updated },
-              },
+                risks: { ...e.stage2.risks, [itemId]: updated }
+              }
             } as import('@/types/evaluation').Evaluation;
-          }),
+          })
         }));
       },
 
@@ -247,12 +265,19 @@ export const useEvaluationStore = create<EvaluationState>()(
                   [itemId]: {
                     ...e.stage2.risks[itemId],
                     applicable,
-                    ...(applicable ? {} : { probability: 0, impact: 0, ratingScore: 0, ratingLabel: "Neutral" as const }),
-                  },
-                },
-              },
+                    ...(applicable
+                      ? {}
+                      : {
+                          probability: 0,
+                          impact: 0,
+                          ratingScore: 0,
+                          ratingLabel: 'Neutral' as const
+                        })
+                  }
+                }
+              }
             };
-          }),
+          })
         })),
 
       updateOpportunityItem: (evalId, itemId, likelihood, impact) => {
@@ -262,16 +287,22 @@ export const useEvaluationStore = create<EvaluationState>()(
         set((state) => ({
           evaluations: state.evaluations.map((e) => {
             if (e.id !== evalId || !e.stage2) return e;
-            const updated: import('@/types/evaluation').OpportunityItem = { ...e.stage2.opportunities[itemId], likelihood: lik, impact: imp, ratingScore, ratingLabel };
+            const updated: import('@/types/evaluation').OpportunityItem = {
+              ...e.stage2.opportunities[itemId],
+              likelihood: lik,
+              impact: imp,
+              ratingScore,
+              ratingLabel
+            };
             return {
               ...e,
               updatedAt: new Date().toISOString(),
               stage2: {
                 ...e.stage2,
-                opportunities: { ...e.stage2.opportunities, [itemId]: updated },
-              },
+                opportunities: { ...e.stage2.opportunities, [itemId]: updated }
+              }
             } as import('@/types/evaluation').Evaluation;
-          }),
+          })
         }));
       },
 
@@ -289,12 +320,19 @@ export const useEvaluationStore = create<EvaluationState>()(
                   [itemId]: {
                     ...e.stage2.opportunities[itemId],
                     applicable,
-                    ...(applicable ? {} : { likelihood: 0, impact: 0, ratingScore: 0, ratingLabel: "Neutral" as const }),
-                  },
-                },
-              },
+                    ...(applicable
+                      ? {}
+                      : {
+                          likelihood: 0,
+                          impact: 0,
+                          ratingScore: 0,
+                          ratingLabel: 'Neutral' as const
+                        })
+                  }
+                }
+              }
             };
-          }),
+          })
         })),
 
       initializeStage1IfNeeded: (id) => {
@@ -303,7 +341,7 @@ export const useEvaluationStore = create<EvaluationState>()(
           set((state) => ({
             evaluations: state.evaluations.map((e) =>
               e.id === id ? { ...e, stage1: emptyStage1() } : e
-            ),
+            )
           }));
         }
       },
@@ -314,7 +352,7 @@ export const useEvaluationStore = create<EvaluationState>()(
           set((state) => ({
             evaluations: state.evaluations.map((e) =>
               e.id === id ? { ...e, stage2: emptyStage2() } : e
-            ),
+            )
           }));
         }
       },
@@ -327,17 +365,19 @@ export const useEvaluationStore = create<EvaluationState>()(
         const naceSDGs = new Set<number>(NACE_SDG_MAP[eval_.context.naceCode] ?? []);
 
         const all = new Set([...stageSDGs, ...naceSDGs]);
-        return Array.from(all).map((num) => {
-          let source: "Stage" | "Business" | "Both" = "Business";
-          if (stageSDGs.has(num) && naceSDGs.has(num)) source = "Both";
-          else if (stageSDGs.has(num)) source = "Stage";
-          return { sdgNumber: num, source };
-        }).sort((a, b) => a.sdgNumber - b.sdgNumber);
-      },
+        return Array.from(all)
+          .map((num) => {
+            let source: 'Stage' | 'Business' | 'Both' = 'Business';
+            if (stageSDGs.has(num) && naceSDGs.has(num)) source = 'Both';
+            else if (stageSDGs.has(num)) source = 'Stage';
+            return { sdgNumber: num, source };
+          })
+          .sort((a, b) => a.sdgNumber - b.sdgNumber);
+      }
     }),
     {
-      name: "zeeus-evaluations",
-      version: 1,
+      name: 'zeeus-evaluations',
+      version: 1
     }
   )
 );

@@ -1,10 +1,10 @@
-"use client";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { ZeeusLogo } from "@/components/layout/ZeeusLogo";
-import { Input } from "@/components/ui/Select";
-import { Button } from "@/components/ui/Button";
-import { Lock, Mail, ArrowLeft } from "lucide-react";
+'use client';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { ZeeusLogo } from '@/components/layout/ZeeusLogo';
+import { Input } from '@/components/ui/Select';
+import { Button } from '@/components/ui/Button';
+import { Lock, Mail, ArrowLeft } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -12,7 +12,7 @@ export default function LoginPage() {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     // Mocked auth — always succeeds
-    router.push("/app");
+    router.push('/app');
   }
 
   return (
@@ -28,17 +28,15 @@ export default function LoginPage() {
         </div>
         <div className="relative z-10 text-center max-w-md">
           <ZeeusLogo dark className="justify-center mb-8" />
-          <h2 className="text-3xl font-black text-white mb-4">
-            Sustainability by Design
-          </h2>
+          <h2 className="text-3xl font-black text-white mb-4">Sustainability by Design</h2>
           <p className="text-white/80 text-lg leading-relaxed">
             Guide your startup toward impact and resilience with the ZEEUS SbyD Tool.
           </p>
           <div className="mt-8 grid grid-cols-3 gap-4">
             {[
-              { label: "SDGs", value: "17" },
-              { label: "ESRS Topics", value: "10" },
-              { label: "Minutes", value: "~30" },
+              { label: 'SDGs', value: '17' },
+              { label: 'ESRS Topics', value: '10' },
+              { label: 'Minutes', value: '~30' }
             ].map((stat) => (
               <div key={stat.label} className="bg-white/10 rounded-2xl p-4">
                 <div className="text-3xl font-black text-zeeus-lime">{stat.value}</div>
@@ -83,9 +81,7 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="text-sm font-semibold text-gray-700 block mb-1.5">
-                Password
-              </label>
+              <label className="text-sm font-semibold text-gray-700 block mb-1.5">Password</label>
               <div className="relative">
                 <Lock size={16} className="absolute left-3 top-3 text-gray-400" />
                 <input
@@ -102,14 +98,12 @@ export default function LoginPage() {
           </form>
 
           <div className="mt-4 text-center">
-            <p className="text-xs text-gray-400">
-              Demo mode: any credentials work.
-            </p>
+            <p className="text-xs text-gray-400">Demo mode: any credentials work.</p>
           </div>
 
           <div className="mt-6 pt-6 border-t border-surface-border text-center">
             <p className="text-sm text-gray-500">
-              Don't have an account?{" "}
+              Don't have an account?{' '}
               <Link href="/signup" className="font-semibold text-brand hover:text-brand-dark">
                 Sign up
               </Link>

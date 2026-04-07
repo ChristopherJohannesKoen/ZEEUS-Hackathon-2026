@@ -114,7 +114,10 @@ export function getProjects(query: Partial<ProjectListQuery> = {}) {
 }
 
 export function getEvaluations() {
-  return protectedServerRequest<EvaluationListResponse>(() => serverClient.evaluations.list(), [200]);
+  return protectedServerRequest<EvaluationListResponse>(
+    () => serverClient.evaluations.list(),
+    [200]
+  );
 }
 
 export function getEvaluation(evaluationId: string) {

@@ -66,7 +66,9 @@ export function EvaluationsListClient({ evaluations }: { evaluations: Evaluation
 
       {filteredEvaluations.length === 0 ? (
         <Card className="border-dashed border-surface-border bg-[#fbfdf8]">
-          <h2 className="text-xl font-bold text-slate-950">No evaluations match the current filters</h2>
+          <h2 className="text-xl font-bold text-slate-950">
+            No evaluations match the current filters
+          </h2>
           <p className="mt-3 max-w-xl text-sm leading-7 text-slate-600">
             Adjust the search term or status filter, or start a fresh evaluation from the wizard.
           </p>
@@ -86,7 +88,9 @@ export function EvaluationsListClient({ evaluations }: { evaluations: Evaluation
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="space-y-3">
                   <div className="flex flex-wrap gap-2">
-                    <Badge tone={evaluationStatusTone(evaluation.status)}>{evaluation.status}</Badge>
+                    <Badge tone={evaluationStatusTone(evaluation.status)}>
+                      {evaluation.status}
+                    </Badge>
                     <Badge tone={confidenceTone(evaluation.confidenceBand)}>
                       {evaluation.confidenceBand} confidence
                     </Badge>
@@ -109,14 +113,20 @@ export function EvaluationsListClient({ evaluations }: { evaluations: Evaluation
               <div className="mt-5 grid gap-3 md:grid-cols-3">
                 <div className="rounded-2xl bg-[#f4f9ee] px-4 py-3">
                   <p className="text-xs uppercase tracking-[0.2em] text-[#5c7353]">Financial</p>
-                  <p className="mt-2 text-2xl font-black text-slate-950">{evaluation.financialTotal}/12</p>
+                  <p className="mt-2 text-2xl font-black text-slate-950">
+                    {evaluation.financialTotal}/12
+                  </p>
                 </div>
                 <div className="rounded-2xl bg-[#f4f9ee] px-4 py-3">
                   <p className="text-xs uppercase tracking-[0.2em] text-[#5c7353]">Risk overall</p>
-                  <p className="mt-2 text-2xl font-black text-slate-950">{evaluation.riskOverall.toFixed(1)}</p>
+                  <p className="mt-2 text-2xl font-black text-slate-950">
+                    {evaluation.riskOverall.toFixed(1)}
+                  </p>
                 </div>
                 <div className="rounded-2xl bg-[#f4f9ee] px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.2em] text-[#5c7353]">Opportunity overall</p>
+                  <p className="text-xs uppercase tracking-[0.2em] text-[#5c7353]">
+                    Opportunity overall
+                  </p>
                   <p className="mt-2 text-2xl font-black text-slate-950">
                     {evaluation.opportunityOverall.toFixed(1)}
                   </p>

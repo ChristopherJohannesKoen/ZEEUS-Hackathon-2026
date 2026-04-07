@@ -15,7 +15,9 @@ export default async function EvaluationsPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#58724d]">
             Workspace
           </p>
-          <h1 className="mt-2 text-4xl font-black tracking-tight text-slate-950">Saved evaluations</h1>
+          <h1 className="mt-2 text-4xl font-black tracking-tight text-slate-950">
+            Saved evaluations
+          </h1>
           <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
             Resume drafts, inspect completed dashboards, and keep the startup assessment flow in a
             single persistent workspace instead of a spreadsheet folder.

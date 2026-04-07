@@ -2,17 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  Button,
-  Card,
-  Field,
-  Select
-} from '@packages/ui';
-import type {
-  EvaluationDetail,
-  Stage2OpportunityAnswer,
-  Stage2RiskAnswer
-} from '@packages/shared';
+import { Button, Card, Field, Select } from '@packages/ui';
+import type { EvaluationDetail, Stage2OpportunityAnswer, Stage2RiskAnswer } from '@packages/shared';
 import { saveStage2Opportunities, saveStage2Risks } from '../lib/client-api';
 
 const probabilityOptions = [
@@ -128,7 +119,10 @@ export function StageTwoForm({ evaluation }: { evaluation: EvaluationDetail }) {
         <h3 className="text-xl font-bold text-slate-950">Risks</h3>
         <div className="mt-5 grid gap-5">
           {risks.map((item) => (
-            <div className="rounded-[28px] border border-[#dde9d0] bg-[#fbfdf8] p-5" key={item.riskCode}>
+            <div
+              className="rounded-[28px] border border-[#dde9d0] bg-[#fbfdf8] p-5"
+              key={item.riskCode}
+            >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#5a7352]">
@@ -143,7 +137,9 @@ export function StageTwoForm({ evaluation }: { evaluation: EvaluationDetail }) {
                     onChange={(event) =>
                       setRisks((current) =>
                         current.map((entry) =>
-                          entry.riskCode === item.riskCode ? normaliseRisk(entry, event.target.checked) : entry
+                          entry.riskCode === item.riskCode
+                            ? normaliseRisk(entry, event.target.checked)
+                            : entry
                         )
                       )
                     }
@@ -161,7 +157,10 @@ export function StageTwoForm({ evaluation }: { evaluation: EvaluationDetail }) {
                       setRisks((current) =>
                         current.map((entry) =>
                           entry.riskCode === item.riskCode
-                            ? { ...entry, probability: event.target.value as Stage2RiskAnswer['probability'] }
+                            ? {
+                                ...entry,
+                                probability: event.target.value as Stage2RiskAnswer['probability']
+                              }
                             : entry
                         )
                       )
@@ -202,7 +201,11 @@ export function StageTwoForm({ evaluation }: { evaluation: EvaluationDetail }) {
                       setRisks((current) =>
                         current.map((entry) =>
                           entry.riskCode === item.riskCode
-                            ? { ...entry, evidenceBasis: event.target.value as Stage2RiskAnswer['evidenceBasis'] }
+                            ? {
+                                ...entry,
+                                evidenceBasis: event.target
+                                  .value as Stage2RiskAnswer['evidenceBasis']
+                              }
                             : entry
                         )
                       )
@@ -232,7 +235,10 @@ export function StageTwoForm({ evaluation }: { evaluation: EvaluationDetail }) {
         <h3 className="text-xl font-bold text-slate-950">Opportunities</h3>
         <div className="mt-5 grid gap-5">
           {opportunities.map((item) => (
-            <div className="rounded-[28px] border border-[#dde9d0] bg-[#fbfdf8] p-5" key={item.opportunityCode}>
+            <div
+              className="rounded-[28px] border border-[#dde9d0] bg-[#fbfdf8] p-5"
+              key={item.opportunityCode}
+            >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#5a7352]">
@@ -269,7 +275,8 @@ export function StageTwoForm({ evaluation }: { evaluation: EvaluationDetail }) {
                           entry.opportunityCode === item.opportunityCode
                             ? {
                                 ...entry,
-                                likelihood: event.target.value as Stage2OpportunityAnswer['likelihood']
+                                likelihood: event.target
+                                  .value as Stage2OpportunityAnswer['likelihood']
                               }
                             : entry
                         )
@@ -291,7 +298,10 @@ export function StageTwoForm({ evaluation }: { evaluation: EvaluationDetail }) {
                       setOpportunities((current) =>
                         current.map((entry) =>
                           entry.opportunityCode === item.opportunityCode
-                            ? { ...entry, impact: event.target.value as Stage2OpportunityAnswer['impact'] }
+                            ? {
+                                ...entry,
+                                impact: event.target.value as Stage2OpportunityAnswer['impact']
+                              }
                             : entry
                         )
                       )
@@ -313,7 +323,8 @@ export function StageTwoForm({ evaluation }: { evaluation: EvaluationDetail }) {
                           entry.opportunityCode === item.opportunityCode
                             ? {
                                 ...entry,
-                                evidenceBasis: event.target.value as Stage2OpportunityAnswer['evidenceBasis']
+                                evidenceBasis: event.target
+                                  .value as Stage2OpportunityAnswer['evidenceBasis']
                               }
                             : entry
                         )

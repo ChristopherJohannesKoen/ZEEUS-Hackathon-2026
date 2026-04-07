@@ -1,14 +1,6 @@
-import Link from "next/link";
-import { ZeeusLogo } from "@/components/layout/ZeeusLogo";
-import {
-  ArrowRight,
-  Leaf,
-  TrendingUp,
-  Globe2,
-  ShieldCheck,
-  Zap,
-  BarChart3,
-} from "lucide-react";
+import Link from 'next/link';
+import { ZeeusLogo } from '@/components/layout/ZeeusLogo';
+import { ArrowRight, Leaf, TrendingUp, Globe2, ShieldCheck, Zap, BarChart3 } from 'lucide-react';
 
 export default function LandingPage() {
   return (
@@ -24,10 +16,7 @@ export default function LandingPage() {
             >
               Sign in
             </Link>
-            <Link
-              href="/app/evaluate/start"
-              className="btn-primary text-sm"
-            >
+            <Link href="/app/evaluate/start" className="btn-primary text-sm">
               Start evaluation
               <ArrowRight size={15} />
             </Link>
@@ -38,7 +27,10 @@ export default function LandingPage() {
       {/* Hero */}
       <section className="relative overflow-hidden">
         {/* Background */}
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, #39B54A 0%, #00654A 100%)', opacity: 0.97 }} />
+        <div
+          className="absolute inset-0"
+          style={{ background: 'linear-gradient(135deg, #39B54A 0%, #00654A 100%)', opacity: 0.97 }}
+        />
         <div className="absolute inset-0 pattern-circles opacity-30" />
         {/* Decorative SVG circles */}
         <div className="absolute right-0 top-0 opacity-10">
@@ -53,22 +45,21 @@ export default function LandingPage() {
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-2 rounded-full bg-white/15 border border-white/25 px-4 py-1.5 mb-6">
               <span className="h-2 w-2 rounded-full bg-zeeus-lime animate-pulse" />
-              <span className="text-white text-xs font-semibold tracking-wide">Sustainability by Design (SbyD) Tool</span>
+              <span className="text-white text-xs font-semibold tracking-wide">
+                Sustainability by Design (SbyD) Tool
+              </span>
             </div>
 
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white leading-tight mb-6">
-              Build a startup that's{" "}
-              <span className="text-zeeus-lime">right for people,</span>
+              Build a startup that's <span className="text-zeeus-lime">right for people,</span>
               <br />
-              the planet, and your{" "}
-              <span className="text-zeeus-lime">bottom line.</span>
+              the planet, and your <span className="text-zeeus-lime">bottom line.</span>
             </h1>
 
             <p className="text-white/85 text-lg md:text-xl leading-relaxed mb-8 max-w-2xl">
               The ZEEUS SbyD Tool weaves sustainability into your startup decisions from day one.
-              This is a{" "}
-              <strong className="text-white">guidance tool, not a judgment tool</strong> — helping
-              you align with UN SDGs and ESRS dual materiality in a startup-friendly way.
+              This is a <strong className="text-white">guidance tool, not a judgment tool</strong> —
+              helping you align with UN SDGs and ESRS dual materiality in a startup-friendly way.
             </p>
 
             <div className="flex flex-wrap gap-4">
@@ -81,7 +72,8 @@ export default function LandingPage() {
               </Link>
               <Link
                 href="/login"
-                className="inline-flex items-center gap-2 rounded-xl border-2 text-white px-7 py-3.5 text-base font-semibold transition-all duration-200" style={{ borderColor: 'rgba(255,255,255,0.5)' }}
+                className="inline-flex items-center gap-2 rounded-xl border-2 text-white px-7 py-3.5 text-base font-semibold transition-all duration-200"
+                style={{ borderColor: 'rgba(255,255,255,0.5)' }}
               >
                 Sign in
               </Link>
@@ -89,7 +81,8 @@ export default function LandingPage() {
 
             {/* Tagline */}
             <p className="mt-8 text-white/60 text-sm italic">
-              "SDGs are a map, not a checklist. Use them to spot hot spots early and design smarter."
+              "SDGs are a map, not a checklist. Use them to spot hot spots early and design
+              smarter."
             </p>
           </div>
         </div>
@@ -108,31 +101,34 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               {
-                step: "01",
+                step: '01',
                 icon: <Globe2 size={20} />,
-                title: "Enter startup context",
-                desc: "Your stage, country, NACE division, offering type, and innovation approach.",
+                title: 'Enter startup context',
+                desc: 'Your stage, country, NACE division, offering type, and innovation approach.'
               },
               {
-                step: "02",
+                step: '02',
                 icon: <BarChart3 size={20} />,
-                title: "Stage I — Holistic Assessment",
-                desc: "Assess financial, environmental (E1–E5), social & governance (S1–S4, G1) indicators inside-out.",
+                title: 'Stage I — Holistic Assessment',
+                desc: 'Assess financial, environmental (E1–E5), social & governance (S1–S4, G1) indicators inside-out.'
               },
               {
-                step: "03",
+                step: '03',
                 icon: <ShieldCheck size={20} />,
-                title: "Stage II — Risks & Opportunities",
-                desc: "Evaluate 10 risks and 10 opportunities from the outside-in using a probability × impact matrix.",
+                title: 'Stage II — Risks & Opportunities',
+                desc: 'Evaluate 10 risks and 10 opportunities from the outside-in using a probability × impact matrix.'
               },
               {
-                step: "04",
+                step: '04',
                 icon: <TrendingUp size={20} />,
-                title: "Dashboard & SDG Alignment",
-                desc: "Get your impact summary, SDG alignment, top risks/opportunities, and actionable recommendations.",
-              },
+                title: 'Dashboard & SDG Alignment',
+                desc: 'Get your impact summary, SDG alignment, top risks/opportunities, and actionable recommendations.'
+              }
             ].map((item) => (
-              <div key={item.step} className="card relative overflow-hidden group hover:shadow-card-hover hover:-translate-y-1 transition-all duration-200">
+              <div
+                key={item.step}
+                className="card relative overflow-hidden group hover:shadow-card-hover hover:-translate-y-1 transition-all duration-200"
+              >
                 <div className="absolute top-3 right-3 text-5xl font-black text-surface-border group-hover:text-brand/10 transition-colors">
                   {item.step}
                 </div>
@@ -154,19 +150,19 @@ export default function LandingPage() {
             {[
               {
                 icon: <Leaf size={22} className="text-brand" />,
-                title: "Qual before quant — by design",
-                desc: "Early-stage founders rarely have perfect measurements. ESRS explicitly begins with qualitative judgements. L/M/H is a legitimate first pass.",
+                title: 'Qual before quant — by design',
+                desc: 'Early-stage founders rarely have perfect measurements. ESRS explicitly begins with qualitative judgements. L/M/H is a legitimate first pass.'
               },
               {
                 icon: <Globe2 size={22} className="text-brand" />,
-                title: "SDGs are a map, not a checklist",
-                desc: "You don't need all 169 targets at once. You need the few relevant to your model today. The tool selects them by stage and NACE sector.",
+                title: 'SDGs are a map, not a checklist',
+                desc: "You don't need all 169 targets at once. You need the few relevant to your model today. The tool selects them by stage and NACE sector."
               },
               {
                 icon: <Zap size={22} className="text-brand" />,
-                title: "Built on accountability",
-                desc: "The tool rewards honesty. Genuine inputs strengthen your case with buyers, partners, investors, and regulators as you scale.",
-              },
+                title: 'Built on accountability',
+                desc: 'The tool rewards honesty. Genuine inputs strengthen your case with buyers, partners, investors, and regulators as you scale.'
+              }
             ].map((item) => (
               <div key={item.title} className="flex gap-4">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand/10 flex-shrink-0">
@@ -185,12 +181,10 @@ export default function LandingPage() {
       {/* CTA Banner */}
       <section className="py-16" style={{ backgroundColor: '#00654A' }}>
         <div className="max-w-4xl mx-auto px-6 text-center">
-          <h2 className="text-3xl font-black text-white mb-4">
-            Sustainability isn't extra work.
-          </h2>
+          <h2 className="text-3xl font-black text-white mb-4">Sustainability isn't extra work.</h2>
           <p className="text-white/75 text-lg mb-8 max-w-xl mx-auto">
-            It's how you design a product and a business that wins in the better economy.
-            Start your first evaluation in under 5 minutes.
+            It's how you design a product and a business that wins in the better economy. Start your
+            first evaluation in under 5 minutes.
           </p>
           <Link
             href="/app/evaluate/start"
@@ -207,13 +201,16 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <ZeeusLogo />
           <p className="text-xs text-gray-400 text-center">
-            ZEEUS — Zero Emissions Entrepreneurship for Universal Sustainability.
-            Developed by TUAS – Trier University of Applied Sciences, IfaS.
-            Funded by the European Union (EIT).
+            ZEEUS — Zero Emissions Entrepreneurship for Universal Sustainability. Developed by TUAS
+            – Trier University of Applied Sciences, IfaS. Funded by the European Union (EIT).
           </p>
           <div className="flex gap-4 text-xs text-gray-400">
-            <a href="#" className="hover:text-gray-700">Privacy</a>
-            <a href="#" className="hover:text-gray-700">Terms</a>
+            <a href="#" className="hover:text-gray-700">
+              Privacy
+            </a>
+            <a href="#" className="hover:text-gray-700">
+              Terms
+            </a>
           </div>
         </div>
       </footer>

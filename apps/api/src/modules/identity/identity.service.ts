@@ -1268,7 +1268,9 @@ export class IdentityService implements OnModuleInit {
     });
 
     const existingGroupMap = new Map<string, (typeof existingGroups)[number]>(
-      existingGroups.map((group: (typeof existingGroups)[number]) => [group.externalId, group] as const)
+      existingGroups.map(
+        (group: (typeof existingGroups)[number]) => [group.externalId, group] as const
+      )
     );
     const groupIds: string[] = [];
 

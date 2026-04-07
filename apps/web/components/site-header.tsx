@@ -18,15 +18,27 @@ export function SiteHeader({ currentUser }: { currentUser?: SessionUser }) {
             Workspace
           </Link>
           {currentUser ? (
-            <Link className={buttonClassName({ className: 'bg-brand hover:bg-brand-dark' })} href="/app">
+            <Link
+              className={buttonClassName({ className: 'bg-brand hover:bg-brand-dark' })}
+              href="/app"
+            >
               {currentUser.name}
             </Link>
           ) : (
             <>
-              <Link className={buttonClassName({ variant: 'ghost', className: 'text-slate-700 hover:bg-surface-muted' })} href="/login">
+              <Link
+                className={buttonClassName({
+                  variant: 'ghost',
+                  className: 'text-slate-700 hover:bg-surface-muted'
+                })}
+                href="/login"
+              >
                 Sign in
               </Link>
-              <Link className={buttonClassName({ className: 'bg-brand hover:bg-brand-dark' })} href="/signup">
+              <Link
+                className={buttonClassName({ className: 'bg-brand hover:bg-brand-dark' })}
+                href="/signup"
+              >
                 Create account
               </Link>
             </>

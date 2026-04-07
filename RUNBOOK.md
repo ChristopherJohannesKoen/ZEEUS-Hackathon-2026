@@ -83,6 +83,7 @@ Priority bands:
 ## Seeded data
 
 Three demo evaluations load automatically from `src/data/seed.ts`:
+
 - `eval-001` — AquaPure Tech (completed, all stages filled)
 - `eval-002` — SolarCircle Platform (in progress)
 - `eval-003` — FoodLoop Connect (draft)
@@ -98,13 +99,13 @@ Any form submission goes straight to `/app`.
 
 Each of these is a clean seam:
 
-| Frontend mock | Backend replacement |
-|---|---|
-| `useEvaluationStore()` store actions | NestJS REST endpoints |
-| `SEED_EVALUATIONS` in `seed.ts` | PostgreSQL query via API |
-| `generateId()` | UUID from DB insert |
-| `computeDashboardSummary()` | Move to shared package / backend |
-| `persist(zustand)` | Remove persist, use server state |
+| Frontend mock                        | Backend replacement              |
+| ------------------------------------ | -------------------------------- |
+| `useEvaluationStore()` store actions | NestJS REST endpoints            |
+| `SEED_EVALUATIONS` in `seed.ts`      | PostgreSQL query via API         |
+| `generateId()`                       | UUID from DB insert              |
+| `computeDashboardSummary()`          | Move to shared package / backend |
+| `persist(zustand)`                   | Remove persist, use server state |
 
 ## CSV export
 

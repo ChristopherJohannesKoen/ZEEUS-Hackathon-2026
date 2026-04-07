@@ -2,12 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  Button,
-  Card,
-  Field,
-  Select
-} from '@packages/ui';
+import { Button, Card, Field, Select } from '@packages/ui';
 import { getFinancialIndicatorOptions } from '@packages/scoring';
 import type {
   EvaluationDetail,
@@ -75,7 +70,9 @@ export function StageOneForm({ evaluation }: { evaluation: EvaluationDetail }) {
     },
     {
       title: 'Social and governance indicators',
-      items: topics.filter((item) => item.topicCode.startsWith('S') || item.topicCode.startsWith('G'))
+      items: topics.filter(
+        (item) => item.topicCode.startsWith('S') || item.topicCode.startsWith('G')
+      )
     }
   ];
 
@@ -117,8 +114,7 @@ export function StageOneForm({ evaluation }: { evaluation: EvaluationDetail }) {
           <h2 className="text-2xl font-black text-slate-950">Holistic Startup Assessment</h2>
           <p className="max-w-3xl text-sm leading-7 text-slate-600">
             Financial scores use workbook lookup levels. Environmental, social, and governance
-            topics use the deterministic formula
-            {' '}
+            topics use the deterministic formula{' '}
             <strong>((Magnitude + Scale + Irreversibility) / 3) × Likelihood</strong>.
           </p>
         </div>
@@ -139,7 +135,10 @@ export function StageOneForm({ evaluation }: { evaluation: EvaluationDetail }) {
             <Select
               name="roiLevel"
               onChange={(event) =>
-                setFinancial((current) => ({ ...current, roiLevel: event.target.value as Stage1FinancialAnswersPayload['roiLevel'] }))
+                setFinancial((current) => ({
+                  ...current,
+                  roiLevel: event.target.value as Stage1FinancialAnswersPayload['roiLevel']
+                }))
               }
               value={financial.roiLevel}
             >
@@ -150,13 +149,17 @@ export function StageOneForm({ evaluation }: { evaluation: EvaluationDetail }) {
               ))}
             </Select>
           </Field>
-          <Field hint="How stable the business case stays across scenarios." label={financialOptions.sensitivity.label}>
+          <Field
+            hint="How stable the business case stays across scenarios."
+            label={financialOptions.sensitivity.label}
+          >
             <Select
               name="sensitivityLevel"
               onChange={(event) =>
                 setFinancial((current) => ({
                   ...current,
-                  sensitivityLevel: event.target.value as Stage1FinancialAnswersPayload['sensitivityLevel']
+                  sensitivityLevel: event.target
+                    .value as Stage1FinancialAnswersPayload['sensitivityLevel']
                 }))
               }
               value={financial.sensitivityLevel}
@@ -168,11 +171,17 @@ export function StageOneForm({ evaluation }: { evaluation: EvaluationDetail }) {
               ))}
             </Select>
           </Field>
-          <Field hint="How differentiated and strategically defendable the venture is." label={financialOptions.usp.label}>
+          <Field
+            hint="How differentiated and strategically defendable the venture is."
+            label={financialOptions.usp.label}
+          >
             <Select
               name="uspLevel"
               onChange={(event) =>
-                setFinancial((current) => ({ ...current, uspLevel: event.target.value as Stage1FinancialAnswersPayload['uspLevel'] }))
+                setFinancial((current) => ({
+                  ...current,
+                  uspLevel: event.target.value as Stage1FinancialAnswersPayload['uspLevel']
+                }))
               }
               value={financial.uspLevel}
             >
@@ -183,13 +192,17 @@ export function StageOneForm({ evaluation }: { evaluation: EvaluationDetail }) {
               ))}
             </Select>
           </Field>
-          <Field hint="Use the closest market growth band available." label={financialOptions.marketGrowth.label}>
+          <Field
+            hint="Use the closest market growth band available."
+            label={financialOptions.marketGrowth.label}
+          >
             <Select
               name="marketGrowthLevel"
               onChange={(event) =>
                 setFinancial((current) => ({
                   ...current,
-                  marketGrowthLevel: event.target.value as Stage1FinancialAnswersPayload['marketGrowthLevel']
+                  marketGrowthLevel: event.target
+                    .value as Stage1FinancialAnswersPayload['marketGrowthLevel']
                 }))
               }
               value={financial.marketGrowthLevel}
@@ -209,14 +222,19 @@ export function StageOneForm({ evaluation }: { evaluation: EvaluationDetail }) {
           <h3 className="text-xl font-bold text-slate-950">{group.title}</h3>
           <div className="mt-5 grid gap-5">
             {group.items.map((item) => (
-              <div className="rounded-[28px] border border-[#dde9d0] bg-[#fbfdf8] p-5" key={item.topicCode}>
+              <div
+                className="rounded-[28px] border border-[#dde9d0] bg-[#fbfdf8] p-5"
+                key={item.topicCode}
+              >
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#5a7352]">
                       {item.topicCode}
                     </p>
                     <h4 className="mt-2 text-lg font-bold text-slate-950">{item.title}</h4>
-                    <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">{item.question}</p>
+                    <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">
+                      {item.question}
+                    </p>
                   </div>
                   <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                     <input
@@ -244,7 +262,10 @@ export function StageOneForm({ evaluation }: { evaluation: EvaluationDetail }) {
                         setTopics((current) =>
                           current.map((entry) =>
                             entry.topicCode === item.topicCode
-                              ? { ...entry, magnitude: event.target.value as Stage1TopicAnswer['magnitude'] }
+                              ? {
+                                  ...entry,
+                                  magnitude: event.target.value as Stage1TopicAnswer['magnitude']
+                                }
                               : entry
                           )
                         )
@@ -265,7 +286,10 @@ export function StageOneForm({ evaluation }: { evaluation: EvaluationDetail }) {
                         setTopics((current) =>
                           current.map((entry) =>
                             entry.topicCode === item.topicCode
-                              ? { ...entry, scale: event.target.value as Stage1TopicAnswer['scale'] }
+                              ? {
+                                  ...entry,
+                                  scale: event.target.value as Stage1TopicAnswer['scale']
+                                }
                               : entry
                           )
                         )
@@ -288,7 +312,8 @@ export function StageOneForm({ evaluation }: { evaluation: EvaluationDetail }) {
                             entry.topicCode === item.topicCode
                               ? {
                                   ...entry,
-                                  irreversibility: event.target.value as Stage1TopicAnswer['irreversibility']
+                                  irreversibility: event.target
+                                    .value as Stage1TopicAnswer['irreversibility']
                                 }
                               : entry
                           )
@@ -310,7 +335,10 @@ export function StageOneForm({ evaluation }: { evaluation: EvaluationDetail }) {
                         setTopics((current) =>
                           current.map((entry) =>
                             entry.topicCode === item.topicCode
-                              ? { ...entry, likelihood: event.target.value as Stage1TopicAnswer['likelihood'] }
+                              ? {
+                                  ...entry,
+                                  likelihood: event.target.value as Stage1TopicAnswer['likelihood']
+                                }
                               : entry
                           )
                         )
@@ -330,7 +358,11 @@ export function StageOneForm({ evaluation }: { evaluation: EvaluationDetail }) {
                         setTopics((current) =>
                           current.map((entry) =>
                             entry.topicCode === item.topicCode
-                              ? { ...entry, evidenceBasis: event.target.value as Stage1TopicAnswer['evidenceBasis'] }
+                              ? {
+                                  ...entry,
+                                  evidenceBasis: event.target
+                                    .value as Stage1TopicAnswer['evidenceBasis']
+                                }
                               : entry
                           )
                         )

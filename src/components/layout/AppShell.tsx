@@ -1,10 +1,10 @@
-"use client";
-import { useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
-import { ZeeusLogo } from "./ZeeusLogo";
-import { useEvaluationStore } from "@/store/evaluationStore";
+'use client';
+import { useState } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { cn } from '@/lib/utils';
+import { ZeeusLogo } from './ZeeusLogo';
+import { useEvaluationStore } from '@/store/evaluationStore';
 import {
   LayoutDashboard,
   ClipboardList,
@@ -15,12 +15,12 @@ import {
   Menu,
   X,
   Leaf,
-  BookOpen,
-} from "lucide-react";
+  BookOpen
+} from 'lucide-react';
 
 const NAV_ITEMS = [
-  { href: "/app", label: "Overview", icon: LayoutDashboard },
-  { href: "/app/evaluations", label: "Evaluations", icon: ClipboardList },
+  { href: '/app', label: 'Overview', icon: LayoutDashboard },
+  { href: '/app/evaluations', label: 'Evaluations', icon: ClipboardList }
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -34,14 +34,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-surface-border flex flex-col",
-          "transform transition-transform duration-300 lg:translate-x-0 lg:static lg:flex",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          'fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-surface-border flex flex-col',
+          'transform transition-transform duration-300 lg:translate-x-0 lg:static lg:flex',
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
         {/* Logo */}
         <div className="flex items-center h-16 px-5 border-b border-surface-border flex-shrink-0">
-          <Link href="/app" className="flex items-center gap-2" onClick={() => setSidebarOpen(false)}>
+          <Link
+            href="/app"
+            className="flex items-center gap-2"
+            onClick={() => setSidebarOpen(false)}
+          >
             <ZeeusLogo />
           </Link>
           <button
@@ -67,13 +71,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 href={item.href}
                 onClick={() => setSidebarOpen(false)}
                 className={cn(
-                  "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150",
+                  'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150',
                   active
-                    ? "bg-brand/10 text-brand-dark font-semibold"
-                    : "text-gray-600 hover:bg-surface-muted hover:text-gray-900"
+                    ? 'bg-brand/10 text-brand-dark font-semibold'
+                    : 'text-gray-600 hover:bg-surface-muted hover:text-gray-900'
                 )}
               >
-                <Icon size={16} className={active ? "text-brand" : "text-gray-400"} />
+                <Icon size={16} className={active ? 'text-brand' : 'text-gray-400'} />
                 {item.label}
               </Link>
             );
@@ -171,9 +175,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-auto">
-          {children}
-        </main>
+        <main className="flex-1 overflow-auto">{children}</main>
       </div>
     </div>
   );

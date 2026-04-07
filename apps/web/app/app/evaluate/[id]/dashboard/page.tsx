@@ -37,14 +37,19 @@ export default async function DashboardPage({ params }: { params: Params }) {
                     opportunities.
                   </p>
                 </div>
-                <Badge className="border border-white/20 bg-white/10 text-white" tone={confidenceTone(dashboard.confidenceBand)}>
+                <Badge
+                  className="border border-white/20 bg-white/10 text-white"
+                  tone={confidenceTone(dashboard.confidenceBand)}
+                >
                   {dashboard.confidenceBand} confidence
                 </Badge>
               </div>
 
               <div className="mt-6 grid gap-4 md:grid-cols-3">
                 <div className="rounded-[28px] bg-white/10 p-5">
-                  <p className="text-xs uppercase tracking-[0.22em] text-[#d9ef9b]">Financial total</p>
+                  <p className="text-xs uppercase tracking-[0.22em] text-[#d9ef9b]">
+                    Financial total
+                  </p>
                   <p className="mt-3 text-4xl font-black">{dashboard.financialTotal}/12</p>
                 </div>
                 <div className="rounded-[28px] bg-white/10 p-5">
@@ -52,8 +57,12 @@ export default async function DashboardPage({ params }: { params: Params }) {
                   <p className="mt-3 text-4xl font-black">{dashboard.riskOverall.toFixed(1)}</p>
                 </div>
                 <div className="rounded-[28px] bg-white/10 p-5">
-                  <p className="text-xs uppercase tracking-[0.22em] text-[#d9ef9b]">Opportunity overall</p>
-                  <p className="mt-3 text-4xl font-black">{dashboard.opportunityOverall.toFixed(1)}</p>
+                  <p className="text-xs uppercase tracking-[0.22em] text-[#d9ef9b]">
+                    Opportunity overall
+                  </p>
+                  <p className="mt-3 text-4xl font-black">
+                    {dashboard.opportunityOverall.toFixed(1)}
+                  </p>
                 </div>
               </div>
 
@@ -69,7 +78,8 @@ export default async function DashboardPage({ params }: { params: Params }) {
                 <a
                   className={buttonClassName({
                     variant: 'ghost',
-                    className: 'border border-white/20 text-white hover:bg-white/10 hover:text-white'
+                    className:
+                      'border border-white/20 text-white hover:bg-white/10 hover:text-white'
                   })}
                   href={`/api/evaluations/${evaluation.id}/export.csv`}
                 >
@@ -80,8 +90,12 @@ export default async function DashboardPage({ params }: { params: Params }) {
           </Card>
 
           <Card className="border-surface-border">
-            <p className="text-xs uppercase tracking-[0.25em] text-[#58724d]">Sensitivity and confidence</p>
-            <h2 className="mt-2 text-2xl font-black text-slate-950">Explain near-threshold topics</h2>
+            <p className="text-xs uppercase tracking-[0.25em] text-[#58724d]">
+              Sensitivity and confidence
+            </p>
+            <h2 className="mt-2 text-2xl font-black text-slate-950">
+              Explain near-threshold topics
+            </h2>
             <p className="mt-3 text-sm leading-7 text-slate-600">
               These hints do not change the canonical scores. They help explain where a small shift
               in assumptions could move a topic into a higher priority band.
@@ -213,7 +227,10 @@ export default async function DashboardPage({ params }: { params: Params }) {
               <p className="text-xs uppercase tracking-[0.25em] text-[#58724d]">Recommendations</p>
               <h2 className="mt-2 text-2xl font-black text-slate-950">What to do next</h2>
             </div>
-            <Link className={buttonClassName({ variant: 'secondary' })} href={`/app/report/${evaluation.id}`}>
+            <Link
+              className={buttonClassName({ variant: 'secondary' })}
+              href={`/app/report/${evaluation.id}`}
+            >
               View report
             </Link>
           </div>

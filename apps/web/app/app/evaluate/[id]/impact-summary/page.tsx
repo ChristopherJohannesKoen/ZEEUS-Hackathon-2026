@@ -55,7 +55,9 @@ export default async function ImpactSummaryPage({ params }: { params: Params }) 
             <h2 className="text-xl font-bold text-slate-950">Relevant topics</h2>
             <div className="mt-5 grid gap-3">
               {summary.relevantTopics.length === 0 ? (
-                <p className="text-sm text-slate-600">No topics are currently in the relevant band.</p>
+                <p className="text-sm text-slate-600">
+                  No topics are currently in the relevant band.
+                </p>
               ) : (
                 summary.relevantTopics.map((topic) => (
                   <div className="rounded-2xl bg-[#f7f9f4] p-4" key={topic.topicCode}>
@@ -76,7 +78,10 @@ export default async function ImpactSummaryPage({ params }: { params: Params }) 
             <h2 className="text-xl font-bold text-slate-950">What to consider next</h2>
             <div className="mt-5 grid gap-3">
               {summary.whatToConsiderNext.map((item) => (
-                <div className="rounded-2xl bg-[#f7f9f4] p-4 text-sm leading-7 text-slate-700" key={item}>
+                <div
+                  className="rounded-2xl bg-[#f7f9f4] p-4 text-sm leading-7 text-slate-700"
+                  key={item}
+                >
                   {item}
                 </div>
               ))}
@@ -93,7 +98,10 @@ export default async function ImpactSummaryPage({ params }: { params: Params }) 
               ))}
             </div>
             <div className="mt-6 flex flex-wrap gap-3">
-              <Link className={buttonClassName({ className: 'bg-[#00654A] hover:bg-[#0b7a59]' })} href={`/app/evaluate/${evaluation.id}/sdg-alignment`}>
+              <Link
+                className={buttonClassName({ className: 'bg-[#00654A] hover:bg-[#0b7a59]' })}
+                href={`/app/evaluate/${evaluation.id}/sdg-alignment`}
+              >
                 Continue to SDG alignment
               </Link>
             </div>

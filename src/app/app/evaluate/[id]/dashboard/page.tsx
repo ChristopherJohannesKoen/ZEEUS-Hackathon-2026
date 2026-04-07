@@ -1,23 +1,42 @@
-"use client";
-import { use } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEvaluationStore } from "@/store/evaluationStore";
-import { computeDashboardSummary, generateCSV, downloadCSV } from "@/lib/scoring";
-import { ESG_TOPICS } from "@/data/esg-topics";
-import { RISK_DEFINITIONS, OPPORTUNITY_DEFINITIONS } from "@/data/risks-opportunities";
-import { Card, ScoreCard } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { PriorityChip, RiskChip, OpportunityChip, ConfidenceChip } from "@/components/ui/Badge";
-import { ScoreBar, ProgressBar } from "@/components/ui/ProgressBar";
+'use client';
+import { use } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEvaluationStore } from '@/store/evaluationStore';
+import { computeDashboardSummary, generateCSV, downloadCSV } from '@/lib/scoring';
+import { ESG_TOPICS } from '@/data/esg-topics';
+import { RISK_DEFINITIONS, OPPORTUNITY_DEFINITIONS } from '@/data/risks-opportunities';
+import { Card, ScoreCard } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { PriorityChip, RiskChip, OpportunityChip, ConfidenceChip } from '@/components/ui/Badge';
+import { ScoreBar, ProgressBar } from '@/components/ui/ProgressBar';
 import {
-  DollarSign, Leaf, Users, Shield, TrendingUp,
-  FileText, Download, Lightbulb, AlertTriangle,
-  Info, Eye, BarChart3, CheckCircle,
-} from "lucide-react";
-import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, Tooltip } from "recharts";
+  DollarSign,
+  Leaf,
+  Users,
+  Shield,
+  TrendingUp,
+  FileText,
+  Download,
+  Lightbulb,
+  AlertTriangle,
+  Info,
+  Eye,
+  BarChart3,
+  CheckCircle
+} from 'lucide-react';
+import {
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  ResponsiveContainer,
+  Tooltip
+} from 'recharts';
 
-interface Props { params: Promise<{ id: string }> }
+interface Props {
+  params: Promise<{ id: string }>;
+}
 
 export default function DashboardPage({ params }: Props) {
   const { id } = use(params);
@@ -30,7 +49,9 @@ export default function DashboardPage({ params }: Props) {
       <div className="max-w-3xl mx-auto px-6 py-12 text-center">
         <BarChart3 size={40} className="text-gray-200 mx-auto mb-4" />
         <h2 className="text-lg font-bold text-gray-700 mb-2">Complete your evaluation first</h2>
-        <p className="text-gray-500 mb-6">Finish Stage I and Stage II to unlock your full dashboard.</p>
+        <p className="text-gray-500 mb-6">
+          Finish Stage I and Stage II to unlock your full dashboard.
+        </p>
         <Link href={`/app/evaluate/${id}/stage-1`}>
           <Button variant="primary">Go to Stage I</Button>
         </Link>
@@ -41,10 +62,22 @@ export default function DashboardPage({ params }: Props) {
   const summary = computeDashboardSummary(evaluation!);
   if (!summary) return null;
 
-  const { financialNormalized, environmentalScores, socialScores,
-    materialTopics, highPriorityTopics, riskOverallScore, riskOverallLabel,
-    opportunityOverallScore, opportunityOverallLabel, topRisks, topOpportunities,
-    confidenceBand, sensitivityHints, recommendations } = summary;
+  const {
+    financialNormalized,
+    environmentalScores,
+    socialScores,
+    materialTopics,
+    highPriorityTopics,
+    riskOverallScore,
+    riskOverallLabel,
+    opportunityOverallScore,
+    opportunityOverallLabel,
+    topRisks,
+    topOpportunities,
+    confidenceBand,
+    sensitivityHints,
+    recommendations
+  } = summary;
 
   // Radar chart data
   const radarData = [
@@ -55,12 +88,12 @@ export default function DashboardPage({ params }: Props) {
     ...socialScores.map((t) => {
       const def = ESG_TOPICS.find((e) => e.id === t.topicId);
       return { topic: t.topicId, score: t.rawScore, fullMark: 4, name: def?.title ?? t.topicId };
-    }),
+    })
   ];
 
   function handleExportCSV() {
     const csv = generateCSV(evaluation!);
-    downloadCSV(csv, `${evaluation!.context.name.replace(/\s+/g, "_")}_evaluation.csv`);
+    downloadCSV(csv, `${evaluation!.context.name.replace(/\s+/g, '_')}_evaluation.csv`);
   }
 
   return (
@@ -69,7 +102,9 @@ export default function DashboardPage({ params }: Props) {
       <div className="flex items-start justify-between mb-8">
         <div>
           <h1 className="text-2xl font-black text-gray-900 mb-1">Results Dashboard</h1>
-          <p className="text-sm text-gray-500">{evaluation.context.name} · {evaluation.context.stage}</p>
+          <p className="text-sm text-gray-500">
+            {evaluation.context.name} · {evaluation.context.stage}
+          </p>
         </div>
         <div className="flex gap-2">
           <Button
@@ -94,17 +129,23 @@ export default function DashboardPage({ params }: Props) {
           label="Financial Score"
           value={financialNormalized}
           unit="%"
-          color={financialNormalized >= 66 ? "brand" : financialNormalized >= 33 ? "amber" : "gray"}
+          color={financialNormalized >= 66 ? 'brand' : financialNormalized >= 33 ? 'amber' : 'gray'}
         >
-          <ProgressBar value={financialNormalized} size="sm" className="mt-3"
-            color={financialNormalized >= 66 ? "brand" : financialNormalized >= 33 ? "amber" : "red"} />
+          <ProgressBar
+            value={financialNormalized}
+            size="sm"
+            className="mt-3"
+            color={
+              financialNormalized >= 66 ? 'brand' : financialNormalized >= 33 ? 'amber' : 'red'
+            }
+          />
         </ScoreCard>
 
         <ScoreCard
           label="Risk Level"
           value={riskOverallScore.toFixed(1)}
           max={4}
-          color={riskOverallScore >= 3 ? "red" : riskOverallScore >= 2 ? "amber" : "brand"}
+          color={riskOverallScore >= 3 ? 'red' : riskOverallScore >= 2 ? 'amber' : 'brand'}
         >
           <div className="mt-2">
             <RiskChip label={riskOverallLabel} />
@@ -122,7 +163,13 @@ export default function DashboardPage({ params }: Props) {
           </div>
         </ScoreCard>
 
-        <ScoreCard label="Confidence" value={confidenceBand} color={confidenceBand === "High" ? "brand" : confidenceBand === "Moderate" ? "amber" : "gray"}>
+        <ScoreCard
+          label="Confidence"
+          value={confidenceBand}
+          color={
+            confidenceBand === 'High' ? 'brand' : confidenceBand === 'Moderate' ? 'amber' : 'gray'
+          }
+        >
           <div className="mt-2">
             <ConfidenceChip level={confidenceBand} />
           </div>
@@ -188,19 +235,26 @@ export default function DashboardPage({ params }: Props) {
             <div className="space-y-2">
               {topRisks.length === 0 ? (
                 <p className="text-xs text-gray-400">No applicable risks assessed yet.</p>
-              ) : topRisks.map((r) => {
-                const def = RISK_DEFINITIONS.find((d) => d.id === r.id);
-                return (
-                  <div key={r.id} className="flex items-center gap-3 p-3 rounded-xl bg-red-50/50 border border-red-100">
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-bold text-gray-500">{r.id}</div>
-                      <div className="text-sm font-semibold text-gray-800 truncate">{r.label}</div>
-                      <div className="text-[11px] text-gray-500">{def?.category}</div>
+              ) : (
+                topRisks.map((r) => {
+                  const def = RISK_DEFINITIONS.find((d) => d.id === r.id);
+                  return (
+                    <div
+                      key={r.id}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-red-50/50 border border-red-100"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-bold text-gray-500">{r.id}</div>
+                        <div className="text-sm font-semibold text-gray-800 truncate">
+                          {r.label}
+                        </div>
+                        <div className="text-[11px] text-gray-500">{def?.category}</div>
+                      </div>
+                      <RiskChip label={r.rating} score={r.score} />
                     </div>
-                    <RiskChip label={r.rating} score={r.score} />
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </Card>
 
@@ -214,19 +268,26 @@ export default function DashboardPage({ params }: Props) {
             <div className="space-y-2">
               {topOpportunities.length === 0 ? (
                 <p className="text-xs text-gray-400">No applicable opportunities assessed yet.</p>
-              ) : topOpportunities.map((o) => {
-                const def = OPPORTUNITY_DEFINITIONS.find((d) => d.id === o.id);
-                return (
-                  <div key={o.id} className="flex items-center gap-3 p-3 rounded-xl bg-green-50/50 border border-green-100">
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-bold text-gray-500">{o.id}</div>
-                      <div className="text-sm font-semibold text-gray-800 truncate">{o.label}</div>
-                      <div className="text-[11px] text-gray-500">{def?.category}</div>
+              ) : (
+                topOpportunities.map((o) => {
+                  const def = OPPORTUNITY_DEFINITIONS.find((d) => d.id === o.id);
+                  return (
+                    <div
+                      key={o.id}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-green-50/50 border border-green-100"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-bold text-gray-500">{o.id}</div>
+                        <div className="text-sm font-semibold text-gray-800 truncate">
+                          {o.label}
+                        </div>
+                        <div className="text-[11px] text-gray-500">{def?.category}</div>
+                      </div>
+                      <OpportunityChip label={o.rating} score={o.score} />
                     </div>
-                    <OpportunityChip label={o.rating} score={o.score} />
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </Card>
         </div>
@@ -243,7 +304,7 @@ export default function DashboardPage({ params }: Props) {
               <ResponsiveContainer width="100%" height="100%">
                 <RadarChart data={radarData} outerRadius={60}>
                   <PolarGrid stroke="#E5EDDF" />
-                  <PolarAngleAxis dataKey="topic" tick={{ fontSize: 9, fill: "#6B7280" }} />
+                  <PolarAngleAxis dataKey="topic" tick={{ fontSize: 9, fill: '#6B7280' }} />
                   <Radar
                     name="Score"
                     dataKey="score"
@@ -252,7 +313,9 @@ export default function DashboardPage({ params }: Props) {
                     fillOpacity={0.25}
                     strokeWidth={2}
                   />
-                  <Tooltip formatter={(v: unknown) => typeof v === "number" ? v.toFixed(2) : String(v)} />
+                  <Tooltip
+                    formatter={(v: unknown) => (typeof v === 'number' ? v.toFixed(2) : String(v))}
+                  />
                 </RadarChart>
               </ResponsiveContainer>
             </div>
@@ -266,7 +329,10 @@ export default function DashboardPage({ params }: Props) {
             </h3>
             <ul className="space-y-2.5">
               {recommendations.map((rec, i) => (
-                <li key={i} className="flex items-start gap-2 text-xs text-gray-700 leading-relaxed">
+                <li
+                  key={i}
+                  className="flex items-start gap-2 text-xs text-gray-700 leading-relaxed"
+                >
                   <CheckCircle size={11} className="text-brand mt-0.5 flex-shrink-0" />
                   {rec}
                 </li>
@@ -287,7 +353,10 @@ export default function DashboardPage({ params }: Props) {
             {sensitivityHints.length > 0 ? (
               <div className="space-y-2">
                 {sensitivityHints.map((hint, i) => (
-                  <div key={i} className="flex items-start gap-1.5 text-[11px] text-amber-700 bg-amber-50 rounded-lg p-2">
+                  <div
+                    key={i}
+                    className="flex items-start gap-1.5 text-[11px] text-amber-700 bg-amber-50 rounded-lg p-2"
+                  >
                     <AlertTriangle size={10} className="mt-0.5 flex-shrink-0" />
                     {hint}
                   </div>
@@ -313,7 +382,9 @@ export default function DashboardPage({ params }: Props) {
                   const def = ESG_TOPICS.find((e) => e.id === t.topicId);
                   return (
                     <div key={t.topicId} className="flex items-center justify-between">
-                      <span className="text-xs text-gray-700">{t.topicId} — {def?.title}</span>
+                      <span className="text-xs text-gray-700">
+                        {t.topicId} — {def?.title}
+                      </span>
                       <PriorityChip band={t.band} />
                     </div>
                   );
@@ -324,10 +395,16 @@ export default function DashboardPage({ params }: Props) {
 
           {/* Navigation actions */}
           <div className="flex flex-col gap-2">
-            <Link href={`/app/evaluate/${id}/sdg-alignment`} className="btn-secondary text-sm text-center">
+            <Link
+              href={`/app/evaluate/${id}/sdg-alignment`}
+              className="btn-secondary text-sm text-center"
+            >
               SDG Alignment →
             </Link>
-            <Link href={`/app/report/${id}`} className="btn-primary text-sm text-center flex items-center justify-center gap-2">
+            <Link
+              href={`/app/report/${id}`}
+              className="btn-primary text-sm text-center flex items-center justify-center gap-2"
+            >
               <FileText size={14} />
               View Full Report
             </Link>

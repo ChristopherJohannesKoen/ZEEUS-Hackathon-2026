@@ -81,7 +81,10 @@ export default async function Page() {
                 </p>
               </div>
               <div className="flex flex-wrap gap-3">
-                <Link className="btn-primary bg-white text-brand-dark hover:bg-brand-lime hover:text-brand-dark" href={primaryHref}>
+                <Link
+                  className="btn-primary bg-white text-brand-dark hover:bg-brand-lime hover:text-brand-dark"
+                  href={primaryHref}
+                >
                   {currentUser ? 'Start evaluation' : 'Create account'}
                 </Link>
                 <Link
@@ -119,7 +122,9 @@ export default async function Page() {
               <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#58724d]">
                 Workflow
               </p>
-              <h2 className="mt-3 text-4xl font-black text-slate-950">A cleaner version of the workbook flow</h2>
+              <h2 className="mt-3 text-4xl font-black text-slate-950">
+                A cleaner version of the workbook flow
+              </h2>
               <p className="mt-4 text-sm leading-7 text-slate-600">
                 The wizard keeps the original assessment logic intact, then makes the outputs faster
                 to review, save, and explain.
@@ -128,7 +133,10 @@ export default async function Page() {
 
             <div className="mt-12 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
               {workflowSteps.map((step) => (
-                <div className="card-surface group p-6 transition hover:-translate-y-1 hover:shadow-card-hover" key={step.id}>
+                <div
+                  className="card-surface group p-6 transition hover:-translate-y-1 hover:shadow-card-hover"
+                  key={step.id}
+                >
                   <div className="text-5xl font-black text-[#e0e9d5] transition group-hover:text-brand/20">
                     {step.id}
                   </div>
@@ -164,7 +172,10 @@ export default async function Page() {
               to move faster than the spreadsheet without losing rigor.
             </p>
             <div className="mt-8">
-              <Link className="btn-primary bg-brand-lime text-brand-dark hover:bg-white" href={primaryHref}>
+              <Link
+                className="btn-primary bg-brand-lime text-brand-dark hover:bg-white"
+                href={primaryHref}
+              >
                 {currentUser ? 'Create a new evaluation' : 'Start with an account'}
               </Link>
             </div>

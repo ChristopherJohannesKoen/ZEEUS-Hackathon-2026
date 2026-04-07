@@ -51,23 +51,34 @@ export default async function ReportPage({ params }: { params: Params }) {
                   {report.evaluation.country} · {report.evaluation.naceDivision}
                 </p>
               </div>
-              <Badge className="border border-white/20 bg-white/10 text-white" tone={confidenceTone(report.dashboard.confidenceBand)}>
+              <Badge
+                className="border border-white/20 bg-white/10 text-white"
+                tone={confidenceTone(report.dashboard.confidenceBand)}
+              >
                 {report.dashboard.confidenceBand} confidence
               </Badge>
             </div>
 
             <div className="mt-6 grid gap-4 md:grid-cols-3">
               <div className="rounded-[28px] bg-white/10 p-5">
-                <p className="text-xs uppercase tracking-[0.22em] text-[#d9ef9b]">Financial total</p>
+                <p className="text-xs uppercase tracking-[0.22em] text-[#d9ef9b]">
+                  Financial total
+                </p>
                 <p className="mt-3 text-4xl font-black">{report.dashboard.financialTotal}/12</p>
               </div>
               <div className="rounded-[28px] bg-white/10 p-5">
                 <p className="text-xs uppercase tracking-[0.22em] text-[#d9ef9b]">Risk overall</p>
-                <p className="mt-3 text-4xl font-black">{report.dashboard.riskOverall.toFixed(1)}</p>
+                <p className="mt-3 text-4xl font-black">
+                  {report.dashboard.riskOverall.toFixed(1)}
+                </p>
               </div>
               <div className="rounded-[28px] bg-white/10 p-5">
-                <p className="text-xs uppercase tracking-[0.22em] text-[#d9ef9b]">Opportunity overall</p>
-                <p className="mt-3 text-4xl font-black">{report.dashboard.opportunityOverall.toFixed(1)}</p>
+                <p className="text-xs uppercase tracking-[0.22em] text-[#d9ef9b]">
+                  Opportunity overall
+                </p>
+                <p className="mt-3 text-4xl font-black">
+                  {report.dashboard.opportunityOverall.toFixed(1)}
+                </p>
               </div>
             </div>
           </div>
@@ -76,8 +87,12 @@ export default async function ReportPage({ params }: { params: Params }) {
         <Card className="border-surface-border">
           <h2 className="text-xl font-bold text-slate-950">Startup context</h2>
           <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-2xl bg-[#f7f9f4] p-4">Stage: {report.evaluation.currentStage.replaceAll('_', ' ')}</div>
-            <div className="rounded-2xl bg-[#f7f9f4] p-4">Offering: {report.evaluation.offeringType}</div>
+            <div className="rounded-2xl bg-[#f7f9f4] p-4">
+              Stage: {report.evaluation.currentStage.replaceAll('_', ' ')}
+            </div>
+            <div className="rounded-2xl bg-[#f7f9f4] p-4">
+              Offering: {report.evaluation.offeringType}
+            </div>
             <div className="rounded-2xl bg-[#f7f9f4] p-4">
               Launched: {report.evaluation.launched ? 'Yes' : 'No'}
             </div>
@@ -94,7 +109,9 @@ export default async function ReportPage({ params }: { params: Params }) {
               <div className="rounded-[28px] bg-[#f7f9f4] p-4" key={topic.topicCode}>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <h3 className="font-bold text-slate-950">{topic.title}</h3>
-                  <Badge tone={priorityTone(topic.priorityBand)}>{topic.priorityBand.replaceAll('_', ' ')}</Badge>
+                  <Badge tone={priorityTone(topic.priorityBand)}>
+                    {topic.priorityBand.replaceAll('_', ' ')}
+                  </Badge>
                 </div>
                 <p className="mt-2 text-sm text-slate-600">Impact score: {topic.impactScore}</p>
               </div>

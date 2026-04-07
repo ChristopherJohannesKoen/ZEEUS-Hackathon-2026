@@ -23,7 +23,9 @@ export default async function SdgAlignmentPage({ params }: { params: Params }) {
           <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#58724d]">
             SDG alignment
           </p>
-          <h1 className="mt-2 text-3xl font-black text-slate-950">Merged stage and business SDGs</h1>
+          <h1 className="mt-2 text-3xl font-black text-slate-950">
+            Merged stage and business SDGs
+          </h1>
           <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
             Stage and NACE suggestions are de-duplicated, tagged, and linked to the official UN goal
             pages.
@@ -34,7 +36,15 @@ export default async function SdgAlignmentPage({ params }: { params: Params }) {
           {alignment.items.map((sdg) => (
             <Card className="border-[#d7e8c8]" key={`${sdg.number}-${sdg.sourceType}`}>
               <div className="flex items-center justify-between gap-3">
-                <Badge tone={sdg.sourceType === 'both' ? 'emerald' : sdg.sourceType === 'stage' ? 'amber' : 'slate'}>
+                <Badge
+                  tone={
+                    sdg.sourceType === 'both'
+                      ? 'emerald'
+                      : sdg.sourceType === 'stage'
+                        ? 'amber'
+                        : 'slate'
+                  }
+                >
                   {sdg.sourceType}
                 </Badge>
                 <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
@@ -55,7 +65,10 @@ export default async function SdgAlignmentPage({ params }: { params: Params }) {
         </div>
 
         <div>
-          <Link className={buttonClassName({ className: 'bg-[#00654A] hover:bg-[#0b7a59]' })} href={`/app/evaluate/${evaluation.id}/dashboard`}>
+          <Link
+            className={buttonClassName({ className: 'bg-[#00654A] hover:bg-[#0b7a59]' })}
+            href={`/app/evaluate/${evaluation.id}/dashboard`}
+          >
             Continue to dashboard
           </Link>
         </div>

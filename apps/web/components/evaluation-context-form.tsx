@@ -2,19 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  Badge,
-  Button,
-  Card,
-  Field,
-  Input,
-  Select,
-  buttonClassName
-} from '@packages/ui';
-import {
-  getNaceDivisionOptions,
-  getStartupStageOptions
-} from '@packages/scoring';
+import { Badge, Button, Card, Field, Input, Select, buttonClassName } from '@packages/ui';
+import { getNaceDivisionOptions, getStartupStageOptions } from '@packages/scoring';
 import type { EvaluationContextPayload } from '@packages/shared';
 import { createEvaluation, updateEvaluationContext } from '../lib/client-api';
 
@@ -56,10 +45,16 @@ export function EvaluationContextForm({
             name: String(formData.get('name') ?? ''),
             country: String(formData.get('country') ?? ''),
             naceDivision: String(formData.get('naceDivision') ?? ''),
-            offeringType: String(formData.get('offeringType') ?? 'product') as EvaluationContextPayload['offeringType'],
+            offeringType: String(
+              formData.get('offeringType') ?? 'product'
+            ) as EvaluationContextPayload['offeringType'],
             launched: String(formData.get('launched') ?? 'false') === 'true',
-            currentStage: String(formData.get('currentStage') ?? 'pre_seed') as EvaluationContextPayload['currentStage'],
-            innovationApproach: String(formData.get('innovationApproach') ?? 'sustaining') as EvaluationContextPayload['innovationApproach']
+            currentStage: String(
+              formData.get('currentStage') ?? 'pre_seed'
+            ) as EvaluationContextPayload['currentStage'],
+            innovationApproach: String(
+              formData.get('innovationApproach') ?? 'sustaining'
+            ) as EvaluationContextPayload['innovationApproach']
           };
 
           try {
@@ -70,7 +65,9 @@ export function EvaluationContextForm({
             router.push(`/app/evaluate/${evaluation.id}/summary`);
             router.refresh();
           } catch (error) {
-            setErrorMessage(error instanceof Error ? error.message : 'Unable to save this evaluation.');
+            setErrorMessage(
+              error instanceof Error ? error.message : 'Unable to save this evaluation.'
+            );
           } finally {
             setIsPending(false);
           }
@@ -78,10 +75,23 @@ export function EvaluationContextForm({
       >
         <div className="grid gap-5 md:grid-cols-2">
           <Field hint="Use the startup or venture name shown in your report." label="Name">
-            <Input defaultValue={initialValue?.name} name="name" placeholder="Circular Grid Labs" required />
+            <Input
+              defaultValue={initialValue?.name}
+              name="name"
+              placeholder="Circular Grid Labs"
+              required
+            />
           </Field>
-          <Field hint="Country context helps frame stage and market interpretation." label="Country">
-            <Input defaultValue={initialValue?.country} name="country" placeholder="Germany" required />
+          <Field
+            hint="Country context helps frame stage and market interpretation."
+            label="Country"
+          >
+            <Input
+              defaultValue={initialValue?.country}
+              name="country"
+              placeholder="Germany"
+              required
+            />
           </Field>
         </div>
 
@@ -100,13 +110,19 @@ export function EvaluationContextForm({
         </Field>
 
         <div className="grid gap-5 md:grid-cols-2">
-          <Field hint="The toolkit adapts a few suggestions depending on the offering type." label="Offering type">
+          <Field
+            hint="The toolkit adapts a few suggestions depending on the offering type."
+            label="Offering type"
+          >
             <Select defaultValue={initialValue?.offeringType} name="offeringType" required>
               <option value="product">Product</option>
               <option value="service">Service</option>
             </Select>
           </Field>
-          <Field hint="Choose yes only if the offer is already launched to the market." label="Launched">
+          <Field
+            hint="Choose yes only if the offer is already launched to the market."
+            label="Launched"
+          >
             <Select
               defaultValue={initialValue ? String(initialValue.launched) : 'false'}
               name="launched"
@@ -119,7 +135,10 @@ export function EvaluationContextForm({
         </div>
 
         <div className="grid gap-5 md:grid-cols-2">
-          <Field hint="This drives the stage-based SDG suggestions and next-step guidance." label="Current stage">
+          <Field
+            hint="This drives the stage-based SDG suggestions and next-step guidance."
+            label="Current stage"
+          >
             <Select defaultValue={initialValue?.currentStage} name="currentStage" required>
               {startupStageOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -128,8 +147,15 @@ export function EvaluationContextForm({
               ))}
             </Select>
           </Field>
-          <Field hint="Choose the closest fit to how the venture changes the market." label="Innovation approach">
-            <Select defaultValue={initialValue?.innovationApproach} name="innovationApproach" required>
+          <Field
+            hint="Choose the closest fit to how the venture changes the market."
+            label="Innovation approach"
+          >
+            <Select
+              defaultValue={initialValue?.innovationApproach}
+              name="innovationApproach"
+              required
+            >
               <option value="sustaining">Sustaining</option>
               <option value="disruptive">Disruptive</option>
             </Select>
@@ -137,7 +163,9 @@ export function EvaluationContextForm({
         </div>
 
         <details className="rounded-2xl border border-[#dce8ce] bg-[#fbfdf7] p-4 text-sm text-[#5d7058]">
-          <summary className="cursor-pointer font-semibold text-[#355d2d]">Why this matters</summary>
+          <summary className="cursor-pointer font-semibold text-[#355d2d]">
+            Why this matters
+          </summary>
           <p className="mt-3 leading-7">
             The tool is an early guidance instrument, not a judgement. These answers create an
             initial compass reading before the full inside-out and outside-in assessment.

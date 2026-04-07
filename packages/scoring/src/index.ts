@@ -217,7 +217,8 @@ const riskActionWindows: Record<RiskRatingLabel, string> = {
   sustainable: 'Routine monitoring and periodic review are enough for now.',
   moderate: 'Assign ownership and track mitigation quarterly.',
   severe: 'Define an immediate mitigation plan with budget, owners, and milestones.',
-  critical: 'Escalate to executive attention now and redesign or stabilise the exposure immediately.'
+  critical:
+    'Escalate to executive attention now and redesign or stabilise the exposure immediately.'
 };
 
 const opportunityActionWindows: Record<OpportunityRatingLabel, string> = {
@@ -299,7 +300,10 @@ function mapFinancialIndicatorResult(
     | Stage1FinancialAnswersPayload['marketGrowthLevel']
 ): FinancialIndicatorResult {
   if (id === 'roi') {
-    const item = financialIndicatorCatalog.roi.levels[level as keyof typeof financialIndicatorCatalog.roi.levels];
+    const item =
+      financialIndicatorCatalog.roi.levels[
+        level as keyof typeof financialIndicatorCatalog.roi.levels
+      ];
     return {
       id,
       label: financialIndicatorCatalog.roi.label,
@@ -324,7 +328,10 @@ function mapFinancialIndicatorResult(
   }
 
   if (id === 'usp') {
-    const item = financialIndicatorCatalog.usp.levels[level as keyof typeof financialIndicatorCatalog.usp.levels];
+    const item =
+      financialIndicatorCatalog.usp.levels[
+        level as keyof typeof financialIndicatorCatalog.usp.levels
+      ];
     return {
       id,
       label: financialIndicatorCatalog.usp.label,
@@ -374,11 +381,13 @@ export function getFinancialIndicatorOptions() {
     },
     sensitivity: {
       label: financialIndicatorCatalog.sensitivity.label,
-      options: Object.entries(financialIndicatorCatalog.sensitivity.levels).map(([value, item]) => ({
-        value,
-        label: item.label,
-        score: item.score
-      }))
+      options: Object.entries(financialIndicatorCatalog.sensitivity.levels).map(
+        ([value, item]) => ({
+          value,
+          label: item.label,
+          score: item.score
+        })
+      )
     },
     usp: {
       label: financialIndicatorCatalog.usp.label,
@@ -390,11 +399,13 @@ export function getFinancialIndicatorOptions() {
     },
     marketGrowth: {
       label: financialIndicatorCatalog.marketGrowth.label,
-      options: Object.entries(financialIndicatorCatalog.marketGrowth.levels).map(([value, item]) => ({
-        value,
-        label: item.label,
-        score: item.score
-      }))
+      options: Object.entries(financialIndicatorCatalog.marketGrowth.levels).map(
+        ([value, item]) => ({
+          value,
+          label: item.label,
+          score: item.score
+        })
+      )
     }
   };
 }
@@ -435,7 +446,9 @@ export function buildInitialSummary(context: EvaluationContextPayload): StageSdg
 
   const naceEntry = findNaceEntry(context.naceDivision);
   const stageSdgs = stageEntry.sdgs.map((number) => createSdgReference(number, 'stage'));
-  const businessSdgs = (naceEntry?.sdgs ?? []).map((number) => createSdgReference(number, 'business'));
+  const businessSdgs = (naceEntry?.sdgs ?? []).map((number) =>
+    createSdgReference(number, 'business')
+  );
 
   return {
     currentStage: context.currentStage,
@@ -451,7 +464,9 @@ export function buildInitialSummary(context: EvaluationContextPayload): StageSdg
   };
 }
 
-export function scoreFinancialAnswers(payload: Stage1FinancialAnswersPayload): Stage1FinancialAnswer {
+export function scoreFinancialAnswers(
+  payload: Stage1FinancialAnswersPayload
+): Stage1FinancialAnswer {
   const items = [
     mapFinancialIndicatorResult('roi', payload.roiLevel),
     mapFinancialIndicatorResult('sensitivity', payload.sensitivityLevel),
@@ -476,10 +491,10 @@ export function scoreStage1TopicAnswer(input: Stage1TopicAnswerInput): Stage1Top
   const impactScore = input.applicable
     ? Number(
         (
-          (dimensionScores[input.magnitude] +
+          ((dimensionScores[input.magnitude] +
             dimensionScores[input.scale] +
             dimensionScores[input.irreversibility]) /
-          3 *
+            3) *
           stageOneLikelihoodScores[input.likelihood]
         ).toFixed(2)
       )
@@ -517,7 +532,9 @@ export function scoreStage2RiskAnswer(input: Stage2RiskAnswerInput): Stage2RiskA
   }
 
   const ratingScore = input.applicable
-    ? Number((stageTwoLikelihoodScores[input.probability] * dimensionScores[input.impact]).toFixed(2))
+    ? Number(
+        (stageTwoLikelihoodScores[input.probability] * dimensionScores[input.impact]).toFixed(2)
+      )
     : 0;
 
   return {
@@ -541,7 +558,9 @@ export function scoreStage2OpportunityAnswer(
   }
 
   const ratingScore = input.applicable
-    ? Number((stageTwoLikelihoodScores[input.likelihood] * dimensionScores[input.impact]).toFixed(2))
+    ? Number(
+        (stageTwoLikelihoodScores[input.likelihood] * dimensionScores[input.impact]).toFixed(2)
+      )
     : 0;
 
   return {
@@ -689,7 +708,9 @@ function buildRecommendations(
     });
   }
 
-  for (const risk of [...stage2Risks].sort((left, right) => right.ratingScore - left.ratingScore).slice(0, 2)) {
+  for (const risk of [...stage2Risks]
+    .sort((left, right) => right.ratingScore - left.ratingScore)
+    .slice(0, 2)) {
     const catalogEntry = riskCatalogByCode.get(risk.riskCode);
     if (!catalogEntry || risk.ratingScore <= 0) {
       continue;
@@ -746,13 +767,19 @@ export function buildImpactSummary(
   const whatToConsiderNext = [
     initialSummary.whatToConsider,
     ...(highPriorityTopics[0]
-      ? [`Prioritise ${highPriorityTopics[0].title.toLowerCase()} first because it is already above the high-priority threshold.`]
+      ? [
+          `Prioritise ${highPriorityTopics[0].title.toLowerCase()} first because it is already above the high-priority threshold.`
+        ]
       : []),
     ...(topRisk && topRisk.ratingScore > 0
-      ? [`Track ${topRisk.title.toLowerCase()} early because it is the strongest outside-in risk signal right now.`]
+      ? [
+          `Track ${topRisk.title.toLowerCase()} early because it is the strongest outside-in risk signal right now.`
+        ]
       : []),
     ...(topOpportunity && topOpportunity.ratingScore > 0
-      ? [`Explore ${topOpportunity.title.toLowerCase()} as the most visible sustainability upside in the current profile.`]
+      ? [
+          `Explore ${topOpportunity.title.toLowerCase()} as the most visible sustainability upside in the current profile.`
+        ]
       : [])
   ];
 
@@ -822,7 +849,12 @@ export function buildDashboard(
         score: item.ratingScore,
         actionWindow: opportunityActionWindows[item.ratingLabel]
       })),
-    recommendations: buildRecommendations(financial, stage1Topics, stage2Risks, stage2Opportunities),
+    recommendations: buildRecommendations(
+      financial,
+      stage1Topics,
+      stage2Risks,
+      stage2Opportunities
+    ),
     confidenceBand,
     sensitivityHints: buildSensitivityHints(stage1Topics)
   };

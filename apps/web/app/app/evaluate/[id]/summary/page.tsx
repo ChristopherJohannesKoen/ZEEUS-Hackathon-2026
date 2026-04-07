@@ -54,15 +54,21 @@ export default async function EvaluationSummaryPage({ params }: { params: Params
                 <p className="mt-3 text-sm leading-7 text-slate-600">{summary.phaseGoal}</p>
               </div>
               <div className="rounded-[28px] bg-[#f4f9ee] p-5">
-                <p className="text-xs uppercase tracking-[0.22em] text-[#5d7355]">What to consider</p>
+                <p className="text-xs uppercase tracking-[0.22em] text-[#5d7355]">
+                  What to consider
+                </p>
                 <p className="mt-2 text-sm leading-7 text-slate-600">{summary.whatToConsider}</p>
               </div>
             </div>
 
             {summary.phaseConsideration ? (
               <div className="mt-4 rounded-[28px] border border-surface-border bg-white p-5">
-                <p className="text-xs uppercase tracking-[0.22em] text-[#5d7355]">Phase consideration</p>
-                <p className="mt-2 text-sm leading-7 text-slate-600">{summary.phaseConsideration}</p>
+                <p className="text-xs uppercase tracking-[0.22em] text-[#5d7355]">
+                  Phase consideration
+                </p>
+                <p className="mt-2 text-sm leading-7 text-slate-600">
+                  {summary.phaseConsideration}
+                </p>
               </div>
             ) : null}
 
@@ -83,7 +89,12 @@ export default async function EvaluationSummaryPage({ params }: { params: Params
               </div>
               <div className="mt-5 flex flex-wrap gap-2">
                 {summary.mergedSdgs.map((sdg) => (
-                  <a href={sdg.url} key={`${sdg.number}-${sdg.sourceType}`} rel="noreferrer" target="_blank">
+                  <a
+                    href={sdg.url}
+                    key={`${sdg.number}-${sdg.sourceType}`}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
                     <Badge tone={sdgTone(sdg.sourceType)}>
                       SDG {sdg.number} · {sdg.sourceType}
                     </Badge>
@@ -122,7 +133,10 @@ export default async function EvaluationSummaryPage({ params }: { params: Params
               >
                 Continue to Stage I
               </Link>
-              <Link className={buttonClassName({ variant: 'secondary' })} href={`/app/evaluate/${evaluation.id}/dashboard`}>
+              <Link
+                className={buttonClassName({ variant: 'secondary' })}
+                href={`/app/evaluate/${evaluation.id}/dashboard`}
+              >
                 View dashboard
               </Link>
             </div>

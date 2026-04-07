@@ -1,13 +1,13 @@
-"use client";
-import { useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEvaluationStore } from "@/store/evaluationStore";
-import { computeDashboardSummary } from "@/lib/scoring";
-import { formatDate, formatDateRelative } from "@/lib/utils";
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { StatusChip, ConfidenceChip } from "@/components/ui/Badge";
+'use client';
+import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEvaluationStore } from '@/store/evaluationStore';
+import { computeDashboardSummary } from '@/lib/scoring';
+import { formatDate, formatDateRelative } from '@/lib/utils';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { StatusChip, ConfidenceChip } from '@/components/ui/Badge';
 import {
   Plus,
   Search,
@@ -17,20 +17,20 @@ import {
   FileText,
   Filter,
   SortAsc,
-  BarChart3,
-} from "lucide-react";
-import type { EvaluationStatus } from "@/types/evaluation";
+  BarChart3
+} from 'lucide-react';
+import type { EvaluationStatus } from '@/types/evaluation';
 
 export default function EvaluationsPage() {
   const router = useRouter();
   const { evaluations, deleteEvaluation, duplicateEvaluation } = useEvaluationStore();
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<EvaluationStatus | "all">("all");
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<EvaluationStatus | 'all'>('all');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   const filtered = evaluations.filter((e) => {
     const matchSearch = e.context.name.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = statusFilter === "all" || e.status === statusFilter;
+    const matchStatus = statusFilter === 'all' || e.status === statusFilter;
     return matchSearch && matchStatus;
   });
 
@@ -51,7 +51,7 @@ export default function EvaluationsPage() {
         <div>
           <h1 className="text-2xl font-black text-gray-900">Evaluations</h1>
           <p className="text-gray-500 mt-1">
-            {evaluations.length} evaluation{evaluations.length !== 1 ? "s" : ""} in your workspace.
+            {evaluations.length} evaluation{evaluations.length !== 1 ? 's' : ''} in your workspace.
           </p>
         </div>
         <Link href="/app/evaluate/start">
@@ -76,17 +76,21 @@ export default function EvaluationsPage() {
 
         <div className="flex items-center gap-2">
           <Filter size={14} className="text-gray-400" />
-          {(["all", "draft", "in_progress", "completed"] as const).map((s) => (
+          {(['all', 'draft', 'in_progress', 'completed'] as const).map((s) => (
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
               className={`rounded-xl px-3 py-2 text-xs font-semibold transition-all ${
                 statusFilter === s
-                  ? "bg-brand text-white"
-                  : "bg-white border border-surface-border text-gray-600 hover:bg-surface-muted"
+                  ? 'bg-brand text-white'
+                  : 'bg-white border border-surface-border text-gray-600 hover:bg-surface-muted'
               }`}
             >
-              {s === "all" ? "All" : s === "in_progress" ? "In Progress" : s.charAt(0).toUpperCase() + s.slice(1)}
+              {s === 'all'
+                ? 'All'
+                : s === 'in_progress'
+                  ? 'In Progress'
+                  : s.charAt(0).toUpperCase() + s.slice(1)}
             </button>
           ))}
         </div>
@@ -97,13 +101,15 @@ export default function EvaluationsPage() {
         <Card className="text-center py-16">
           <BarChart3 size={32} className="text-gray-200 mx-auto mb-3" />
           <p className="text-gray-500 mb-4">
-            {search || statusFilter !== "all"
-              ? "No evaluations match your filters."
-              : "No evaluations yet."}
+            {search || statusFilter !== 'all'
+              ? 'No evaluations match your filters.'
+              : 'No evaluations yet.'}
           </p>
-          {!search && statusFilter === "all" && (
+          {!search && statusFilter === 'all' && (
             <Link href="/app/evaluate/start">
-              <Button variant="primary" leftIcon={<Plus size={15} />}>Start your first evaluation</Button>
+              <Button variant="primary" leftIcon={<Plus size={15} />}>
+                Start your first evaluation
+              </Button>
             </Link>
           )}
         </Card>
@@ -121,7 +127,9 @@ export default function EvaluationsPage() {
                       <StatusChip status={ev.status} />
                     </div>
                     <div className="flex flex-wrap gap-3 text-xs text-gray-500">
-                      <span>{ev.context.naceCode} – {ev.context.naceLabel.slice(0, 35)}...</span>
+                      <span>
+                        {ev.context.naceCode} – {ev.context.naceLabel.slice(0, 35)}...
+                      </span>
                       <span>·</span>
                       <span>{ev.context.stage}</span>
                       <span>·</span>
@@ -135,21 +143,29 @@ export default function EvaluationsPage() {
                   {summary && (
                     <div className="hidden lg:flex items-center gap-5 text-xs border-l border-surface-border pl-5 flex-shrink-0">
                       <div className="text-center">
-                        <div className="text-xl font-black text-brand-dark">{summary.financialNormalized}%</div>
+                        <div className="text-xl font-black text-brand-dark">
+                          {summary.financialNormalized}%
+                        </div>
                         <div className="text-gray-400">Financial</div>
                       </div>
                       <div className="text-center">
-                        <div className={`text-lg font-black ${
-                          summary.riskOverallLabel === "Critical" ? "text-red-700" :
-                          summary.riskOverallLabel === "Severe" ? "text-orange-600" :
-                          "text-amber-600"
-                        }`}>
+                        <div
+                          className={`text-lg font-black ${
+                            summary.riskOverallLabel === 'Critical'
+                              ? 'text-red-700'
+                              : summary.riskOverallLabel === 'Severe'
+                                ? 'text-orange-600'
+                                : 'text-amber-600'
+                          }`}
+                        >
                           {summary.riskOverallLabel}
                         </div>
                         <div className="text-gray-400">Risk</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-lg font-black text-green-700">{summary.opportunityOverallLabel}</div>
+                        <div className="text-lg font-black text-green-700">
+                          {summary.opportunityOverallLabel}
+                        </div>
                         <div className="text-gray-400">Opportunity</div>
                       </div>
                       <ConfidenceChip level={summary.confidenceBand} />
@@ -158,9 +174,12 @@ export default function EvaluationsPage() {
 
                   {/* Actions */}
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    {ev.status === "completed" ? (
+                    {ev.status === 'completed' ? (
                       <>
-                        <Link href={`/app/evaluate/${ev.id}/dashboard`} className="btn-primary text-xs">
+                        <Link
+                          href={`/app/evaluate/${ev.id}/dashboard`}
+                          className="btn-primary text-xs"
+                        >
                           Dashboard <ArrowRight size={12} />
                         </Link>
                         <Link href={`/app/report/${ev.id}`} className="btn-secondary text-xs">
@@ -170,7 +189,7 @@ export default function EvaluationsPage() {
                       </>
                     ) : (
                       <Link
-                        href={`/app/evaluate/${ev.id}/${ev.stage1 ? (ev.stage2 ? "impact-summary" : "stage-2") : "stage-1"}`}
+                        href={`/app/evaluate/${ev.id}/${ev.stage1 ? (ev.stage2 ? 'impact-summary' : 'stage-2') : 'stage-1'}`}
                         className="btn-primary text-xs"
                       >
                         Resume <ArrowRight size={12} />
@@ -200,8 +219,12 @@ export default function EvaluationsPage() {
                       Delete &quot;{ev.context.name}&quot;? This cannot be undone.
                     </p>
                     <div className="flex gap-2">
-                      <Button variant="secondary" size="sm" onClick={() => setDeleteConfirm(null)}>Cancel</Button>
-                      <Button variant="danger" size="sm" onClick={() => handleDelete(ev.id)}>Delete</Button>
+                      <Button variant="secondary" size="sm" onClick={() => setDeleteConfirm(null)}>
+                        Cancel
+                      </Button>
+                      <Button variant="danger" size="sm" onClick={() => handleDelete(ev.id)}>
+                        Delete
+                      </Button>
                     </div>
                   </div>
                 )}

@@ -296,7 +296,11 @@ export class EvaluationsService {
   }
 
   async getEvaluation(currentUser: SessionUser, evaluationId: string): Promise<EvaluationDetail> {
-    const evaluation = await this.getOwnedEvaluationState(this.prismaService, evaluationId, currentUser.id);
+    const evaluation = await this.getOwnedEvaluationState(
+      this.prismaService,
+      evaluationId,
+      currentUser.id
+    );
     return this.serializeEvaluationDetail(evaluation);
   }
 
@@ -333,7 +337,11 @@ export class EvaluationsService {
   }
 
   async getSummary(currentUser: SessionUser, evaluationId: string) {
-    const evaluation = await this.getOwnedEvaluationState(this.prismaService, evaluationId, currentUser.id);
+    const evaluation = await this.getOwnedEvaluationState(
+      this.prismaService,
+      evaluationId,
+      currentUser.id
+    );
     return buildInitialSummary(this.toContextPayload(evaluation));
   }
 
@@ -559,7 +567,11 @@ export class EvaluationsService {
     currentUser: SessionUser,
     evaluationId: string
   ): Promise<ImpactSummaryResponse> {
-    const evaluation = await this.getOwnedEvaluationState(this.prismaService, evaluationId, currentUser.id);
+    const evaluation = await this.getOwnedEvaluationState(
+      this.prismaService,
+      evaluationId,
+      currentUser.id
+    );
     const detail = this.serializeEvaluationDetail(evaluation);
     return buildImpactSummary(
       detail.initialSummary,
@@ -573,7 +585,11 @@ export class EvaluationsService {
     currentUser: SessionUser,
     evaluationId: string
   ): Promise<SdgAlignmentResponse> {
-    const evaluation = await this.getOwnedEvaluationState(this.prismaService, evaluationId, currentUser.id);
+    const evaluation = await this.getOwnedEvaluationState(
+      this.prismaService,
+      evaluationId,
+      currentUser.id
+    );
     const initialSummary = buildInitialSummary(this.toContextPayload(evaluation));
     return {
       items: initialSummary.mergedSdgs
@@ -581,7 +597,11 @@ export class EvaluationsService {
   }
 
   async getDashboard(currentUser: SessionUser, evaluationId: string): Promise<DashboardResponse> {
-    const evaluation = await this.getOwnedEvaluationState(this.prismaService, evaluationId, currentUser.id);
+    const evaluation = await this.getOwnedEvaluationState(
+      this.prismaService,
+      evaluationId,
+      currentUser.id
+    );
     const detail = this.serializeEvaluationDetail(evaluation);
     return buildDashboard(
       evaluation.id,
@@ -594,7 +614,11 @@ export class EvaluationsService {
   }
 
   async getReport(currentUser: SessionUser, evaluationId: string): Promise<ReportResponse> {
-    const evaluation = await this.getOwnedEvaluationState(this.prismaService, evaluationId, currentUser.id);
+    const evaluation = await this.getOwnedEvaluationState(
+      this.prismaService,
+      evaluationId,
+      currentUser.id
+    );
     const detail = this.serializeEvaluationDetail(evaluation);
     const impactSummary = buildImpactSummary(
       detail.initialSummary,
@@ -649,8 +673,9 @@ export class EvaluationsService {
         riskOverall: dashboard.riskOverall,
         opportunityOverall: dashboard.opportunityOverall,
         confidenceBand: dashboard.confidenceBand,
-        relevantTopicCount: dashboard.materialAlerts.filter((item) => item.priorityBand === 'relevant')
-          .length,
+        relevantTopicCount: dashboard.materialAlerts.filter(
+          (item) => item.priorityBand === 'relevant'
+        ).length,
         highPriorityTopicCount: dashboard.materialAlerts.filter(
           (item) => item.priorityBand === 'high_priority'
         ).length,
@@ -714,9 +739,7 @@ export class EvaluationsService {
     return evaluation;
   }
 
-  private serializeEvaluationListItem(
-    evaluation: EvaluationListRecord
-  ): EvaluationListItem {
+  private serializeEvaluationListItem(evaluation: EvaluationListRecord): EvaluationListItem {
     return {
       id: evaluation.id,
       name: evaluation.name,
@@ -830,7 +853,11 @@ export class EvaluationsService {
 
   private buildCsvReport(report: ReportResponse) {
     const rows: string[][] = [];
-    const pushSection = (section: string, field: string, value: string | number | boolean | null) => {
+    const pushSection = (
+      section: string,
+      field: string,
+      value: string | number | boolean | null
+    ) => {
       rows.push([section, field, value === null ? '' : String(value)]);
     };
 
@@ -887,7 +914,11 @@ export class EvaluationsService {
         `${opportunity.opportunityCode}.likelihood`,
         opportunity.likelihood
       );
-      pushSection('stage2_opportunity', `${opportunity.opportunityCode}.impact`, opportunity.impact);
+      pushSection(
+        'stage2_opportunity',
+        `${opportunity.opportunityCode}.impact`,
+        opportunity.impact
+      );
       pushSection(
         'stage2_opportunity',
         `${opportunity.opportunityCode}.ratingScore`,

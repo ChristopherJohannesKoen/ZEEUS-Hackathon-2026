@@ -78,7 +78,8 @@ export function EvaluationProgress({
       </div>
       <div className="flex items-center justify-between md:hidden">
         <span className="text-sm font-semibold text-brand-dark">
-          {stepDefinitions.findIndex((entry) => entry.key === currentStep) + 1}/{stepDefinitions.length}
+          {stepDefinitions.findIndex((entry) => entry.key === currentStep) + 1}/
+          {stepDefinitions.length}
           {' · '}
           {stepDefinitions.find((entry) => entry.key === currentStep)?.label}
         </span>

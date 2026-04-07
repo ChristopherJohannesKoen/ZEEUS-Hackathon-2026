@@ -16,7 +16,10 @@ export default async function DashboardPage() {
       <section className="overflow-hidden rounded-[32px] bg-gradient-to-br from-brand to-brand-dark p-8 text-white">
         <div className="pattern-circles -mx-8 -my-8 px-8 py-8">
           <div className="flex flex-wrap items-center gap-3">
-            <Badge className="border border-white/20 bg-white/10 text-white" tone={roleTone(currentUser.role)}>
+            <Badge
+              className="border border-white/20 bg-white/10 text-white"
+              tone={roleTone(currentUser.role)}
+            >
               {currentUser.role}
             </Badge>
             <span className="text-xs uppercase tracking-[0.3em] text-[#d9ef9b]">
@@ -24,7 +27,9 @@ export default async function DashboardPage() {
             </span>
           </div>
           <div className="mt-6 space-y-3">
-            <h1 className="text-4xl font-black tracking-tight">Welcome back, {currentUser.name}.</h1>
+            <h1 className="text-4xl font-black tracking-tight">
+              Welcome back, {currentUser.name}.
+            </h1>
             <p className="max-w-2xl text-sm leading-7 text-white/80">
               Continue saved assessments, review materiality outputs, and move directly into the
               dashboard and report flow built for the hackathon submission.
@@ -66,12 +71,16 @@ export default async function DashboardPage() {
         <Card className="border-surface-border">
           <p className="text-xs uppercase tracking-[0.25em] text-[#5c7353]">In progress</p>
           <p className="mt-4 text-4xl font-black text-slate-950">{inProgressCount}</p>
-          <p className="mt-2 text-sm text-slate-600">Active drafts moving through the assessment steps.</p>
+          <p className="mt-2 text-sm text-slate-600">
+            Active drafts moving through the assessment steps.
+          </p>
         </Card>
         <Card className="border-surface-border">
           <p className="text-xs uppercase tracking-[0.25em] text-[#5c7353]">Drafts</p>
           <p className="mt-4 text-4xl font-black text-slate-950">{draftCount}</p>
-          <p className="mt-2 text-sm text-slate-600">Created but not yet pushed through the workflow.</p>
+          <p className="mt-2 text-sm text-slate-600">
+            Created but not yet pushed through the workflow.
+          </p>
         </Card>
       </section>
 
@@ -113,7 +122,9 @@ export default async function DashboardPage() {
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="space-y-2">
                       <div className="flex flex-wrap gap-2">
-                        <Badge tone={evaluationStatusTone(evaluation.status)}>{evaluation.status}</Badge>
+                        <Badge tone={evaluationStatusTone(evaluation.status)}>
+                          {evaluation.status}
+                        </Badge>
                         <Badge tone={confidenceTone(evaluation.confidenceBand)}>
                           {evaluation.confidenceBand} confidence
                         </Badge>
@@ -133,14 +144,22 @@ export default async function DashboardPage() {
                   <div className="mt-5 grid gap-3 md:grid-cols-3">
                     <div className="rounded-2xl bg-white px-4 py-3">
                       <p className="text-xs uppercase tracking-[0.2em] text-[#5c7353]">Financial</p>
-                      <p className="mt-2 text-2xl font-black text-slate-950">{evaluation.financialTotal}/12</p>
+                      <p className="mt-2 text-2xl font-black text-slate-950">
+                        {evaluation.financialTotal}/12
+                      </p>
                     </div>
                     <div className="rounded-2xl bg-white px-4 py-3">
-                      <p className="text-xs uppercase tracking-[0.2em] text-[#5c7353]">Risk overall</p>
-                      <p className="mt-2 text-2xl font-black text-slate-950">{evaluation.riskOverall.toFixed(1)}</p>
+                      <p className="text-xs uppercase tracking-[0.2em] text-[#5c7353]">
+                        Risk overall
+                      </p>
+                      <p className="mt-2 text-2xl font-black text-slate-950">
+                        {evaluation.riskOverall.toFixed(1)}
+                      </p>
                     </div>
                     <div className="rounded-2xl bg-white px-4 py-3">
-                      <p className="text-xs uppercase tracking-[0.2em] text-[#5c7353]">Opportunity overall</p>
+                      <p className="text-xs uppercase tracking-[0.2em] text-[#5c7353]">
+                        Opportunity overall
+                      </p>
                       <p className="mt-2 text-2xl font-black text-slate-950">
                         {evaluation.opportunityOverall.toFixed(1)}
                       </p>

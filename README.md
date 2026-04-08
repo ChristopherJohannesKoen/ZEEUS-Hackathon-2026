@@ -1,4 +1,14 @@
-# ZEEUS Hackathon Assessment Platform
+---
+title: ZEEUS Hackathon 2026
+emoji: 🚀
+colorFrom: blue
+colorTo: purple
+sdk: docker
+app_port: 3000
+pinned: false
+---
+
+## ZEEUS Hackathon Assessment Platform
 
 This repository is the working submission codebase for the ZEEUS hackathon.
 It turns the Excel-based Sustainability by Design workflow into a reproducible

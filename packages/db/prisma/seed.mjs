@@ -81,6 +81,9 @@ const knowledgeArticles = [
       'The platform mirrors the workbook flow with a faster web experience, saved drafts, revision history, and clearer outputs.',
     body: 'ZEEUS starts with startup context, moves through the Stage I inside-out assessment, then Stage II risks and opportunities, and finishes with impact summary, SDG alignment, dashboard, and report outputs. The workflow is intentionally guidance-oriented, not judgment-oriented. Founders are encouraged to use reasonable qualitative inputs early, then strengthen them with evidence over time.',
     category: 'how_it_works',
+    status: 'published',
+    locale: 'en',
+    heroImageUrl: null,
     sortOrder: 10
   },
   {
@@ -90,6 +93,9 @@ const knowledgeArticles = [
       'Deterministic workbook-parity scoring remains the canonical engine behind the platform.',
     body: 'Stage I combines financial indicators with environmental, social, and governance impact topics. Stage II applies probability and impact matrices for risks and opportunities. Relevant topics are surfaced from 2.0 upward, while high-priority topics start at 2.5. The platform preserves deterministic scoring and treats AI as an explanatory layer only.',
     category: 'methodology',
+    status: 'published',
+    locale: 'en',
+    heroImageUrl: null,
     sortOrder: 20
   },
   {
@@ -99,6 +105,9 @@ const knowledgeArticles = [
       'The SDGs act as a map, while the assessment logic borrows from double-materiality thinking to keep startup decisions practical.',
     body: 'The platform uses startup stage and business category to suggest likely SDG relevance, then refines that view through assessment logic. This keeps the SDGs useful as a directional map instead of a compliance checklist. The approach also reflects double materiality by looking at inside-out impacts and outside-in risks and opportunities.',
     category: 'sdg_esrs',
+    status: 'published',
+    locale: 'en',
+    heroImageUrl: null,
     sortOrder: 30
   },
   {
@@ -108,6 +117,9 @@ const knowledgeArticles = [
       'Programs can enroll startups, request submissions, assign reviewers, and track evidence-backed improvement over time.',
     body: 'ZEEUS now supports dual-audience delivery. Founders can run evaluations and evidence workflows, while partners can manage programs, submissions, reviewer assignments, and official outputs. Evaluation lifecycle and program review lifecycle remain separate so canonical scoring is never altered by reviewers.',
     category: 'partner',
+    status: 'published',
+    locale: 'en',
+    heroImageUrl: null,
     sortOrder: 40
   },
   {
@@ -117,6 +129,9 @@ const knowledgeArticles = [
       'Use the knowledge base, FAQ, and partner support channels to onboard new teams without losing methodological consistency.',
     body: 'ZEEUS is designed to be explainable and reproducible. The public site provides plain-language guidance, while the workspace offers tooltips, scenario notes, evidence prompts, and reporting outputs. Partners can use branded program pages and reviewer workflows to coordinate startup support.',
     category: 'contact',
+    status: 'published',
+    locale: 'en',
+    heroImageUrl: null,
     sortOrder: 50
   }
 ];
@@ -127,6 +142,8 @@ const faqEntries = [
     answer:
       'No. It is a guidance tool designed to help startups identify material issues early and make better design decisions before scaling.',
     category: 'principles',
+    status: 'published',
+    locale: 'en',
     sortOrder: 10
   },
   {
@@ -134,6 +151,8 @@ const faqEntries = [
     answer:
       'No. The SDGs are treated as a map and early compass reading. Final relevance is refined by the full assessment workflow.',
     category: 'methodology',
+    status: 'published',
+    locale: 'en',
     sortOrder: 20
   },
   {
@@ -141,6 +160,8 @@ const faqEntries = [
     answer:
       'Yes. Qualitative judgments are valid early on, as long as teams are explicit about assumptions and improve evidence quality over time.',
     category: 'methodology',
+    status: 'published',
+    locale: 'en',
     sortOrder: 30
   },
   {
@@ -148,6 +169,8 @@ const faqEntries = [
     answer:
       'Scores from 2.0 to below 2.5 are surfaced as relevant. Scores from 2.5 upward are surfaced as high priority.',
     category: 'scores',
+    status: 'published',
+    locale: 'en',
     sortOrder: 40
   },
   {
@@ -155,6 +178,8 @@ const faqEntries = [
     answer:
       'No. AI is advisory only. It can explain outputs, highlight evidence gaps, and summarize findings, but it never alters canonical scoring.',
     category: 'ai',
+    status: 'published',
+    locale: 'en',
     sortOrder: 50
   },
   {
@@ -162,6 +187,8 @@ const faqEntries = [
     answer:
       'Yes. Reviewers work on top of immutable revision snapshots. They can comment, request changes, or approve submissions without mutating the saved scoring outputs.',
     category: 'programs',
+    status: 'published',
+    locale: 'en',
     sortOrder: 60
   }
 ];
@@ -177,6 +204,9 @@ const caseStudies = [
       'LoopLeaf started with strong opportunity signals but weak evidence quality. By collecting supplier data, clarifying waste assumptions, and mapping SDG targets, the team improved confidence without changing the deterministic logic.',
     stage: 'pre_launch',
     naceDivision: '10 Manufacture of food products',
+    status: 'published',
+    locale: 'en',
+    heroImageUrl: null,
     sortOrder: 10
   },
   {
@@ -189,6 +219,9 @@ const caseStudies = [
       'RouteKind used the scenario lab to compare geography and partner-dependency assumptions. The exercise clarified where evidence was missing and what had to be collected before pitching for scale capital.',
     stage: 'growth_channel_fit',
     naceDivision: '52 Warehousing and support activities for transportation',
+    status: 'published',
+    locale: 'en',
+    heroImageUrl: null,
     sortOrder: 20
   }
 ];
@@ -196,44 +229,69 @@ const caseStudies = [
 const resourceAssets = [
   {
     id: 'resource-user-manual',
+    slug: 'zeeus-user-manual',
     title: 'User manual',
     description: 'Step-by-step description of the workflow, scoring logic, outputs, and dashboard.',
     category: 'manual',
-    href: '/resources#user-manual',
-    fileLabel: 'PDF guide'
+    fileLabel: 'TXT guide',
+    status: 'published',
+    locale: 'en',
+    externalUrl: '/resources/zeeus-user-manual.txt',
+    fileName: 'zeeus-user-manual.txt',
+    sortOrder: 10
   },
   {
     id: 'resource-faq',
+    slug: 'zeeus-faq',
     title: 'FAQ',
     description: 'Plain-language answers on methodology, SDGs, and qualitative startup inputs.',
     category: 'faq',
-    href: '/faq',
-    fileLabel: 'FAQ page'
+    fileLabel: 'TXT reference',
+    status: 'published',
+    locale: 'en',
+    externalUrl: '/resources/zeeus-faq.txt',
+    fileName: 'zeeus-faq.txt',
+    sortOrder: 20
   },
   {
     id: 'resource-methodology',
+    slug: 'zeeus-methodology-note',
     title: 'Methodology note',
     description:
       'Short explanation of deterministic scoring and the relevant vs high-priority split.',
     category: 'methodology',
-    href: '/methodology',
-    fileLabel: 'Method note'
+    fileLabel: 'TXT note',
+    status: 'published',
+    locale: 'en',
+    externalUrl: '/resources/zeeus-methodology-note.txt',
+    fileName: 'zeeus-methodology-note.txt',
+    sortOrder: 30
   },
   {
     id: 'resource-sample-report',
+    slug: 'zeeus-sample-report',
     title: 'Sample report walkthrough',
     description: 'Overview of how dashboard and report outputs should be read and presented.',
     category: 'sample_report',
-    href: '/how-it-works',
-    fileLabel: 'Walkthrough'
+    fileLabel: 'CSV sample',
+    status: 'published',
+    locale: 'en',
+    externalUrl: '/resources/zeeus-sample-report.csv',
+    fileName: 'zeeus-sample-report.csv',
+    sortOrder: 40
   },
   {
     id: 'resource-workflow-assets',
+    slug: 'zeeus-workflow-checklist',
     title: 'Workflow assets',
     description: 'Reference materials, explainer content, and onboarding prompts for programs.',
     category: 'workflow_asset',
-    href: '/partners',
-    fileLabel: 'Partner pack'
+    fileLabel: 'Checklist',
+    status: 'published',
+    locale: 'en',
+    externalUrl: '/resources/zeeus-workflow-checklist.txt',
+    fileName: 'zeeus-workflow-checklist.txt',
+    sortOrder: 50
   }
 ];
 
@@ -1149,6 +1207,9 @@ async function main() {
         summary: article.summary,
         body: article.body,
         category: article.category,
+        status: article.status,
+        locale: article.locale,
+        heroImageUrl: article.heroImageUrl,
         sortOrder: article.sortOrder
       }
     });
@@ -1167,6 +1228,8 @@ async function main() {
         question: entry.question,
         answer: entry.answer,
         category: entry.category,
+        status: entry.status,
+        locale: entry.locale,
         sortOrder: entry.sortOrder
       }
     });
@@ -1183,6 +1246,9 @@ async function main() {
         story: study.story,
         stage: study.stage,
         naceDivision: study.naceDivision,
+        status: study.status,
+        locale: study.locale,
+        heroImageUrl: study.heroImageUrl,
         sortOrder: study.sortOrder
       }
     });
@@ -1196,6 +1262,8 @@ async function main() {
       create: {
         id: `${target.goalNumber}:${target.targetCode}`,
         ...target,
+        status: 'published',
+        locale: 'en',
         sortOrder: (index + 1) * 10
       },
       update: {
@@ -1204,34 +1272,50 @@ async function main() {
         title: target.title,
         description: target.description,
         officialUrl: target.officialUrl,
+        status: 'published',
+        locale: 'en',
         sortOrder: (index + 1) * 10
       }
     });
   }
 
-  const resourceList = resourceAssets.map((asset) => ({
-    ...asset,
-    updatedAt: new Date().toISOString()
-  }));
-
-  await prisma.knowledgeArticle.upsert({
-    where: { slug: 'resources-downloads' },
-    create: {
-      slug: 'resources-downloads',
-      title: 'Resources and downloads',
-      summary: 'Download-center metadata for manuals, FAQs, methodology notes, and sample assets.',
-      body: JSON.stringify(resourceList),
-      category: 'how_it_works',
-      sortOrder: 60
-    },
-    update: {
-      title: 'Resources and downloads',
-      summary: 'Download-center metadata for manuals, FAQs, methodology notes, and sample assets.',
-      body: JSON.stringify(resourceList),
-      category: 'how_it_works',
-      sortOrder: 60
+  await prisma.knowledgeArticle.deleteMany({
+    where: {
+      slug: 'resources-downloads'
     }
   });
+
+  for (const asset of resourceAssets) {
+    await prisma.resourceAsset.upsert({
+      where: { slug: asset.slug },
+      create: {
+        id: asset.id,
+        slug: asset.slug,
+        title: asset.title,
+        description: asset.description,
+        category: asset.category,
+        fileLabel: asset.fileLabel,
+        status: asset.status,
+        locale: asset.locale,
+        externalUrl: asset.externalUrl,
+        fileName: asset.fileName,
+        mimeType: null,
+        byteSize: null,
+        sortOrder: asset.sortOrder
+      },
+      update: {
+        title: asset.title,
+        description: asset.description,
+        category: asset.category,
+        fileLabel: asset.fileLabel,
+        status: asset.status,
+        locale: asset.locale,
+        externalUrl: asset.externalUrl,
+        fileName: asset.fileName,
+        sortOrder: asset.sortOrder
+      }
+    });
+  }
 
   for (const evidence of evidenceFixtures) {
     await prisma.evidenceAsset.upsert({
@@ -1280,6 +1364,7 @@ async function main() {
         id: `${evaluation.id}:${scenario.name}`,
         evaluationId: seededEvaluation.id,
         baseRevisionId: seededEvaluation.currentRevisionId,
+        baseRevisionNumber: seededEvaluation.currentRevisionNumber,
         name: scenario.name,
         status: 'draft',
         focusArea: scenario.focusArea,
@@ -1289,13 +1374,21 @@ async function main() {
         hypothesis: scenario.hypothesis,
         advisorySummary: scenario.advisorySummary,
         assumptions: {
-          comparisonMode: 'advisory_only',
-          confidenceBand: evaluationFixture.confidenceBand
+          financialDelta: 0.5,
+          riskDelta: 0.25,
+          opportunityDelta: 0.5,
+          confidenceShift: 'same',
+          impactedTopicCodes: ['E1', 'E5']
         },
+        metricDeltas: [],
+        topicDeltas: [],
+        projectedConfidenceBand: evaluationFixture.confidenceBand,
+        takeaways: ['Seeded scenario for founder-side advisory comparison.'],
         createdByUserId: owner.id
       },
       update: {
         baseRevisionId: seededEvaluation.currentRevisionId,
+        baseRevisionNumber: seededEvaluation.currentRevisionNumber,
         name: scenario.name,
         status: 'draft',
         focusArea: scenario.focusArea,
@@ -1305,9 +1398,16 @@ async function main() {
         hypothesis: scenario.hypothesis,
         advisorySummary: scenario.advisorySummary,
         assumptions: {
-          comparisonMode: 'advisory_only',
-          confidenceBand: evaluationFixture.confidenceBand
+          financialDelta: 0.5,
+          riskDelta: 0.25,
+          opportunityDelta: 0.5,
+          confidenceShift: 'same',
+          impactedTopicCodes: ['E1', 'E5']
         },
+        metricDeltas: [],
+        topicDeltas: [],
+        projectedConfidenceBand: evaluationFixture.confidenceBand,
+        takeaways: ['Seeded scenario for founder-side advisory comparison.'],
         createdByUserId: owner.id
       }
     });

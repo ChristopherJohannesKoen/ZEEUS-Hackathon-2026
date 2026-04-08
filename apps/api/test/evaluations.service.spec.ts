@@ -356,15 +356,31 @@ describe('EvaluationsService', () => {
     await expect(
       service.compareRevisions(currentUser, 'evaluation_1', 4, 4)
     ).rejects.toBeInstanceOf(BadRequestException);
-    expect(prismaService.evaluation.findFirst).toHaveBeenCalledWith({
-      where: {
-        id: 'evaluation_1',
-        userId: currentUser.id
-      },
-      select: {
-        id: true
-      }
-    });
+    expect(prismaService.evaluation.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          id: 'evaluation_1',
+          OR: expect.arrayContaining([
+            expect.objectContaining({ userId: currentUser.id }),
+            expect.objectContaining({
+              organization: {
+                members: {
+                  some: {
+                    userId: currentUser.id,
+                    role: {
+                      in: ['owner', 'manager', 'member']
+                    }
+                  }
+                }
+              }
+            })
+          ])
+        }),
+        select: {
+          id: true
+        }
+      })
+    );
   });
 
   it('compares immutable revisions using stored report snapshots', async () => {

@@ -16,9 +16,32 @@ const displayFont = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: 'ZEEUS Sustainability by Design',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_ORIGIN ?? 'http://localhost:3000'),
+  title: {
+    default: 'ZEEUS Sustainability by Design',
+    template: '%s | ZEEUS'
+  },
   description:
-    'A Dockerized assessment platform for startup sustainability scoring, SDG alignment, and deterministic Excel-parity reporting.'
+    'A guidance-first sustainability platform for startups, with deterministic assessment scoring, SDG exploration, evidence tracking, scenarios, and partner review workflows.',
+  applicationName: 'ZEEUS',
+  icons: {
+    icon: '/mark.svg',
+    shortcut: '/mark.svg',
+    apple: '/mark.svg'
+  },
+  openGraph: {
+    title: 'ZEEUS Sustainability by Design',
+    description:
+      'A guidance-first sustainability platform for startup assessments, evidence, SDG exploration, and co-branded reporting.',
+    siteName: 'ZEEUS',
+    type: 'website'
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'ZEEUS Sustainability by Design',
+    description:
+      'Deterministic startup sustainability assessments with public guidance, evidence, scenarios, and partner review workflows.'
+  }
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

@@ -42,6 +42,10 @@ export function AppShell({
     { href: '/app/settings', label: 'Settings' }
   ];
 
+  if (currentUser.role === 'owner' || currentUser.role === 'admin') {
+    navigationItems.splice(4, 0, { href: '/app/content-studio', label: 'Content Studio' });
+  }
+
   return (
     <div className="min-h-screen bg-surface text-slate-900">
       {sidebarOpen ? (

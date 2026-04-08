@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
   Param,
   Post,
   Put,
@@ -21,17 +22,24 @@ import {
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
+  ContentItemParamsSchema,
   CreateEvidenceAssetPayloadSchema,
   CreateProgramSubmissionPayloadSchema,
+  SubmitPartnerInterestPayloadSchema,
   CreateReviewAssignmentPayloadSchema,
   CreateReviewCommentPayloadSchema,
   CreateScenarioRunPayloadSchema,
   EvidenceAssetParamsSchema,
   EvaluationIdParamsSchema,
   OrganizationParamsSchema,
-  SdgGoalParamsSchema,
   ProgramParamsSchema,
   ProgramSubmissionParamsSchema,
+  ResourceAssetParamsSchema,
+  SdgGoalParamsSchema,
+  UpsertCaseStudyPayloadSchema,
+  UpsertFaqEntryPayloadSchema,
+  UpsertKnowledgeArticlePayloadSchema,
+  UpsertResourceAssetPayloadSchema,
   UpdateProgramSubmissionStatusPayloadSchema
 } from '@packages/shared';
 import type { Response } from 'express';
@@ -57,6 +65,204 @@ export class PlatformController {
   @ApiOperation({ summary: 'Get a goal-level SDG explainer with official targets' })
   getSdgGoal(@Param() params: unknown) {
     return this.platformService.getSdgGoal(parseZodSchema(SdgGoalParamsSchema, params).goalNumber);
+  }
+
+  @Get('content/resources/:resourceId/download')
+  @ApiProduces('application/octet-stream')
+  @ApiOperation({ summary: 'Download a published resource asset' })
+  async downloadResource(@Param() params: unknown, @Res() response: Response) {
+    const parsed = parseZodSchema(ResourceAssetParamsSchema, params);
+    const result = await this.platformService.downloadResource(parsed.resourceId);
+
+    if (result.type === 'redirect') {
+      response.redirect(result.location);
+      return;
+    }
+
+    response.setHeader('Content-Type', result.mimeType);
+    response.setHeader('Content-Disposition', `attachment; filename="${result.fileName}"`);
+    response.write(result.content);
+    response.end();
+  }
+
+  @Post('content/partner-interest')
+  @HttpCode(200)
+  @UseInterceptors(IdempotencyInterceptor)
+  @ApiHeader({ name: 'Idempotency-Key', required: true })
+  @ApiOperation({ summary: 'Submit a public partner interest request' })
+  submitPartnerInterest(@Body() body: unknown) {
+    return this.platformService.submitPartnerInterest(
+      parseZodSchema(SubmitPartnerInterestPayloadSchema, body)
+    );
+  }
+
+  @Get('content/admin/overview')
+  @ApiCookieAuth()
+  @UseGuards(SessionGuard)
+  @ApiOperation({ summary: 'Get the editorial workflow overview for owners and admins' })
+  getEditorialOverview(
+    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>
+  ) {
+    return this.platformService.getEditorialOverview(currentUser);
+  }
+
+  @Post('content/admin/articles')
+  @ApiCookieAuth()
+  @UseGuards(SessionGuard)
+  @UseInterceptors(IdempotencyInterceptor)
+  @ApiHeader({ name: 'Idempotency-Key', required: true })
+  @ApiOperation({ summary: 'Create a knowledge article' })
+  createKnowledgeArticle(
+    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
+    @Body() body: unknown
+  ) {
+    return this.platformService.createKnowledgeArticle(
+      currentUser,
+      parseZodSchema(UpsertKnowledgeArticlePayloadSchema, body)
+    );
+  }
+
+  @Put('content/admin/articles/:contentId')
+  @ApiCookieAuth()
+  @UseGuards(SessionGuard)
+  @ApiOperation({ summary: 'Update a knowledge article' })
+  updateKnowledgeArticle(
+    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
+    @Param() params: unknown,
+    @Body() body: unknown
+  ) {
+    return this.platformService.updateKnowledgeArticle(
+      currentUser,
+      parseZodSchema(ContentItemParamsSchema, params).contentId,
+      parseZodSchema(UpsertKnowledgeArticlePayloadSchema, body)
+    );
+  }
+
+  @Post('content/admin/faqs')
+  @ApiCookieAuth()
+  @UseGuards(SessionGuard)
+  @UseInterceptors(IdempotencyInterceptor)
+  @ApiHeader({ name: 'Idempotency-Key', required: true })
+  @ApiOperation({ summary: 'Create an FAQ entry' })
+  createFaqEntry(
+    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
+    @Body() body: unknown
+  ) {
+    return this.platformService.createFaqEntry(
+      currentUser,
+      parseZodSchema(UpsertFaqEntryPayloadSchema, body)
+    );
+  }
+
+  @Put('content/admin/faqs/:contentId')
+  @ApiCookieAuth()
+  @UseGuards(SessionGuard)
+  @ApiOperation({ summary: 'Update an FAQ entry' })
+  updateFaqEntry(
+    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
+    @Param() params: unknown,
+    @Body() body: unknown
+  ) {
+    return this.platformService.updateFaqEntry(
+      currentUser,
+      parseZodSchema(ContentItemParamsSchema, params).contentId,
+      parseZodSchema(UpsertFaqEntryPayloadSchema, body)
+    );
+  }
+
+  @Post('content/admin/case-studies')
+  @ApiCookieAuth()
+  @UseGuards(SessionGuard)
+  @UseInterceptors(IdempotencyInterceptor)
+  @ApiHeader({ name: 'Idempotency-Key', required: true })
+  @ApiOperation({ summary: 'Create a case study' })
+  createCaseStudy(
+    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
+    @Body() body: unknown
+  ) {
+    return this.platformService.createCaseStudy(
+      currentUser,
+      parseZodSchema(UpsertCaseStudyPayloadSchema, body)
+    );
+  }
+
+  @Put('content/admin/case-studies/:contentId')
+  @ApiCookieAuth()
+  @UseGuards(SessionGuard)
+  @ApiOperation({ summary: 'Update a case study' })
+  updateCaseStudy(
+    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
+    @Param() params: unknown,
+    @Body() body: unknown
+  ) {
+    return this.platformService.updateCaseStudy(
+      currentUser,
+      parseZodSchema(ContentItemParamsSchema, params).contentId,
+      parseZodSchema(UpsertCaseStudyPayloadSchema, body)
+    );
+  }
+
+  @Post('content/admin/resources')
+  @ApiCookieAuth()
+  @UseGuards(SessionGuard)
+  @UseInterceptors(IdempotencyInterceptor)
+  @ApiHeader({ name: 'Idempotency-Key', required: true })
+  @ApiOperation({ summary: 'Create a resource asset record' })
+  createResourceAsset(
+    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
+    @Body() body: unknown
+  ) {
+    return this.platformService.createResourceAsset(
+      currentUser,
+      parseZodSchema(UpsertResourceAssetPayloadSchema, body)
+    );
+  }
+
+  @Put('content/admin/resources/:resourceId')
+  @ApiCookieAuth()
+  @UseGuards(SessionGuard)
+  @ApiOperation({ summary: 'Update a resource asset record' })
+  updateResourceAsset(
+    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
+    @Param() params: unknown,
+    @Body() body: unknown
+  ) {
+    return this.platformService.updateResourceAsset(
+      currentUser,
+      parseZodSchema(ResourceAssetParamsSchema, params).resourceId,
+      parseZodSchema(UpsertResourceAssetPayloadSchema, body)
+    );
+  }
+
+  @Post('content/admin/resources/:resourceId/upload')
+  @ApiCookieAuth()
+  @UseGuards(SessionGuard)
+  @UseInterceptors(IdempotencyInterceptor, FileInterceptor('file'))
+  @ApiConsumes('multipart/form-data')
+  @ApiHeader({ name: 'Idempotency-Key', required: true })
+  @ApiOperation({ summary: 'Upload a binary asset for a resource item' })
+  uploadResourceAsset(
+    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
+    @Param() params: unknown,
+    @UploadedFile()
+    file:
+      | {
+          buffer: Buffer;
+          originalname: string;
+          mimetype: string;
+          size: number;
+        }
+      | undefined
+  ) {
+    if (!file) {
+      throw new BadRequestException('A file is required.');
+    }
+
+    return this.platformService.uploadResourceBinary(
+      currentUser,
+      parseZodSchema(ResourceAssetParamsSchema, params).resourceId,
+      file
+    );
   }
 
   @Get('organizations')

@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import type {
+  ContentStatus,
   CreateEvidenceAssetPayload,
   CreateProgramSubmissionPayload,
   CreateReviewAssignmentPayload,
@@ -13,17 +14,35 @@ import type {
   CreateScenarioRunPayload,
   EvidenceAssetListResponse,
   EvidenceAssetSummary,
+  EditorialOverview,
+  FaqEntry,
+  KnowledgeArticle,
   OrganizationDetail,
   OrganizationListResponse,
   ProgramDetail,
   ProgramListResponse,
   PublicSiteContent,
+  PublicResourceAsset,
+  PriorityBand,
+  ResourceAssetSummary,
+  ScenarioAssumptions,
+  ScenarioMetricDelta,
+  ScenarioTopicDelta,
+  SubmitPartnerInterestPayload,
   ScenarioRunListResponse,
   ScenarioRunSummary,
   SdgGoalDetail,
   SessionUser,
-  UpdateProgramSubmissionStatusPayload
+  TopicCode,
+  UpdateProgramSubmissionStatusPayload,
+  UpsertCaseStudyPayload,
+  UpsertFaqEntryPayload,
+  UpsertKnowledgeArticlePayload,
+  UpsertResourceAssetPayload
 } from '@packages/shared';
+import { ReportResponseSchema } from '@packages/shared';
+import { Prisma } from '@prisma/client';
+import { buildScenarioProjection } from './scenario-projections';
 import { AuditService } from '../audit/audit.service';
 import { EvaluationStorageService } from '../evaluations/evaluation-storage.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -37,29 +56,39 @@ export class PlatformService {
   ) {}
 
   async getSiteContent(): Promise<PublicSiteContent> {
-    const [articles, faqEntries, caseStudies, resourceArticle, programs] = await Promise.all([
+    const [articles, faqEntries, caseStudies, resources, programs] = await Promise.all([
       this.prismaService.knowledgeArticle.findMany({
         where: {
-          slug: {
-            not: 'resources-downloads'
-          }
+          status: 'published',
+          locale: 'en'
         },
         orderBy: [{ sortOrder: 'asc' }, { updatedAt: 'desc' }]
       }),
       this.prismaService.faqEntry.findMany({
+        where: {
+          status: 'published',
+          locale: 'en'
+        },
         orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }]
       }),
       this.prismaService.caseStudy.findMany({
+        where: {
+          status: 'published',
+          locale: 'en'
+        },
         orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }]
       }),
-      this.prismaService.knowledgeArticle.findUnique({
+      this.prismaService.resourceAsset.findMany({
         where: {
-          slug: 'resources-downloads'
-        }
+          status: 'published',
+          locale: 'en'
+        },
+        orderBy: [{ sortOrder: 'asc' }, { updatedAt: 'desc' }]
       }),
       this.prismaService.program.findMany({
         where: {
-          isPublic: true
+          isPublic: true,
+          status: 'active'
         },
         include: {
           members: {
@@ -90,6 +119,9 @@ export class PlatformService {
           | 'sdg_esrs'
           | 'partner'
           | 'contact',
+        status: article.status as ContentStatus,
+        locale: article.locale,
+        heroImageUrl: article.heroImageUrl,
         updatedAt: article.updatedAt.toISOString()
       })),
       faqEntries: faqEntries.map((entry: (typeof faqEntries)[number]) => ({
@@ -97,6 +129,8 @@ export class PlatformService {
         question: entry.question,
         answer: entry.answer,
         category: entry.category,
+        status: entry.status as ContentStatus,
+        locale: entry.locale,
         sortOrder: entry.sortOrder
       })),
       caseStudies: caseStudies.map((study: (typeof caseStudies)[number]) => ({
@@ -107,9 +141,14 @@ export class PlatformService {
         summary: study.summary,
         story: study.story,
         stage: study.stage,
-        naceDivision: study.naceDivision
+        naceDivision: study.naceDivision,
+        status: study.status as ContentStatus,
+        locale: study.locale,
+        heroImageUrl: study.heroImageUrl
       })),
-      resources: this.parseResourceAssets(resourceArticle?.body),
+      resources: resources.map((resource: (typeof resources)[number]) =>
+        this.serializePublicResource(resource)
+      ),
       partnerPrograms: programs.map((program: (typeof programs)[number]) =>
         this.serializeProgramSummary(program, null)
       )
@@ -119,7 +158,9 @@ export class PlatformService {
   async getSdgGoal(goalNumber: number): Promise<SdgGoalDetail> {
     const targets = await this.prismaService.sdgTarget.findMany({
       where: {
-        goalNumber
+        goalNumber,
+        status: 'published',
+        locale: 'en'
       },
       orderBy: [{ sortOrder: 'asc' }, { targetCode: 'asc' }]
     });
@@ -142,6 +183,449 @@ export class PlatformService {
         description: target.description,
         officialUrl: target.officialUrl
       }))
+    };
+  }
+
+  async getEditorialOverview(currentUser: SessionUser): Promise<EditorialOverview> {
+    this.assertEditorialAccess(currentUser);
+
+    const [articles, faqEntries, caseStudies, resources, partnerInterestCount] = await Promise.all([
+      this.prismaService.knowledgeArticle.findMany({
+        orderBy: [{ sortOrder: 'asc' }, { updatedAt: 'desc' }]
+      }),
+      this.prismaService.faqEntry.findMany({
+        orderBy: [{ category: 'asc' }, { sortOrder: 'asc' }, { updatedAt: 'desc' }]
+      }),
+      this.prismaService.caseStudy.findMany({
+        orderBy: [{ sortOrder: 'asc' }, { updatedAt: 'desc' }]
+      }),
+      this.prismaService.resourceAsset.findMany({
+        orderBy: [{ sortOrder: 'asc' }, { updatedAt: 'desc' }]
+      }),
+      this.prismaService.partnerInterestLead.count()
+    ]);
+
+    return {
+      articles: articles.map((article: (typeof articles)[number]) => ({
+        id: article.id,
+        slug: article.slug,
+        title: article.title,
+        summary: article.summary,
+        body: article.body,
+        category: article.category as
+          | 'how_it_works'
+          | 'methodology'
+          | 'sdg_esrs'
+          | 'partner'
+          | 'contact',
+        status: article.status as ContentStatus,
+        locale: article.locale,
+        heroImageUrl: article.heroImageUrl,
+        updatedAt: article.updatedAt.toISOString()
+      })),
+      faqEntries: faqEntries.map((entry: (typeof faqEntries)[number]) => ({
+        id: entry.id,
+        question: entry.question,
+        answer: entry.answer,
+        category: entry.category,
+        status: entry.status as ContentStatus,
+        locale: entry.locale,
+        sortOrder: entry.sortOrder
+      })),
+      caseStudies: caseStudies.map((study: (typeof caseStudies)[number]) => ({
+        id: study.id,
+        slug: study.slug,
+        title: study.title,
+        startupName: study.startupName,
+        summary: study.summary,
+        story: study.story,
+        stage: study.stage,
+        naceDivision: study.naceDivision,
+        status: study.status as ContentStatus,
+        locale: study.locale,
+        heroImageUrl: study.heroImageUrl,
+        updatedAt: study.updatedAt.toISOString()
+      })),
+      resources: resources.map((resource: (typeof resources)[number]) =>
+        this.serializeResource(resource)
+      ),
+      partnerInterestCount
+    };
+  }
+
+  async createKnowledgeArticle(
+    currentUser: SessionUser,
+    payload: UpsertKnowledgeArticlePayload
+  ): Promise<KnowledgeArticle> {
+    this.assertEditorialAccess(currentUser);
+    const article = await this.prismaService.knowledgeArticle.create({
+      data: {
+        slug: payload.slug,
+        title: payload.title,
+        summary: payload.summary,
+        body: payload.body,
+        category: payload.category,
+        status: payload.status,
+        locale: payload.locale,
+        heroImageUrl: payload.heroImageUrl ?? null
+      }
+    });
+
+    await this.auditService.log({
+      actorId: currentUser.id,
+      action: 'evaluation.context_updated',
+      targetType: 'knowledge_article',
+      targetId: article.id,
+      metadata: {
+        slug: article.slug,
+        status: article.status
+      }
+    });
+
+    return {
+      id: article.id,
+      slug: article.slug,
+      title: article.title,
+      summary: article.summary,
+      body: article.body,
+      category: article.category as
+        | 'how_it_works'
+        | 'methodology'
+        | 'sdg_esrs'
+        | 'partner'
+        | 'contact',
+      status: article.status as ContentStatus,
+      locale: article.locale,
+      heroImageUrl: article.heroImageUrl,
+      updatedAt: article.updatedAt.toISOString()
+    };
+  }
+
+  async updateKnowledgeArticle(
+    currentUser: SessionUser,
+    contentId: string,
+    payload: UpsertKnowledgeArticlePayload
+  ): Promise<KnowledgeArticle> {
+    this.assertEditorialAccess(currentUser);
+    const article = await this.prismaService.knowledgeArticle.update({
+      where: { id: contentId },
+      data: {
+        slug: payload.slug,
+        title: payload.title,
+        summary: payload.summary,
+        body: payload.body,
+        category: payload.category,
+        status: payload.status,
+        locale: payload.locale,
+        heroImageUrl: payload.heroImageUrl ?? null
+      }
+    });
+
+    return {
+      id: article.id,
+      slug: article.slug,
+      title: article.title,
+      summary: article.summary,
+      body: article.body,
+      category: article.category as
+        | 'how_it_works'
+        | 'methodology'
+        | 'sdg_esrs'
+        | 'partner'
+        | 'contact',
+      status: article.status as ContentStatus,
+      locale: article.locale,
+      heroImageUrl: article.heroImageUrl,
+      updatedAt: article.updatedAt.toISOString()
+    };
+  }
+
+  async createFaqEntry(
+    currentUser: SessionUser,
+    payload: UpsertFaqEntryPayload
+  ): Promise<FaqEntry> {
+    this.assertEditorialAccess(currentUser);
+    const entry = await this.prismaService.faqEntry.create({
+      data: {
+        question: payload.question,
+        answer: payload.answer,
+        category: payload.category,
+        status: payload.status,
+        locale: payload.locale,
+        sortOrder: payload.sortOrder
+      }
+    });
+
+    return {
+      id: entry.id,
+      question: entry.question,
+      answer: entry.answer,
+      category: entry.category,
+      status: entry.status as ContentStatus,
+      locale: entry.locale,
+      sortOrder: entry.sortOrder
+    };
+  }
+
+  async updateFaqEntry(
+    currentUser: SessionUser,
+    contentId: string,
+    payload: UpsertFaqEntryPayload
+  ): Promise<FaqEntry> {
+    this.assertEditorialAccess(currentUser);
+    const entry = await this.prismaService.faqEntry.update({
+      where: { id: contentId },
+      data: {
+        question: payload.question,
+        answer: payload.answer,
+        category: payload.category,
+        status: payload.status,
+        locale: payload.locale,
+        sortOrder: payload.sortOrder
+      }
+    });
+
+    return {
+      id: entry.id,
+      question: entry.question,
+      answer: entry.answer,
+      category: entry.category,
+      status: entry.status as ContentStatus,
+      locale: entry.locale,
+      sortOrder: entry.sortOrder
+    };
+  }
+
+  async createCaseStudy(
+    currentUser: SessionUser,
+    payload: UpsertCaseStudyPayload
+  ): Promise<PublicSiteContent['caseStudies'][number]> {
+    this.assertEditorialAccess(currentUser);
+    const study = await this.prismaService.caseStudy.create({
+      data: {
+        slug: payload.slug,
+        title: payload.title,
+        startupName: payload.startupName,
+        summary: payload.summary,
+        story: payload.story,
+        stage: payload.stage,
+        naceDivision: payload.naceDivision,
+        status: payload.status,
+        locale: payload.locale,
+        heroImageUrl: payload.heroImageUrl ?? null,
+        sortOrder: payload.sortOrder
+      }
+    });
+
+    return {
+      id: study.id,
+      slug: study.slug,
+      title: study.title,
+      startupName: study.startupName,
+      summary: study.summary,
+      story: study.story,
+      stage: study.stage,
+      naceDivision: study.naceDivision,
+      status: study.status as ContentStatus,
+      locale: study.locale,
+      heroImageUrl: study.heroImageUrl,
+      updatedAt: study.updatedAt.toISOString()
+    };
+  }
+
+  async updateCaseStudy(
+    currentUser: SessionUser,
+    contentId: string,
+    payload: UpsertCaseStudyPayload
+  ): Promise<PublicSiteContent['caseStudies'][number]> {
+    this.assertEditorialAccess(currentUser);
+    const study = await this.prismaService.caseStudy.update({
+      where: { id: contentId },
+      data: {
+        slug: payload.slug,
+        title: payload.title,
+        startupName: payload.startupName,
+        summary: payload.summary,
+        story: payload.story,
+        stage: payload.stage,
+        naceDivision: payload.naceDivision,
+        status: payload.status,
+        locale: payload.locale,
+        heroImageUrl: payload.heroImageUrl ?? null,
+        sortOrder: payload.sortOrder
+      }
+    });
+
+    return {
+      id: study.id,
+      slug: study.slug,
+      title: study.title,
+      startupName: study.startupName,
+      summary: study.summary,
+      story: study.story,
+      stage: study.stage,
+      naceDivision: study.naceDivision,
+      status: study.status as ContentStatus,
+      locale: study.locale,
+      heroImageUrl: study.heroImageUrl,
+      updatedAt: study.updatedAt.toISOString()
+    };
+  }
+
+  async createResourceAsset(
+    currentUser: SessionUser,
+    payload: UpsertResourceAssetPayload
+  ): Promise<ResourceAssetSummary> {
+    this.assertEditorialAccess(currentUser);
+    const resource = await this.prismaService.resourceAsset.create({
+      data: {
+        slug: payload.slug,
+        title: payload.title,
+        description: payload.description,
+        category: payload.category,
+        fileLabel: payload.fileLabel,
+        status: payload.status,
+        locale: payload.locale,
+        externalUrl: payload.externalUrl ?? null,
+        sortOrder: payload.sortOrder
+      }
+    });
+
+    return this.serializeResource(resource);
+  }
+
+  async updateResourceAsset(
+    currentUser: SessionUser,
+    resourceId: string,
+    payload: UpsertResourceAssetPayload
+  ): Promise<ResourceAssetSummary> {
+    this.assertEditorialAccess(currentUser);
+    const resource = await this.prismaService.resourceAsset.update({
+      where: { id: resourceId },
+      data: {
+        slug: payload.slug,
+        title: payload.title,
+        description: payload.description,
+        category: payload.category,
+        fileLabel: payload.fileLabel,
+        status: payload.status,
+        locale: payload.locale,
+        externalUrl: payload.externalUrl ?? null,
+        sortOrder: payload.sortOrder
+      }
+    });
+
+    return this.serializeResource(resource);
+  }
+
+  async uploadResourceBinary(
+    currentUser: SessionUser,
+    resourceId: string,
+    file: {
+      buffer: Buffer;
+      originalname: string;
+      mimetype: string;
+      size: number;
+    }
+  ): Promise<ResourceAssetSummary> {
+    this.assertEditorialAccess(currentUser);
+
+    if (!file?.buffer?.byteLength) {
+      throw new BadRequestException('Resource upload is missing a file.');
+    }
+
+    const current = await this.prismaService.resourceAsset.findUnique({
+      where: {
+        id: resourceId
+      }
+    });
+
+    if (!current) {
+      throw new NotFoundException('Resource asset not found.');
+    }
+
+    const checksumSha256 = createHash('sha256').update(file.buffer).digest('hex');
+    const fileName = file.originalname || `${current.slug}.bin`;
+    const mimeType = file.mimetype || 'application/octet-stream';
+    const storageKey = this.evaluationStorageService.buildStorageKey(
+      checksumSha256,
+      fileName,
+      'content-resources'
+    );
+
+    await this.evaluationStorageService.writeObject(storageKey, file.buffer, mimeType);
+
+    const resource = await this.prismaService.resourceAsset.update({
+      where: {
+        id: resourceId
+      },
+      data: {
+        storageKey,
+        fileName,
+        mimeType,
+        byteSize: file.size
+      }
+    });
+
+    return this.serializeResource(resource);
+  }
+
+  async downloadResource(resourceId: string) {
+    const resource = await this.prismaService.resourceAsset.findFirst({
+      where: {
+        id: resourceId,
+        status: 'published',
+        locale: 'en'
+      }
+    });
+
+    if (!resource) {
+      throw new NotFoundException('Resource asset not found.');
+    }
+
+    if (resource.externalUrl) {
+      return {
+        type: 'redirect' as const,
+        location: resource.externalUrl
+      };
+    }
+
+    if (!resource.storageKey || !resource.fileName || !resource.mimeType) {
+      throw new BadRequestException('This resource does not have a binary asset.');
+    }
+
+    return {
+      type: 'binary' as const,
+      fileName: resource.fileName,
+      mimeType: resource.mimeType,
+      content: await this.evaluationStorageService.readObject(resource.storageKey)
+    };
+  }
+
+  async submitPartnerInterest(payload: SubmitPartnerInterestPayload) {
+    const lead = await this.prismaService.partnerInterestLead.create({
+      data: {
+        name: payload.name,
+        organizationName: payload.organizationName,
+        email: payload.email,
+        websiteUrl: payload.websiteUrl ?? null,
+        message: payload.message
+      }
+    });
+
+    await this.auditService.log({
+      actorId: null,
+      action: 'evaluation.context_updated',
+      targetType: 'partner_interest_lead',
+      targetId: lead.id,
+      metadata: {
+        email: lead.email,
+        organizationName: lead.organizationName
+      }
+    });
+
+    return {
+      ok: true as const
     };
   }
 
@@ -386,7 +870,24 @@ export class PlatformService {
     );
     const availableEvaluations = await this.prismaService.evaluation.findMany({
       where: {
-        userId: currentUser.id,
+        organizationId: program.organizationId,
+        OR: [
+          {
+            userId: currentUser.id
+          },
+          {
+            organization: {
+              members: {
+                some: {
+                  userId: currentUser.id,
+                  role: {
+                    in: ['owner', 'manager', 'member']
+                  }
+                }
+              }
+            }
+          }
+        ],
         currentRevisionId: {
           not: null
         }
@@ -474,7 +975,7 @@ export class PlatformService {
     currentUser: SessionUser,
     evaluationId: string
   ): Promise<EvidenceAssetListResponse> {
-    await this.assertOwnedEvaluation(currentUser.id, evaluationId);
+    await this.assertWorkspaceEvaluationAccess(currentUser, evaluationId);
 
     const items = await this.prismaService.evidenceAsset.findMany({
       where: {
@@ -493,7 +994,7 @@ export class PlatformService {
     evaluationId: string,
     payload: CreateEvidenceAssetPayload
   ): Promise<EvidenceAssetSummary> {
-    const evaluation = await this.assertOwnedEvaluation(currentUser.id, evaluationId);
+    const evaluation = await this.assertWorkspaceEvaluationAccess(currentUser, evaluationId);
 
     const item = await this.prismaService.evidenceAsset.create({
       data: {
@@ -508,7 +1009,11 @@ export class PlatformService {
         evidenceBasis: payload.evidenceBasis,
         confidenceWeight: payload.confidenceWeight ?? null,
         linkedTopicCode: payload.linkedTopicCode ?? null,
+        linkedRiskCode: payload.linkedRiskCode ?? null,
+        linkedOpportunityCode: payload.linkedOpportunityCode ?? null,
         linkedRecommendationId: payload.linkedRecommendationId ?? null,
+        reviewState: payload.reviewState ?? 'draft',
+        scenarioId: payload.scenarioId ?? null,
         createdByUserId: currentUser.id
       }
     });
@@ -541,7 +1046,7 @@ export class PlatformService {
       throw new BadRequestException('Evidence upload is missing a file.');
     }
 
-    const evaluation = await this.assertOwnedEvaluation(currentUser.id, evaluationId);
+    const evaluation = await this.assertWorkspaceEvaluationAccess(currentUser, evaluationId);
     const checksumSha256 = createHash('sha256').update(file.buffer).digest('hex');
     const fileName = file.originalname || `${payload.title}.bin`;
     const mimeType = file.mimetype || 'application/octet-stream';
@@ -565,7 +1070,11 @@ export class PlatformService {
         evidenceBasis: payload.evidenceBasis,
         confidenceWeight: payload.confidenceWeight ?? null,
         linkedTopicCode: payload.linkedTopicCode ?? null,
+        linkedRiskCode: payload.linkedRiskCode ?? null,
+        linkedOpportunityCode: payload.linkedOpportunityCode ?? null,
         linkedRecommendationId: payload.linkedRecommendationId ?? null,
+        reviewState: payload.reviewState ?? 'draft',
+        scenarioId: payload.scenarioId ?? null,
         storageKey,
         fileName,
         mimeType,
@@ -599,13 +1108,11 @@ export class PlatformService {
       end(): void;
     }
   ) {
+    await this.assertWorkspaceEvaluationAccess(currentUser, evaluationId);
     const item = await this.prismaService.evidenceAsset.findFirst({
       where: {
         id: evidenceId,
-        evaluationId,
-        evaluation: {
-          userId: currentUser.id
-        }
+        evaluationId
       }
     });
 
@@ -630,22 +1137,10 @@ export class PlatformService {
     payload: CreateProgramSubmissionPayload
   ): Promise<ProgramDetail> {
     const access = await this.getProgramAccess(programId, currentUser.id);
-    const evaluation = await this.prismaService.evaluation.findFirst({
-      where: {
-        id: payload.evaluationId,
-        userId: currentUser.id
-      },
-      select: {
-        id: true,
-        organizationId: true,
-        currentRevisionId: true,
-        currentRevisionNumber: true
-      }
-    });
-
-    if (!evaluation) {
-      throw new ForbiddenException('Evaluation access denied.');
-    }
+    const evaluation = await this.assertWorkspaceEvaluationAccess(
+      currentUser,
+      payload.evaluationId
+    );
 
     const revisionNumber = payload.revisionNumber ?? evaluation.currentRevisionNumber;
 
@@ -867,7 +1362,7 @@ export class PlatformService {
     currentUser: SessionUser,
     evaluationId: string
   ): Promise<ScenarioRunListResponse> {
-    await this.assertOwnedEvaluation(currentUser.id, evaluationId);
+    await this.assertWorkspaceEvaluationAccess(currentUser, evaluationId);
 
     const items = await this.prismaService.scenarioRun.findMany({
       where: {
@@ -886,25 +1381,15 @@ export class PlatformService {
     evaluationId: string,
     payload: CreateScenarioRunPayload
   ): Promise<ScenarioRunSummary> {
-    const evaluation = await this.assertOwnedEvaluation(currentUser.id, evaluationId);
-    const revisionLabel =
-      evaluation.currentRevisionNumber > 0
-        ? `revision ${evaluation.currentRevisionNumber}`
-        : 'draft';
-    const advisorySummary = [
-      `Scenario focus: ${payload.focusArea}.`,
-      payload.geography ? `Geography: ${payload.geography}.` : null,
-      payload.dependency ? `Dependency: ${payload.dependency}.` : null,
-      `Compare this advisory case against ${revisionLabel} before changing the canonical assessment.`,
-      payload.hypothesis
-    ]
-      .filter(Boolean)
-      .join(' ');
+    const evaluation = await this.assertWorkspaceEvaluationAccess(currentUser, evaluationId);
+    const report = await this.getScenarioBaseReport(evaluation.currentRevisionId, evaluationId);
+    const projection = buildScenarioProjection(report, payload.assumptions);
 
     const item = await this.prismaService.scenarioRun.create({
       data: {
         evaluationId,
         baseRevisionId: evaluation.currentRevisionId,
+        baseRevisionNumber: evaluation.currentRevisionNumber,
         name: payload.name,
         status: 'draft',
         focusArea: payload.focusArea,
@@ -912,11 +1397,12 @@ export class PlatformService {
         dependency: payload.dependency ?? null,
         timeframe: payload.timeframe ?? null,
         hypothesis: payload.hypothesis,
-        advisorySummary,
-        assumptions: {
-          comparisonMode: 'advisory_only',
-          generatedFromRevisionNumber: evaluation.currentRevisionNumber
-        },
+        advisorySummary: projection.advisorySummary,
+        assumptions: payload.assumptions,
+        metricDeltas: projection.metricDeltas,
+        topicDeltas: projection.topicDeltas,
+        projectedConfidenceBand: projection.projectedConfidenceBand,
+        takeaways: projection.takeaways,
         createdByUserId: currentUser.id
       }
     });
@@ -935,14 +1421,31 @@ export class PlatformService {
     return this.serializeScenario(item);
   }
 
-  private async assertOwnedEvaluation(userId: string, evaluationId: string) {
+  private async assertWorkspaceEvaluationAccess(currentUser: SessionUser, evaluationId: string) {
     const evaluation = await this.prismaService.evaluation.findFirst({
       where: {
         id: evaluationId,
-        userId
+        OR: [
+          {
+            userId: currentUser.id
+          },
+          {
+            organization: {
+              members: {
+                some: {
+                  userId: currentUser.id,
+                  role: {
+                    in: ['owner', 'manager', 'member']
+                  }
+                }
+              }
+            }
+          }
+        ]
       },
       select: {
         id: true,
+        organizationId: true,
         currentRevisionId: true,
         currentRevisionNumber: true
       }
@@ -953,19 +1456,6 @@ export class PlatformService {
     }
 
     return evaluation;
-  }
-
-  private parseResourceAssets(body?: string | null) {
-    if (!body) {
-      return [];
-    }
-
-    try {
-      const parsed = JSON.parse(body);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
   }
 
   private async assertProgramSubmission(programId: string, submissionId: string) {
@@ -982,6 +1472,45 @@ export class PlatformService {
     if (!submission) {
       throw new NotFoundException('Program submission not found.');
     }
+  }
+
+  private assertEditorialAccess(currentUser: SessionUser) {
+    if (!['owner', 'admin'].includes(currentUser.role)) {
+      throw new ForbiddenException('Editorial access denied.');
+    }
+  }
+
+  private async getScenarioBaseReport(revisionId: string | null, evaluationId: string) {
+    if (revisionId) {
+      const revision = await this.prismaService.evaluationRevision.findUnique({
+        where: {
+          id: revisionId
+        },
+        select: {
+          reportSnapshot: true
+        }
+      });
+
+      if (revision) {
+        return ReportResponseSchema.parse(revision.reportSnapshot);
+      }
+    }
+
+    const revision = await this.prismaService.evaluationRevision.findFirst({
+      where: {
+        evaluationId
+      },
+      orderBy: [{ revisionNumber: 'desc' }],
+      select: {
+        reportSnapshot: true
+      }
+    });
+
+    if (!revision) {
+      throw new BadRequestException('A saved revision is required before creating a scenario.');
+    }
+
+    return ReportResponseSchema.parse(revision.reportSnapshot);
   }
 
   private async getProgramAccess(programId: string, userId: string) {
@@ -1101,6 +1630,80 @@ export class PlatformService {
     };
   }
 
+  private serializePublicResource(resource: {
+    id: string;
+    slug: string;
+    title: string;
+    description: string;
+    category: string;
+    fileLabel: string;
+    externalUrl: string | null;
+    fileName: string | null;
+    mimeType: string | null;
+    byteSize: number | null;
+    updatedAt: Date;
+  }): PublicResourceAsset {
+    return {
+      id: resource.id,
+      slug: resource.slug,
+      title: resource.title,
+      description: resource.description,
+      category: resource.category as
+        | 'manual'
+        | 'faq'
+        | 'methodology'
+        | 'sample_report'
+        | 'workflow_asset',
+      href: resource.externalUrl ?? `/api/content/resources/${resource.id}/download`,
+      fileLabel: resource.fileLabel,
+      fileName: resource.fileName,
+      mimeType: resource.mimeType,
+      byteSize: resource.byteSize,
+      updatedAt: resource.updatedAt.toISOString()
+    };
+  }
+
+  private serializeResource(resource: {
+    id: string;
+    slug: string;
+    title: string;
+    description: string;
+    category: string;
+    fileLabel: string;
+    status: string;
+    locale: string;
+    externalUrl: string | null;
+    fileName: string | null;
+    mimeType: string | null;
+    byteSize: number | null;
+    storageKey?: string | null;
+    sortOrder: number;
+    updatedAt: Date;
+  }): ResourceAssetSummary {
+    return {
+      id: resource.id,
+      slug: resource.slug,
+      title: resource.title,
+      description: resource.description,
+      category: resource.category as
+        | 'manual'
+        | 'faq'
+        | 'methodology'
+        | 'sample_report'
+        | 'workflow_asset',
+      fileLabel: resource.fileLabel,
+      status: resource.status as ContentStatus,
+      locale: resource.locale,
+      externalUrl: resource.externalUrl,
+      fileName: resource.fileName,
+      mimeType: resource.mimeType,
+      byteSize: resource.byteSize,
+      hasBinary: Boolean(resource.storageKey && resource.fileName),
+      sortOrder: resource.sortOrder,
+      updatedAt: resource.updatedAt.toISOString()
+    };
+  }
+
   private serializeEvidence(item: {
     id: string;
     evaluationId: string;
@@ -1115,7 +1718,24 @@ export class PlatformService {
     evidenceBasis: 'measured' | 'estimated' | 'assumed';
     confidenceWeight: number | null;
     linkedTopicCode: 'E1' | 'E2' | 'E3' | 'E4' | 'E5' | 'S1' | 'S2' | 'S3' | 'S4' | 'G1' | null;
+    linkedRiskCode:
+      | 'climate_policy_risk'
+      | 'water_scarcity_risk'
+      | 'biodiversity_regulation_risk'
+      | 'resource_scarcity_risk'
+      | 'community_stability_risk'
+      | 'consumer_governance_risk'
+      | null;
+    linkedOpportunityCode:
+      | 'climate_transition_opportunity'
+      | 'water_reputation_opportunity'
+      | 'biodiversity_reputation_opportunity'
+      | 'circular_efficiency_opportunity'
+      | 'community_reputation_opportunity'
+      | 'governance_trust_opportunity'
+      | null;
     linkedRecommendationId: string | null;
+    reviewState: string;
     storageKey?: string | null;
     fileName?: string | null;
     mimeType?: string | null;
@@ -1136,7 +1756,10 @@ export class PlatformService {
       evidenceBasis: item.evidenceBasis,
       confidenceWeight: item.confidenceWeight,
       linkedTopicCode: item.linkedTopicCode,
+      linkedRiskCode: item.linkedRiskCode,
+      linkedOpportunityCode: item.linkedOpportunityCode,
       linkedRecommendationId: item.linkedRecommendationId,
+      reviewState: item.reviewState as 'draft' | 'review_requested' | 'validated' | 'needs_update',
       fileName: item.fileName ?? null,
       mimeType: item.mimeType ?? null,
       byteSize: item.byteSize ?? null,
@@ -1149,6 +1772,7 @@ export class PlatformService {
     id: string;
     evaluationId: string;
     baseRevisionId: string | null;
+    baseRevisionNumber: number | null;
     name: string;
     status: string;
     focusArea: string;
@@ -1156,7 +1780,12 @@ export class PlatformService {
     dependency: string | null;
     timeframe: string | null;
     hypothesis: string;
+    assumptions: Prisma.JsonValue | null;
     advisorySummary: string;
+    metricDeltas: Prisma.JsonValue | null;
+    topicDeltas: Prisma.JsonValue | null;
+    projectedConfidenceBand: 'high' | 'moderate' | 'low';
+    takeaways: Prisma.JsonValue | null;
     createdAt: Date;
     updatedAt: Date;
   }): ScenarioRunSummary {
@@ -1164,7 +1793,7 @@ export class PlatformService {
       id: item.id,
       evaluationId: item.evaluationId,
       baseRevisionId: item.baseRevisionId,
-      baseRevisionNumber: null,
+      baseRevisionNumber: item.baseRevisionNumber,
       name: item.name,
       status: item.status as 'draft' | 'submitted' | 'archived',
       focusArea: item.focusArea,
@@ -1172,9 +1801,92 @@ export class PlatformService {
       dependency: item.dependency,
       timeframe: item.timeframe,
       hypothesis: item.hypothesis,
+      assumptions: this.parseScenarioAssumptions(item.assumptions),
       advisorySummary: item.advisorySummary,
+      metricDeltas: this.parseScenarioMetricDeltas(item.metricDeltas),
+      topicDeltas: this.parseScenarioTopicDeltas(item.topicDeltas),
+      projectedConfidenceBand: item.projectedConfidenceBand,
+      takeaways: this.parseScenarioTakeaways(item.takeaways),
       createdAt: item.createdAt.toISOString(),
       updatedAt: item.updatedAt.toISOString()
     };
+  }
+
+  private parseScenarioAssumptions(
+    value: Prisma.JsonValue | null | undefined
+  ): ScenarioAssumptions {
+    const parsed = value && typeof value === 'object' ? value : {};
+
+    return {
+      financialDelta:
+        typeof (parsed as Record<string, unknown>).financialDelta === 'number'
+          ? ((parsed as Record<string, unknown>).financialDelta as number)
+          : 0,
+      riskDelta:
+        typeof (parsed as Record<string, unknown>).riskDelta === 'number'
+          ? ((parsed as Record<string, unknown>).riskDelta as number)
+          : 0,
+      opportunityDelta:
+        typeof (parsed as Record<string, unknown>).opportunityDelta === 'number'
+          ? ((parsed as Record<string, unknown>).opportunityDelta as number)
+          : 0,
+      confidenceShift:
+        (parsed as Record<string, unknown>).confidenceShift === 'down' ||
+        (parsed as Record<string, unknown>).confidenceShift === 'up'
+          ? ((parsed as Record<string, unknown>).confidenceShift as 'down' | 'up')
+          : 'same',
+      impactedTopicCodes: Array.isArray((parsed as Record<string, unknown>).impactedTopicCodes)
+        ? (((parsed as Record<string, unknown>).impactedTopicCodes as string[]).filter(
+            Boolean
+          ) as Array<'E1' | 'E2' | 'E3' | 'E4' | 'E5' | 'S1' | 'S2' | 'S3' | 'S4' | 'G1'>)
+        : []
+    };
+  }
+
+  private parseScenarioMetricDeltas(
+    value: Prisma.JsonValue | null | undefined
+  ): ScenarioMetricDelta[] {
+    return Array.isArray(value)
+      ? (value as Array<Record<string, unknown>>).map(
+          (item): ScenarioMetricDelta => ({
+            key:
+              item.key === 'risk_overall' || item.key === 'opportunity_overall'
+                ? item.key
+                : 'financial_total',
+            label: typeof item.label === 'string' ? item.label : 'Metric',
+            currentValue: typeof item.currentValue === 'number' ? item.currentValue : 0,
+            scenarioValue: typeof item.scenarioValue === 'number' ? item.scenarioValue : 0,
+            delta: typeof item.delta === 'number' ? item.delta : 0
+          })
+        )
+      : [];
+  }
+
+  private parseScenarioTopicDeltas(
+    value: Prisma.JsonValue | null | undefined
+  ): ScenarioTopicDelta[] {
+    return Array.isArray(value)
+      ? (value as Array<Record<string, unknown>>).map(
+          (item): ScenarioTopicDelta => ({
+            topicCode: typeof item.topicCode === 'string' ? (item.topicCode as TopicCode) : 'E1',
+            title: typeof item.title === 'string' ? item.title : 'Topic',
+            currentBand:
+              typeof item.currentBand === 'string'
+                ? (item.currentBand as PriorityBand)
+                : 'not_applicable',
+            scenarioBand:
+              typeof item.scenarioBand === 'string'
+                ? (item.scenarioBand as PriorityBand)
+                : 'not_applicable',
+            note: typeof item.note === 'string' ? item.note : 'No note'
+          })
+        )
+      : [];
+  }
+
+  private parseScenarioTakeaways(value: Prisma.JsonValue | null | undefined) {
+    return Array.isArray(value)
+      ? (value as Array<unknown>).filter((item): item is string => typeof item === 'string')
+      : [];
   }
 }

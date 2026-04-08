@@ -291,7 +291,23 @@ export class EvaluationsService {
   async listEvaluations(currentUser: SessionUser): Promise<EvaluationListResponse> {
     const evaluations: EvaluationListRecord[] = await this.prismaService.evaluation.findMany({
       where: {
-        userId: currentUser.id
+        OR: [
+          {
+            userId: currentUser.id
+          },
+          {
+            organization: {
+              members: {
+                some: {
+                  userId: currentUser.id,
+                  role: {
+                    in: ['owner', 'manager', 'member']
+                  }
+                }
+              }
+            }
+          }
+        ]
       },
       orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
       select: {
@@ -1991,7 +2007,23 @@ export class EvaluationsService {
     const evaluation = await client.evaluation.findFirst({
       where: {
         id: evaluationId,
-        userId
+        OR: [
+          {
+            userId
+          },
+          {
+            organization: {
+              members: {
+                some: {
+                  userId,
+                  role: {
+                    in: ['owner', 'manager', 'member']
+                  }
+                }
+              }
+            }
+          }
+        ]
       },
       select: {
         id: true
@@ -2011,7 +2043,23 @@ export class EvaluationsService {
     const evaluation = await client.evaluation.findFirst({
       where: {
         id: evaluationId,
-        userId
+        OR: [
+          {
+            userId
+          },
+          {
+            organization: {
+              members: {
+                some: {
+                  userId,
+                  role: {
+                    in: ['owner', 'manager', 'member']
+                  }
+                }
+              }
+            }
+          }
+        ]
       },
       select: {
         id: true,
@@ -2034,7 +2082,23 @@ export class EvaluationsService {
     const evaluation = await client.evaluation.findFirst({
       where: {
         id: evaluationId,
-        userId
+        OR: [
+          {
+            userId
+          },
+          {
+            organization: {
+              members: {
+                some: {
+                  userId,
+                  role: {
+                    in: ['owner', 'manager', 'member']
+                  }
+                }
+              }
+            }
+          }
+        ]
       },
       select: evaluationStateSelect
     });
@@ -2067,7 +2131,23 @@ export class EvaluationsService {
         id: artifactId,
         evaluationId,
         evaluation: {
-          userId
+          OR: [
+            {
+              userId
+            },
+            {
+              organization: {
+                members: {
+                  some: {
+                    userId,
+                    role: {
+                      in: ['owner', 'manager', 'member']
+                    }
+                  }
+                }
+              }
+            }
+          ]
         }
       },
       select: artifactSelect
@@ -2086,7 +2166,23 @@ export class EvaluationsService {
         id: narrativeId,
         evaluationId,
         evaluation: {
-          userId
+          OR: [
+            {
+              userId
+            },
+            {
+              organization: {
+                members: {
+                  some: {
+                    userId,
+                    role: {
+                      in: ['owner', 'manager', 'member']
+                    }
+                  }
+                }
+              }
+            }
+          ]
         }
       },
       select: narrativeSelect

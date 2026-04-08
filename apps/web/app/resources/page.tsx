@@ -21,11 +21,20 @@ export default async function ResourcesPage() {
             </p>
             <h2 className="mt-3 text-xl font-bold text-slate-950">{resource.title}</h2>
             <p className="mt-3 text-sm leading-7 text-slate-600">{resource.description}</p>
+            <div className="mt-4 grid gap-1 text-xs uppercase tracking-[0.2em] text-slate-500">
+              {resource.fileName ? <p>File: {resource.fileName}</p> : null}
+              {resource.mimeType ? <p>Type: {resource.mimeType}</p> : null}
+              {resource.byteSize !== null ? (
+                <p>Size: {(resource.byteSize / 1024).toFixed(1)} KB</p>
+              ) : null}
+            </div>
             <Link
               className="mt-5 inline-flex text-sm font-semibold text-brand-dark"
               href={resource.href}
+              target={resource.href.startsWith('http') ? '_blank' : undefined}
+              rel={resource.href.startsWith('http') ? 'noreferrer' : undefined}
             >
-              Open {resource.fileLabel}
+              Download {resource.fileLabel}
             </Link>
           </Card>
         ))}

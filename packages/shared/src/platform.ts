@@ -1,5 +1,13 @@
 import { z } from 'zod';
-import { EvidenceBasisSchema, EvaluationStatusSchema, TopicCodeSchema } from './evaluations';
+import {
+  ConfidenceBandSchema,
+  EvidenceBasisSchema,
+  EvaluationStatusSchema,
+  OpportunityCodeSchema,
+  PriorityBandSchema,
+  RiskCodeSchema,
+  TopicCodeSchema
+} from './evaluations';
 
 export const OrganizationRoleSchema = z.enum(['owner', 'manager', 'member', 'reviewer']);
 export type OrganizationRole = z.infer<typeof OrganizationRoleSchema>;
@@ -28,6 +36,12 @@ export const ReviewAssignmentStatusSchema = z.enum([
 ]);
 export type ReviewAssignmentStatus = z.infer<typeof ReviewAssignmentStatusSchema>;
 
+export const ContentStatusSchema = z.enum(['draft', 'published', 'archived']);
+export type ContentStatus = z.infer<typeof ContentStatusSchema>;
+
+export const LocaleCodeSchema = z.string().trim().min(2).max(12).default('en');
+export type LocaleCode = z.infer<typeof LocaleCodeSchema>;
+
 export const KnowledgeArticleCategorySchema = z.enum([
   'how_it_works',
   'methodology',
@@ -49,8 +63,19 @@ export type ResourceAssetCategory = z.infer<typeof ResourceAssetCategorySchema>;
 export const EvidenceAssetKindSchema = z.enum(['file', 'link', 'note']);
 export type EvidenceAssetKind = z.infer<typeof EvidenceAssetKindSchema>;
 
+export const EvidenceReviewStateSchema = z.enum([
+  'draft',
+  'review_requested',
+  'validated',
+  'needs_update'
+]);
+export type EvidenceReviewState = z.infer<typeof EvidenceReviewStateSchema>;
+
 export const ScenarioRunStatusSchema = z.enum(['draft', 'submitted', 'archived']);
 export type ScenarioRunStatus = z.infer<typeof ScenarioRunStatusSchema>;
+
+export const ScenarioConfidenceShiftSchema = z.enum(['down', 'same', 'up']);
+export type ScenarioConfidenceShift = z.infer<typeof ScenarioConfidenceShiftSchema>;
 
 export const OrganizationSummarySchema = z.object({
   id: z.string(),
@@ -194,6 +219,9 @@ export const KnowledgeArticleSchema = z.object({
   summary: z.string(),
   body: z.string(),
   category: KnowledgeArticleCategorySchema,
+  status: ContentStatusSchema,
+  locale: LocaleCodeSchema,
+  heroImageUrl: z.string().url().nullable().default(null),
   updatedAt: z.string()
 });
 export type KnowledgeArticle = z.infer<typeof KnowledgeArticleSchema>;
@@ -203,6 +231,8 @@ export const FaqEntrySchema = z.object({
   question: z.string(),
   answer: z.string(),
   category: z.string(),
+  status: ContentStatusSchema,
+  locale: LocaleCodeSchema,
   sortOrder: z.number().int().min(0)
 });
 export type FaqEntry = z.infer<typeof FaqEntrySchema>;
@@ -215,28 +245,134 @@ export const CaseStudySchema = z.object({
   summary: z.string(),
   story: z.string(),
   stage: z.string(),
-  naceDivision: z.string()
+  naceDivision: z.string(),
+  status: ContentStatusSchema,
+  locale: LocaleCodeSchema,
+  heroImageUrl: z.string().url().nullable().default(null),
+  updatedAt: z.string()
 });
 export type CaseStudy = z.infer<typeof CaseStudySchema>;
 
-export const ResourceAssetSchema = z.object({
+export const PublicResourceAssetSchema = z.object({
   id: z.string(),
+  slug: z.string(),
   title: z.string(),
   description: z.string(),
   category: ResourceAssetCategorySchema,
   href: z.string(),
-  fileLabel: z.string()
+  fileLabel: z.string(),
+  fileName: z.string().nullable().default(null),
+  mimeType: z.string().nullable().default(null),
+  byteSize: z.number().int().nonnegative().nullable().default(null),
+  updatedAt: z.string()
 });
-export type ResourceAsset = z.infer<typeof ResourceAssetSchema>;
+export type PublicResourceAsset = z.infer<typeof PublicResourceAssetSchema>;
+
+export const ResourceAssetSummarySchema = z.object({
+  id: z.string(),
+  slug: z.string(),
+  title: z.string(),
+  description: z.string(),
+  category: ResourceAssetCategorySchema,
+  fileLabel: z.string(),
+  status: ContentStatusSchema,
+  locale: LocaleCodeSchema,
+  externalUrl: z.string().url().nullable().default(null),
+  fileName: z.string().nullable().default(null),
+  mimeType: z.string().nullable().default(null),
+  byteSize: z.number().int().nonnegative().nullable().default(null),
+  hasBinary: z.boolean().default(false),
+  sortOrder: z.number().int().min(0),
+  updatedAt: z.string()
+});
+export type ResourceAssetSummary = z.infer<typeof ResourceAssetSummarySchema>;
 
 export const PublicSiteContentSchema = z.object({
   articles: z.array(KnowledgeArticleSchema),
   faqEntries: z.array(FaqEntrySchema),
   caseStudies: z.array(CaseStudySchema),
-  resources: z.array(ResourceAssetSchema),
+  resources: z.array(PublicResourceAssetSchema),
   partnerPrograms: z.array(ProgramSummarySchema)
 });
 export type PublicSiteContent = z.infer<typeof PublicSiteContentSchema>;
+
+export const EditorialOverviewSchema = z.object({
+  articles: z.array(KnowledgeArticleSchema),
+  faqEntries: z.array(FaqEntrySchema),
+  caseStudies: z.array(CaseStudySchema),
+  resources: z.array(ResourceAssetSummarySchema),
+  partnerInterestCount: z.number().int().min(0)
+});
+export type EditorialOverview = z.infer<typeof EditorialOverviewSchema>;
+
+export const ContentItemParamsSchema = z.object({
+  contentId: z.string()
+});
+export type ContentItemParams = z.infer<typeof ContentItemParamsSchema>;
+
+export const ResourceAssetParamsSchema = z.object({
+  resourceId: z.string()
+});
+export type ResourceAssetParams = z.infer<typeof ResourceAssetParamsSchema>;
+
+export const UpsertKnowledgeArticlePayloadSchema = z.object({
+  slug: z.string().trim().min(2).max(120),
+  title: z.string().trim().min(2).max(160),
+  summary: z.string().trim().min(10).max(500),
+  body: z.string().trim().min(20).max(20000),
+  category: KnowledgeArticleCategorySchema,
+  status: ContentStatusSchema,
+  locale: LocaleCodeSchema,
+  heroImageUrl: z.string().url().nullable().optional()
+});
+export type UpsertKnowledgeArticlePayload = z.infer<typeof UpsertKnowledgeArticlePayloadSchema>;
+
+export const UpsertFaqEntryPayloadSchema = z.object({
+  question: z.string().trim().min(6).max(240),
+  answer: z.string().trim().min(12).max(4000),
+  category: z.string().trim().min(2).max(80),
+  status: ContentStatusSchema,
+  locale: LocaleCodeSchema,
+  sortOrder: z.number().int().min(0)
+});
+export type UpsertFaqEntryPayload = z.infer<typeof UpsertFaqEntryPayloadSchema>;
+
+export const UpsertCaseStudyPayloadSchema = z.object({
+  slug: z.string().trim().min(2).max(120),
+  title: z.string().trim().min(2).max(160),
+  startupName: z.string().trim().min(2).max(160),
+  summary: z.string().trim().min(10).max(500),
+  story: z.string().trim().min(20).max(12000),
+  stage: z.string().trim().min(2).max(120),
+  naceDivision: z.string().trim().min(2).max(200),
+  status: ContentStatusSchema,
+  locale: LocaleCodeSchema,
+  heroImageUrl: z.string().url().nullable().optional(),
+  sortOrder: z.number().int().min(0)
+});
+export type UpsertCaseStudyPayload = z.infer<typeof UpsertCaseStudyPayloadSchema>;
+
+export const UpsertResourceAssetPayloadSchema = z.object({
+  slug: z.string().trim().min(2).max(120),
+  title: z.string().trim().min(2).max(160),
+  description: z.string().trim().min(10).max(500),
+  category: ResourceAssetCategorySchema,
+  fileLabel: z.string().trim().min(2).max(80),
+  status: ContentStatusSchema,
+  locale: LocaleCodeSchema,
+  externalUrl: z.string().url().nullable().optional(),
+  sortOrder: z.number().int().min(0)
+});
+export type UpsertResourceAssetPayload = z.infer<typeof UpsertResourceAssetPayloadSchema>;
+
+export const SubmitPartnerInterestPayloadSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  organizationName: z.string().trim().min(2).max(160),
+  email: z.string().email(),
+  websiteUrl: z.string().url().nullable().optional(),
+  message: z.string().trim().min(12).max(4000)
+});
+export type SubmitPartnerInterestPayload = z.infer<typeof SubmitPartnerInterestPayloadSchema>;
 
 export const SdgTargetSchema = z.object({
   id: z.string(),
@@ -277,7 +413,10 @@ export const EvidenceAssetSummarySchema = z.object({
   evidenceBasis: EvidenceBasisSchema,
   confidenceWeight: z.number().min(0).max(1).nullable().default(null),
   linkedTopicCode: TopicCodeSchema.nullable().default(null),
+  linkedRiskCode: RiskCodeSchema.nullable().default(null),
+  linkedOpportunityCode: OpportunityCodeSchema.nullable().default(null),
   linkedRecommendationId: z.string().nullable().default(null),
+  reviewState: EvidenceReviewStateSchema,
   fileName: z.string().nullable().default(null),
   mimeType: z.string().nullable().default(null),
   byteSize: z.number().int().nonnegative().nullable().default(null),
@@ -301,7 +440,11 @@ export const CreateEvidenceAssetPayloadSchema = z.object({
   evidenceBasis: EvidenceBasisSchema,
   confidenceWeight: z.number().min(0).max(1).optional().nullable(),
   linkedTopicCode: TopicCodeSchema.optional().nullable(),
-  linkedRecommendationId: z.string().trim().max(120).optional().nullable()
+  linkedRiskCode: RiskCodeSchema.optional().nullable(),
+  linkedOpportunityCode: OpportunityCodeSchema.optional().nullable(),
+  linkedRecommendationId: z.string().trim().max(120).optional().nullable(),
+  reviewState: EvidenceReviewStateSchema.optional().default('draft'),
+  scenarioId: z.string().optional().nullable()
 });
 export type CreateEvidenceAssetPayload = z.infer<typeof CreateEvidenceAssetPayloadSchema>;
 
@@ -341,6 +484,33 @@ export const CreateReviewCommentPayloadSchema = z.object({
 });
 export type CreateReviewCommentPayload = z.infer<typeof CreateReviewCommentPayloadSchema>;
 
+export const ScenarioAssumptionsSchema = z.object({
+  financialDelta: z.number().min(-4).max(4),
+  riskDelta: z.number().min(-2).max(2),
+  opportunityDelta: z.number().min(-2).max(2),
+  confidenceShift: ScenarioConfidenceShiftSchema,
+  impactedTopicCodes: z.array(TopicCodeSchema).max(4)
+});
+export type ScenarioAssumptions = z.infer<typeof ScenarioAssumptionsSchema>;
+
+export const ScenarioMetricDeltaSchema = z.object({
+  key: z.enum(['financial_total', 'risk_overall', 'opportunity_overall']),
+  label: z.string(),
+  currentValue: z.number(),
+  scenarioValue: z.number(),
+  delta: z.number()
+});
+export type ScenarioMetricDelta = z.infer<typeof ScenarioMetricDeltaSchema>;
+
+export const ScenarioTopicDeltaSchema = z.object({
+  topicCode: TopicCodeSchema,
+  title: z.string(),
+  currentBand: PriorityBandSchema,
+  scenarioBand: PriorityBandSchema,
+  note: z.string()
+});
+export type ScenarioTopicDelta = z.infer<typeof ScenarioTopicDeltaSchema>;
+
 export const ScenarioRunSummarySchema = z.object({
   id: z.string(),
   evaluationId: z.string(),
@@ -353,7 +523,12 @@ export const ScenarioRunSummarySchema = z.object({
   dependency: z.string().nullable().default(null),
   timeframe: z.string().nullable().default(null),
   hypothesis: z.string(),
+  assumptions: ScenarioAssumptionsSchema,
   advisorySummary: z.string(),
+  metricDeltas: z.array(ScenarioMetricDeltaSchema),
+  topicDeltas: z.array(ScenarioTopicDeltaSchema),
+  projectedConfidenceBand: ConfidenceBandSchema,
+  takeaways: z.array(z.string()),
   createdAt: z.string(),
   updatedAt: z.string()
 });
@@ -370,6 +545,7 @@ export const CreateScenarioRunPayloadSchema = z.object({
   geography: z.string().trim().max(120).optional().nullable(),
   dependency: z.string().trim().max(120).optional().nullable(),
   timeframe: z.string().trim().max(120).optional().nullable(),
-  hypothesis: z.string().trim().min(8).max(2000)
+  hypothesis: z.string().trim().min(8).max(2000),
+  assumptions: ScenarioAssumptionsSchema
 });
 export type CreateScenarioRunPayload = z.infer<typeof CreateScenarioRunPayloadSchema>;

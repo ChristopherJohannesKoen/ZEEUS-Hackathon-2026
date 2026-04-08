@@ -1,0 +1,6 @@
+ZEEUS Methodology Note
+
+Deterministic workbook-parity scoring remains canonical.
+Relevant topics begin at 2.0.
+High-priority topics begin at 2.5.
+AI explanations do not modify saved scores, thresholds, SDG alignment, or recommendation eligibility.

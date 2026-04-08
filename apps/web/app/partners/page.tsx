@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Card, buttonClassName } from '@packages/ui';
 import { MarketingShell } from '../../components/marketing-shell';
+import { PartnerInterestForm } from '../../components/partner-interest-form';
 import { getCurrentUser, getPublicSiteContent } from '../../lib/server-api';
 
 export default async function PartnersPage() {
@@ -44,6 +45,26 @@ export default async function PartnersPage() {
             </Card>
           ))}
         </div>
+      </div>
+
+      <div className="mt-8 grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+        <PartnerInterestForm />
+        <Card className="border-surface-border bg-[#fbfdf8]">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#58724d]">
+            Launch model
+          </p>
+          <h2 className="mt-3 text-2xl font-black text-slate-950">Mixed access by design</h2>
+          <div className="mt-4 grid gap-3 text-sm leading-7 text-slate-600">
+            <p>Public-facing partner pages explain programs and collect interest.</p>
+            <p>
+              Reviewer access remains invite-only, routed through the protected program console.
+            </p>
+            <p>
+              Program submissions always point to immutable evaluation revisions and co-branded
+              outputs.
+            </p>
+          </div>
+        </Card>
       </div>
     </MarketingShell>
   );

@@ -4,10 +4,16 @@ import { Badge, Card, buttonClassName } from '@packages/ui';
 import { ArtifactActions } from '../../../../../components/artifact-actions';
 import { EvaluationLifecycleActions } from '../../../../../components/evaluation-lifecycle-actions';
 import { EvaluationProgress } from '../../../../../components/evaluation-progress';
+import { NarrativeActionsPanel } from '../../../../../components/narrative-actions-panel';
 import { RecommendationActionsBoard } from '../../../../../components/recommendation-actions-board';
 import { ApiRequestError } from '../../../../../lib/api-error';
 import { confidenceTone, priorityTone } from '../../../../../lib/display';
-import { getEvaluation, getEvaluationDashboard } from '../../../../../lib/server-api';
+import {
+  getEvaluation,
+  getEvaluationBenchmarks,
+  getEvaluationDashboard,
+  getEvaluationNarratives
+} from '../../../../../lib/server-api';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,9 +23,11 @@ export default async function DashboardPage({ params }: { params: Params }) {
   const { id } = await params;
 
   try {
-    const [evaluation, dashboard] = await Promise.all([
+    const [evaluation, dashboard, narratives, benchmarks] = await Promise.all([
       getEvaluation(id),
-      getEvaluationDashboard(id)
+      getEvaluationDashboard(id),
+      getEvaluationNarratives(id),
+      getEvaluationBenchmarks(id)
     ]);
 
     return (
@@ -77,6 +85,15 @@ export default async function DashboardPage({ params }: { params: Params }) {
                   href={`/app/report/${evaluation.id}`}
                 >
                   Open report
+                </Link>
+                <Link
+                  className={buttonClassName({
+                    className:
+                      'border border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white'
+                  })}
+                  href={`/app/evaluate/${evaluation.id}/benchmarks`}
+                >
+                  Open benchmarks
                 </Link>
               </div>
               <div className="mt-4">
@@ -238,6 +255,41 @@ export default async function DashboardPage({ params }: { params: Params }) {
         <Card className="border-surface-border">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
+              <p className="text-xs uppercase tracking-[0.25em] text-[#58724d]">Benchmarking</p>
+              <h2 className="mt-2 text-2xl font-black text-slate-950">
+                Compare this revision to prior work and seeded baselines
+              </h2>
+            </div>
+            <Link
+              className={buttonClassName({ variant: 'secondary' })}
+              href={`/app/evaluate/${evaluation.id}/benchmarks`}
+            >
+              View benchmark workspace
+            </Link>
+          </div>
+          <div className="mt-6 grid gap-4 md:grid-cols-3">
+            {benchmarks.metrics.map((metric) => (
+              <div className="rounded-[28px] bg-[#f7f9f4] p-5" key={metric.label}>
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{metric.label}</p>
+                <p className="mt-2 text-3xl font-black text-slate-950">{metric.current}</p>
+                <p className="mt-2 text-sm text-slate-600">
+                  Previous {metric.previous ?? 'n/a'} / Reference {metric.reference ?? 'n/a'}
+                </p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-5 grid gap-3">
+            {benchmarks.takeaways.map((takeaway) => (
+              <div className="rounded-[28px] bg-[#f4f9ee] px-5 py-4 text-sm leading-7 text-slate-700" key={takeaway}>
+                {takeaway}
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="border-surface-border">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
               <p className="text-xs uppercase tracking-[0.25em] text-[#58724d]">Recommendations</p>
               <h2 className="mt-2 text-2xl font-black text-slate-950">What to do next</h2>
             </div>
@@ -252,7 +304,25 @@ export default async function DashboardPage({ params }: { params: Params }) {
           <div className="mt-6">
             <RecommendationActionsBoard
               evaluationId={evaluation.id}
+              revisionNumber={evaluation.currentRevisionNumber}
               recommendations={dashboard.recommendations}
+            />
+          </div>
+        </Card>
+
+        <Card className="border-surface-border">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="text-xs uppercase tracking-[0.25em] text-[#58724d]">AI explanations</p>
+              <h2 className="mt-2 text-2xl font-black text-slate-950">
+                Generate revision-scoped narrative guidance
+              </h2>
+            </div>
+          </div>
+          <div className="mt-6">
+            <NarrativeActionsPanel
+              evaluationId={evaluation.id}
+              narratives={narratives.items}
             />
           </div>
         </Card>

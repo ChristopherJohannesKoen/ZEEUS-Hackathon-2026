@@ -67,8 +67,13 @@ export const AuditActionSchema = z.enum([
   'evaluation.revision_created',
   'evaluation.recommendation_action_updated',
   'artifact.requested',
+  'artifact.processing',
   'artifact.ready',
   'artifact.failed',
+  'narrative.requested',
+  'narrative.processing',
+  'narrative.ready',
+  'narrative.failed',
   'evaluation.deleted'
 ]);
 export type AuditAction = z.infer<typeof AuditActionSchema>;

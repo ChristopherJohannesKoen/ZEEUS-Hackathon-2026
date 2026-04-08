@@ -155,6 +155,7 @@ model Evaluation {
   revisions            EvaluationRevision[]
   artifacts            EvaluationArtifact[]
   recommendationActions EvaluationRecommendationAction[]
+  narratives           EvaluationNarrative[]
   createdAt            DateTime                @default(now())
   updatedAt            DateTime                @updatedAt
 
@@ -276,6 +277,8 @@ model EvaluationRevision {
   createdByUserId       String?
   createdAt             DateTime         @default(now())
   artifacts             EvaluationArtifact[]
+  recommendationActions EvaluationRecommendationAction[]
+  narratives            EvaluationNarrative[]
 
   @@unique([evaluationId, revisionNumber])
   @@index([evaluationId, createdAt])
@@ -311,6 +314,8 @@ model EvaluationRecommendationAction {
   id               String                     @id @default(cuid())
   evaluationId     String
   evaluation       Evaluation                 @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  revisionId       String
+  revision         EvaluationRevision         @relation(fields: [revisionId], references: [id], onDelete: Cascade)
   recommendationId String
   status           RecommendationActionStatus @default(not_started)
   ownerNote        String?
@@ -318,8 +323,33 @@ model EvaluationRecommendationAction {
   createdAt        DateTime                   @default(now())
   updatedAt        DateTime                   @updatedAt
 
-  @@unique([evaluationId, recommendationId])
+  @@unique([revisionId, recommendationId])
   @@index([evaluationId, status])
+  @@index([revisionId, status])
+}
+
+model EvaluationNarrative {
+  id              String                    @id @default(cuid())
+  evaluationId    String
+  evaluation      Evaluation                @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  revisionId      String?
+  revision        EvaluationRevision?       @relation(fields: [revisionId], references: [id], onDelete: SetNull)
+  kind            EvaluationNarrativeKind
+  status          EvaluationNarrativeStatus @default(pending)
+  model           String?
+  promptVersion   String?
+  content         String?
+  requestedAt     DateTime                  @default(now())
+  readyAt         DateTime?
+  failedAt        DateTime?
+  errorMessage    String?
+  createdByUserId String?
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+
+  @@index([evaluationId, createdAt])
+  @@index([revisionId])
+  @@index([status, kind, createdAt])
 }
 
 model IdentityProviderConfig {
@@ -694,6 +724,7 @@ enum EvaluationArtifactKind {
 
 enum EvaluationArtifactStatus {
   pending
+  processing
   ready
   failed
 }
@@ -703,4 +734,18 @@ enum RecommendationActionStatus {
   in_progress
   completed
   dismissed
+}
+
+enum EvaluationNarrativeKind {
+  executive_summary
+  material_topics
+  risks_opportunities
+  evidence_guidance
+}
+
+enum EvaluationNarrativeStatus {
+  pending
+  processing
+  ready
+  failed
 }

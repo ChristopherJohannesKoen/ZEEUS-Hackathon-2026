@@ -47,7 +47,9 @@ The evaluation contract covers:
 - compare two revisions
 - request and list persisted CSV/PDF artifacts
 - download a specific artifact binary
-- update structured recommendation action status and owner notes
+- request and list revision-scoped AI narratives
+- fetch revision-based benchmark summaries
+- update revision-scoped recommendation action status and owner notes
 
 Compatibility endpoints for direct CSV and PDF export still exist, but they now
 wrap the artifact pipeline instead of streaming throwaway files.

@@ -3,7 +3,11 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, buttonClassName } from '@packages/ui';
-import { requestEvaluationArtifact } from '../lib/client-api';
+import { getEvaluationArtifactStatus, requestEvaluationArtifact } from '../lib/client-api';
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 export function ArtifactActions({
   evaluationId,
@@ -22,8 +26,32 @@ export function ArtifactActions({
 
       try {
         const artifact = await requestEvaluationArtifact(evaluationId, { kind });
+        let latestArtifact = artifact;
+
+        for (let attempt = 0; attempt < 45; attempt += 1) {
+          if (latestArtifact.status === 'ready') {
+            break;
+          }
+
+          if (latestArtifact.status === 'failed') {
+            throw new Error(
+              latestArtifact.errorMessage ??
+                `Unable to generate the ${kind.toUpperCase()} artifact.`
+            );
+          }
+
+          await sleep(1000);
+          latestArtifact = await getEvaluationArtifactStatus(evaluationId, artifact.id);
+        }
+
+        if (latestArtifact.status !== 'ready') {
+          throw new Error(
+            `The ${kind.toUpperCase()} artifact is still processing. Refresh the page and try downloading again in a moment.`
+          );
+        }
+
         const response = await fetch(
-          `/api/evaluations/${evaluationId}/artifacts/${artifact.id}/download`,
+          `/api/evaluations/${evaluationId}/artifacts/${latestArtifact.id}/download`,
           {
             credentials: 'same-origin'
           }
@@ -37,7 +65,7 @@ export function ArtifactActions({
         const objectUrl = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = objectUrl;
-        link.download = artifact.filename;
+        link.download = latestArtifact.filename;
         document.body.appendChild(link);
         link.click();
         link.remove();

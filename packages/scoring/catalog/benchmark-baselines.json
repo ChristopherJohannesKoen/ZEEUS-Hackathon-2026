@@ -1,0 +1,247 @@
+{
+  "stageBaselines": {
+    "ideation": {
+      "label": "Idea-stage baseline",
+      "financialTotal": 2,
+      "riskOverall": 4,
+      "opportunityOverall": 5,
+      "topicBands": {
+        "E1": "low",
+        "E2": "low",
+        "E3": "low",
+        "E4": "very_low",
+        "E5": "low",
+        "S1": "low",
+        "S2": "very_low",
+        "S3": "low",
+        "S4": "very_low",
+        "G1": "low"
+      }
+    },
+    "validation": {
+      "label": "Validation-stage baseline",
+      "financialTotal": 4,
+      "riskOverall": 5.5,
+      "opportunityOverall": 6,
+      "topicBands": {
+        "E1": "relevant",
+        "E2": "low",
+        "E3": "low",
+        "E4": "very_low",
+        "E5": "relevant",
+        "S1": "low",
+        "S2": "low",
+        "S3": "low",
+        "S4": "very_low",
+        "G1": "relevant"
+      }
+    },
+    "prototype_mvp": {
+      "label": "Prototype/MVP baseline",
+      "financialTotal": 5,
+      "riskOverall": 6,
+      "opportunityOverall": 6.5,
+      "topicBands": {
+        "E1": "relevant",
+        "E2": "low",
+        "E3": "low",
+        "E4": "low",
+        "E5": "relevant",
+        "S1": "low",
+        "S2": "low",
+        "S3": "low",
+        "S4": "low",
+        "G1": "relevant"
+      }
+    },
+    "pre_launch": {
+      "label": "Pre-launch baseline",
+      "financialTotal": 5,
+      "riskOverall": 6.25,
+      "opportunityOverall": 6.75,
+      "topicBands": {
+        "E1": "relevant",
+        "E2": "low",
+        "E3": "low",
+        "E4": "low",
+        "E5": "relevant",
+        "S1": "low",
+        "S2": "low",
+        "S3": "relevant",
+        "S4": "low",
+        "G1": "relevant"
+      }
+    },
+    "launch": {
+      "label": "Launch baseline",
+      "financialTotal": 6,
+      "riskOverall": 6.75,
+      "opportunityOverall": 7.25,
+      "topicBands": {
+        "E1": "relevant",
+        "E2": "low",
+        "E3": "low",
+        "E4": "low",
+        "E5": "relevant",
+        "S1": "low",
+        "S2": "relevant",
+        "S3": "relevant",
+        "S4": "low",
+        "G1": "relevant"
+      }
+    },
+    "product_market_fit": {
+      "label": "Product-market-fit baseline",
+      "financialTotal": 7,
+      "riskOverall": 7,
+      "opportunityOverall": 7.75,
+      "topicBands": {
+        "E1": "relevant",
+        "E2": "low",
+        "E3": "low",
+        "E4": "low",
+        "E5": "relevant",
+        "S1": "relevant",
+        "S2": "relevant",
+        "S3": "relevant",
+        "S4": "low",
+        "G1": "relevant"
+      }
+    },
+    "growth_channel_fit": {
+      "label": "Growth-channel-fit baseline",
+      "financialTotal": 8,
+      "riskOverall": 7.5,
+      "opportunityOverall": 8,
+      "topicBands": {
+        "E1": "relevant",
+        "E2": "low",
+        "E3": "relevant",
+        "E4": "low",
+        "E5": "relevant",
+        "S1": "relevant",
+        "S2": "relevant",
+        "S3": "relevant",
+        "S4": "low",
+        "G1": "high_priority"
+      }
+    },
+    "revenue_validation": {
+      "label": "Revenue-validation baseline",
+      "financialTotal": 8,
+      "riskOverall": 7.25,
+      "opportunityOverall": 7.75,
+      "topicBands": {
+        "E1": "relevant",
+        "E2": "low",
+        "E3": "relevant",
+        "E4": "low",
+        "E5": "relevant",
+        "S1": "relevant",
+        "S2": "relevant",
+        "S3": "relevant",
+        "S4": "low",
+        "G1": "high_priority"
+      }
+    },
+    "operational_foundation": {
+      "label": "Operational-foundation baseline",
+      "financialTotal": 9,
+      "riskOverall": 7.75,
+      "opportunityOverall": 8.25,
+      "topicBands": {
+        "E1": "relevant",
+        "E2": "low",
+        "E3": "relevant",
+        "E4": "low",
+        "E5": "relevant",
+        "S1": "relevant",
+        "S2": "relevant",
+        "S3": "relevant",
+        "S4": "low",
+        "G1": "high_priority"
+      }
+    },
+    "early_scale": {
+      "label": "Early-scale baseline",
+      "financialTotal": 10,
+      "riskOverall": 8,
+      "opportunityOverall": 8.5,
+      "topicBands": {
+        "E1": "high_priority",
+        "E2": "relevant",
+        "E3": "relevant",
+        "E4": "low",
+        "E5": "relevant",
+        "S1": "relevant",
+        "S2": "relevant",
+        "S3": "relevant",
+        "S4": "low",
+        "G1": "high_priority"
+      }
+    }
+  },
+  "naceAdjustments": {
+    "default": {
+      "label": "Generic sustainability startup reference",
+      "financialDelta": 0,
+      "riskDelta": 0,
+      "opportunityDelta": 0,
+      "topicBands": {}
+    },
+    "01": {
+      "label": "Primary production reference",
+      "financialDelta": -1,
+      "riskDelta": 0.75,
+      "opportunityDelta": 0.25,
+      "topicBands": {
+        "E3": "relevant",
+        "E5": "high_priority",
+        "S3": "relevant"
+      }
+    },
+    "10": {
+      "label": "Manufacturing and processing reference",
+      "financialDelta": 0,
+      "riskDelta": 0.5,
+      "opportunityDelta": 0.5,
+      "topicBands": {
+        "E1": "high_priority",
+        "E3": "relevant",
+        "S2": "relevant"
+      }
+    },
+    "35": {
+      "label": "Energy and utilities reference",
+      "financialDelta": 0,
+      "riskDelta": 1,
+      "opportunityDelta": 0.75,
+      "topicBands": {
+        "E1": "high_priority",
+        "E2": "relevant",
+        "E5": "relevant"
+      }
+    },
+    "41": {
+      "label": "Construction reference",
+      "financialDelta": 0,
+      "riskDelta": 0.5,
+      "opportunityDelta": 0.25,
+      "topicBands": {
+        "E1": "relevant",
+        "E4": "relevant",
+        "S1": "relevant"
+      }
+    },
+    "62": {
+      "label": "Digital services reference",
+      "financialDelta": 1,
+      "riskDelta": -0.25,
+      "opportunityDelta": 0.75,
+      "topicBands": {
+        "G1": "high_priority",
+        "S4": "relevant"
+      }
+    }
+  }
+}

@@ -35,6 +35,7 @@ import matrices from '../catalog/matrices.json';
 import topicCatalog from '../catalog/topics.json';
 import riskCatalog from '../catalog/risks.json';
 import opportunityCatalog from '../catalog/opportunities.json';
+import benchmarkBaselines from '../catalog/benchmark-baselines.json';
 import workbookSnapshot from '../catalog/workbook-snapshot.json';
 
 type StageCatalogEntry = (typeof stageCatalog)[number];
@@ -42,6 +43,7 @@ type NaceCatalogEntry = (typeof naceCatalog)[number];
 type TopicCatalogEntry = (typeof topicCatalog)[number];
 type RiskCatalogEntry = (typeof riskCatalog)[number];
 type OpportunityCatalogEntry = (typeof opportunityCatalog)[number];
+type BenchmarkBaselines = typeof benchmarkBaselines;
 
 const workbookFileName =
   workbookSnapshot.workbookPath.split(/[/\\]/).filter(Boolean).pop() ?? 'workbook-catalog';
@@ -68,6 +70,14 @@ const riskCatalogByCode = new Map<RiskCode, RiskCatalogEntry>(
 const opportunityCatalogByCode = new Map<OpportunityCode, OpportunityCatalogEntry>(
   opportunityCatalog.map((entry) => [entry.opportunityCode as OpportunityCode, entry])
 );
+
+const benchmarkPriorityOrder: Record<PriorityBand, number> = {
+  not_applicable: 0,
+  very_low: 1,
+  low: 2,
+  relevant: 3,
+  high_priority: 4
+};
 
 const financialIndicatorCatalog = {
   roi: {
@@ -459,6 +469,47 @@ export function getOpportunityCatalog() {
     title: entry.title,
     question: entry.question
   }));
+}
+
+function extractNaceCode(naceDivision: string) {
+  const match = naceDivision.trim().match(/^(\d{2})\b/);
+  return match?.[1] ?? 'default';
+}
+
+export function getBenchmarkReferenceProfile(context: EvaluationContextPayload) {
+  const stageBaseline = benchmarkBaselines.stageBaselines[
+    context.currentStage as keyof BenchmarkBaselines['stageBaselines']
+  ];
+  const naceCode = extractNaceCode(context.naceDivision);
+  const naceAdjustment =
+    benchmarkBaselines.naceAdjustments[
+      naceCode as keyof BenchmarkBaselines['naceAdjustments']
+    ] ?? benchmarkBaselines.naceAdjustments.default;
+
+  const topicBands = Object.fromEntries(
+    Object.entries(stageBaseline.topicBands).map(([topicCode, priorityBand]) => [
+      topicCode,
+      priorityBand
+    ])
+  ) as Record<TopicCode, PriorityBand>;
+
+  for (const [topicCode, band] of Object.entries(naceAdjustment.topicBands)) {
+    const currentBand = topicBands[topicCode as TopicCode];
+
+    if (!currentBand || benchmarkPriorityOrder[band as PriorityBand] > benchmarkPriorityOrder[currentBand]) {
+      topicBands[topicCode as TopicCode] = band as PriorityBand;
+    }
+  }
+
+  return {
+    label: `${stageBaseline.label} / ${naceAdjustment.label}`,
+    financialTotal: Math.max(0, Math.min(12, stageBaseline.financialTotal + naceAdjustment.financialDelta)),
+    riskOverall: Number((stageBaseline.riskOverall + naceAdjustment.riskDelta).toFixed(2)),
+    opportunityOverall: Number(
+      (stageBaseline.opportunityOverall + naceAdjustment.opportunityDelta).toFixed(2)
+    ),
+    topicBands
+  };
 }
 
 export function buildInitialSummary(context: EvaluationContextPayload): StageSdgSummary {

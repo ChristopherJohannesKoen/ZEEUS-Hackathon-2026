@@ -109,7 +109,7 @@ export default async function EvaluationRevisionComparePage({
                       {change.label}
                     </p>
                     <p className="mt-2 text-sm text-slate-600">
-                      {change.leftValue} → {change.rightValue}
+                      {change.leftValue} -&gt; {change.rightValue}
                     </p>
                   </div>
                 ))
@@ -126,7 +126,7 @@ export default async function EvaluationRevisionComparePage({
                     {change.label}
                   </p>
                   <p className="mt-2 font-semibold text-slate-950">
-                    {change.leftValue} → {change.rightValue}
+                    {change.leftValue} -&gt; {change.rightValue}
                   </p>
                   <p className="mt-1 text-sm text-slate-600">Delta {change.delta}</p>
                 </div>
@@ -149,7 +149,7 @@ export default async function EvaluationRevisionComparePage({
                     <p className="font-semibold text-slate-950">{change.title}</p>
                     <p className="mt-2 text-sm text-slate-600">
                       {change.leftBand ? formatEnumLabel(change.leftBand) : 'n/a'} (
-                      {change.leftScore ?? 'n/a'}) →{` `}
+                      {change.leftScore ?? 'n/a'}) -&gt;{' '}
                       {change.rightBand ? formatEnumLabel(change.rightBand) : 'n/a'} (
                       {change.rightScore ?? 'n/a'})
                     </p>
@@ -197,7 +197,7 @@ export default async function EvaluationRevisionComparePage({
                   <div className="rounded-[28px] bg-[#f7f9f4] p-4" key={change.code}>
                     <p className="font-semibold text-slate-950">{change.title}</p>
                     <p className="mt-2 text-sm text-slate-600">
-                      {change.leftLabel ?? 'n/a'} ({change.leftScore ?? 'n/a'}) →{' '}
+                      {change.leftLabel ?? 'n/a'} ({change.leftScore ?? 'n/a'}) -&gt;{' '}
                       {change.rightLabel ?? 'n/a'} ({change.rightScore ?? 'n/a'})
                     </p>
                   </div>
@@ -218,7 +218,7 @@ export default async function EvaluationRevisionComparePage({
                   <div className="rounded-[28px] bg-[#f7f9f4] p-4" key={change.code}>
                     <p className="font-semibold text-slate-950">{change.title}</p>
                     <p className="mt-2 text-sm text-slate-600">
-                      {change.leftLabel ?? 'n/a'} ({change.leftScore ?? 'n/a'}) →{' '}
+                      {change.leftLabel ?? 'n/a'} ({change.leftScore ?? 'n/a'}) -&gt;{' '}
                       {change.rightLabel ?? 'n/a'} ({change.rightScore ?? 'n/a'})
                     </p>
                   </div>

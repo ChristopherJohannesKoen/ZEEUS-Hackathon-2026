@@ -44,6 +44,9 @@ const environmentSchema = Joi.object({
   IDEMPOTENCY_RETENTION_DAYS: Joi.number().integer().min(1).default(7),
   EXPORT_SYNC_LIMIT: Joi.number().integer().min(100).default(5000),
   EXPOSE_DEV_RESET_DETAILS: Joi.boolean().truthy('true').falsy('false').default(false),
+  ARTIFACTS_DIR: Joi.string().allow('').optional(),
+  INTERNAL_SERVICE_TOKEN: Joi.string().allow('').optional(),
+  WEB_INTERNAL_ORIGIN: Joi.string().uri().allow('').optional(),
   SEED_OWNER_EMAIL: Joi.string().email().required(),
   SEED_OWNER_PASSWORD: Joi.string().min(8).required(),
   ENTERPRISE_IDENTITY_ENABLED: Joi.boolean().truthy('true').falsy('false').default(false),
@@ -86,6 +89,8 @@ const environmentSchema = Joi.object({
   SMTP_USER: Joi.string().allow('').optional(),
   SMTP_PASSWORD: Joi.string().allow('').optional(),
   REDIS_URL: Joi.string().allow('').optional(),
+  S3_ENDPOINT: Joi.string().uri().allow('').optional(),
+  S3_FORCE_PATH_STYLE: Joi.boolean().truthy('true').falsy('false').default(false),
   S3_BUCKET: Joi.string().allow('').optional(),
   S3_REGION: Joi.string().allow('').optional(),
   S3_ACCESS_KEY_ID: Joi.string().allow('').optional(),
@@ -175,6 +180,21 @@ export function validateEnvironment(rawEnvironment: Environment) {
   assertRequiredWhenEnabled(value, 'FEATURE_CACHE', ['REDIS_URL']);
   assertRequiredWhenEnabled(value, 'FEATURE_OBSERVABILITY', ['OTEL_EXPORTER_OTLP_ENDPOINT']);
   assertSecretConfigured(value, 'SESSION_COOKIE_ENCRYPTION_KEY');
+
+  if (
+    (hasConfiguredValue(value.REDIS_URL) || hasConfiguredValue(value.S3_BUCKET)) &&
+    !hasConfiguredValue(value.INTERNAL_SERVICE_TOKEN)
+  ) {
+    throw new Error(
+      'Environment validation failed: INTERNAL_SERVICE_TOKEN must be configured when async jobs or artifact storage are enabled.'
+    );
+  }
+
+  if (hasConfiguredValue(value.REDIS_URL) && !hasConfiguredValue(value.WEB_INTERNAL_ORIGIN)) {
+    throw new Error(
+      'Environment validation failed: WEB_INTERNAL_ORIGIN must be configured when REDIS_URL is enabled.'
+    );
+  }
 
   if (value.ALLOW_MISSING_ORIGIN_FOR_DEV && !canAllowMissingOrigin(value.APP_ENV)) {
     throw new Error(

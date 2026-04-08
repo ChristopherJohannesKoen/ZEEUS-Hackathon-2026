@@ -4,17 +4,23 @@ import {
   AuthPayloadSchema,
   AuthResponseSchema,
   BreakGlassLoginPayloadSchema,
-  CreateEvaluationArtifactPayloadSchema,
-  CreateEvaluationPayloadSchema,
+    CreateEvaluationArtifactPayloadSchema,
+    CreateEvaluationNarrativePayloadSchema,
+    CreateEvaluationPayloadSchema,
   CsrfResponseSchema,
   DashboardResponseSchema,
   EvaluationArtifactListResponseSchema,
   EvaluationArtifactParamsSchema,
-  EvaluationArtifactSummarySchema,
-  EvaluationDetailSchema,
-  EvaluationIdParamsSchema,
-  EvaluationListResponseSchema,
-  EvaluationRevisionCompareQuerySchema,
+    EvaluationArtifactSummarySchema,
+    EvaluationBenchmarkQuerySchema,
+    EvaluationBenchmarkSummarySchema,
+    EvaluationDetailSchema,
+    EvaluationIdParamsSchema,
+    EvaluationListResponseSchema,
+    EvaluationNarrativeListResponseSchema,
+    EvaluationNarrativeSummarySchema,
+    EvaluationRecommendationActionParamsSchema,
+    EvaluationRevisionCompareQuerySchema,
   EvaluationRevisionCompareResponseSchema,
   EvaluationRevisionDetailSchema,
   EvaluationRevisionListResponseSchema,
@@ -496,14 +502,39 @@ export const apiContract = c.router(
         },
         updateRecommendationAction: {
           method: 'PUT',
-          path: '/:id/recommendations/:recommendationId',
-          pathParams: EvaluationIdParamsSchema.extend({
-            recommendationId: z.string()
-          }),
+          path: '/:id/revisions/:revisionNumber/recommendations/:recommendationId',
+          pathParams: EvaluationRecommendationActionParamsSchema,
           body: UpdateRecommendationActionPayloadSchema,
           headers: csrfHeaderSchema,
           responses: {
             200: DashboardResponseSchema
+          }
+        },
+        createNarrative: {
+          method: 'POST',
+          path: '/:id/narratives',
+          pathParams: EvaluationIdParamsSchema,
+          body: CreateEvaluationNarrativePayloadSchema,
+          headers: csrfHeaderSchema.merge(idempotencyHeaderSchema),
+          responses: {
+            201: EvaluationNarrativeSummarySchema
+          }
+        },
+        listNarratives: {
+          method: 'GET',
+          path: '/:id/narratives',
+          pathParams: EvaluationIdParamsSchema,
+          responses: {
+            200: EvaluationNarrativeListResponseSchema
+          }
+        },
+        getBenchmarks: {
+          method: 'GET',
+          path: '/:id/benchmarks',
+          pathParams: EvaluationIdParamsSchema,
+          query: EvaluationBenchmarkQuerySchema,
+          responses: {
+            200: EvaluationBenchmarkSummarySchema
           }
         },
         exportPdf: {

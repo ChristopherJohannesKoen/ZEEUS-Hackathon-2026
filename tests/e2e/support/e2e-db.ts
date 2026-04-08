@@ -64,6 +64,7 @@ async function buildPasswordHash(password: string) {
 }
 
 async function clearTemplateData(prisma: PrismaClient) {
+  await prisma.evaluationNarrative.deleteMany();
   await prisma.evaluationRecommendationAction.deleteMany();
   await prisma.evaluationArtifact.deleteMany();
   await prisma.evaluationRevision.deleteMany();

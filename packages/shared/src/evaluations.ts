@@ -87,11 +87,27 @@ export type RecommendationActionStatus = z.infer<typeof RecommendationActionStat
 export const EvaluationArtifactKindSchema = z.enum(['csv', 'pdf', 'ai_explanation']);
 export type EvaluationArtifactKind = z.infer<typeof EvaluationArtifactKindSchema>;
 
-export const EvaluationArtifactStatusSchema = z.enum(['pending', 'ready', 'failed']);
+export const EvaluationArtifactStatusSchema = z.enum(['pending', 'processing', 'ready', 'failed']);
 export type EvaluationArtifactStatus = z.infer<typeof EvaluationArtifactStatusSchema>;
 
 export const ExportArtifactKindSchema = z.enum(['csv', 'pdf']);
 export type ExportArtifactKind = z.infer<typeof ExportArtifactKindSchema>;
+
+export const EvaluationNarrativeKindSchema = z.enum([
+  'executive_summary',
+  'material_topics',
+  'risks_opportunities',
+  'evidence_guidance'
+]);
+export type EvaluationNarrativeKind = z.infer<typeof EvaluationNarrativeKindSchema>;
+
+export const EvaluationNarrativeStatusSchema = z.enum([
+  'pending',
+  'processing',
+  'ready',
+  'failed'
+]);
+export type EvaluationNarrativeStatus = z.infer<typeof EvaluationNarrativeStatusSchema>;
 
 export const ScoringVersionInfoSchema = z.object({
   scoringVersion: z.string().min(1),
@@ -360,6 +376,34 @@ export const CreateEvaluationArtifactPayloadSchema = z.object({
 });
 export type CreateEvaluationArtifactPayload = z.infer<typeof CreateEvaluationArtifactPayloadSchema>;
 
+export const EvaluationNarrativeSummarySchema = z.object({
+  id: z.string(),
+  evaluationId: z.string(),
+  revisionId: z.string().nullable().default(null),
+  revisionNumber: z.number().int().min(1).nullable().default(null),
+  kind: EvaluationNarrativeKindSchema,
+  status: EvaluationNarrativeStatusSchema,
+  model: z.string().nullable().default(null),
+  promptVersion: z.string().nullable().default(null),
+  content: z.string().nullable().default(null),
+  requestedAt: z.string(),
+  readyAt: z.string().nullable().default(null),
+  failedAt: z.string().nullable().default(null),
+  errorMessage: z.string().nullable().default(null),
+  createdAt: z.string()
+});
+export type EvaluationNarrativeSummary = z.infer<typeof EvaluationNarrativeSummarySchema>;
+
+export const EvaluationNarrativeListResponseSchema = z.object({
+  items: z.array(EvaluationNarrativeSummarySchema)
+});
+export type EvaluationNarrativeListResponse = z.infer<typeof EvaluationNarrativeListResponseSchema>;
+
+export const CreateEvaluationNarrativePayloadSchema = z.object({
+  kind: EvaluationNarrativeKindSchema
+});
+export type CreateEvaluationNarrativePayload = z.infer<typeof CreateEvaluationNarrativePayloadSchema>;
+
 export const EvaluationRecommendationActionStateSchema = z.object({
   recommendationId: z.string(),
   status: RecommendationActionStatusSchema,
@@ -376,6 +420,15 @@ export const UpdateRecommendationActionPayloadSchema = z.object({
 });
 export type UpdateRecommendationActionPayload = z.infer<
   typeof UpdateRecommendationActionPayloadSchema
+>;
+
+export const EvaluationRecommendationActionParamsSchema = z.object({
+  id: z.string(),
+  revisionNumber: z.coerce.number().int().min(1),
+  recommendationId: z.string()
+});
+export type EvaluationRecommendationActionParams = z.infer<
+  typeof EvaluationRecommendationActionParamsSchema
 >;
 
 export const EvaluationListItemSchema = z.object({
@@ -594,3 +647,42 @@ export const EvaluationRevisionCompareResponseSchema = z.object({
 export type EvaluationRevisionCompareResponse = z.infer<
   typeof EvaluationRevisionCompareResponseSchema
 >;
+
+export const EvaluationBenchmarkQuerySchema = z.object({
+  revisionNumber: z.coerce.number().int().min(1).optional()
+});
+export type EvaluationBenchmarkQuery = z.infer<typeof EvaluationBenchmarkQuerySchema>;
+
+export const EvaluationBenchmarkMetricSchema = z.object({
+  label: z.string(),
+  current: z.number(),
+  previous: z.number().nullable().default(null),
+  best: z.number().nullable().default(null),
+  reference: z.number().nullable().default(null),
+  deltaFromPrevious: z.number().nullable().default(null),
+  deltaFromReference: z.number().nullable().default(null)
+});
+export type EvaluationBenchmarkMetric = z.infer<typeof EvaluationBenchmarkMetricSchema>;
+
+export const EvaluationBenchmarkTopicShiftSchema = z.object({
+  topicCode: TopicCodeSchema,
+  title: z.string(),
+  currentBand: PriorityBandSchema,
+  previousBand: PriorityBandSchema.nullable().default(null),
+  referenceBand: PriorityBandSchema.nullable().default(null)
+});
+export type EvaluationBenchmarkTopicShift = z.infer<typeof EvaluationBenchmarkTopicShiftSchema>;
+
+export const EvaluationBenchmarkSummarySchema = z.object({
+  evaluationId: z.string(),
+  revisionNumber: z.number().int().min(1),
+  referenceProfile: z.object({
+    stage: StartupStageSchema,
+    naceDivision: z.string(),
+    label: z.string()
+  }),
+  metrics: z.array(EvaluationBenchmarkMetricSchema),
+  topicShifts: z.array(EvaluationBenchmarkTopicShiftSchema),
+  takeaways: z.array(z.string())
+});
+export type EvaluationBenchmarkSummary = z.infer<typeof EvaluationBenchmarkSummarySchema>;

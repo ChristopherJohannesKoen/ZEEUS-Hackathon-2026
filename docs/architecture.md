@@ -10,17 +10,21 @@ clear UX, deterministic scoring, dashboards, and export.
 ## Runtime Topology
 
 - `apps/web` serves the landing page, auth pages, evaluation workspace, wizard,
-  dashboard, and report UI.
+  dashboard, benchmarks, and report UI.
 - `apps/web` reaches the API through contract-backed helpers and Next rewrites
   for `/api/*`.
 - `apps/api` owns auth, persistence, scoring orchestration, evaluation
-  workflows, exports, Swagger, and health endpoints.
+  workflows, revision snapshots, queue orchestration, Swagger, and health endpoints.
+- `apps/worker` owns async artifact generation, report-to-PDF rendering, CSV
+  serialization, and AI narrative generation.
 - `packages/scoring` owns pure TypeScript scoring logic and workbook-derived
   lookup catalogs.
 - `packages/contracts` defines the shared HTTP contract for web-to-API routes.
 - `packages/shared` defines Zod schemas, DTOs, enums, and response shapes.
 - `packages/db` owns Prisma schema, migrations, and seed data.
 - PostgreSQL is the required backing service.
+- Redis backs the BullMQ job queue.
+- MinIO is the default local S3-compatible object store for revision artifacts.
 
 ## Product Flow
 
@@ -34,7 +38,8 @@ The primary assessment flow is:
 6. SDG alignment
 7. Dashboard and structured recommendations
 8. Review before completion
-9. Immutable revisions, compare view, and persisted CSV/PDF artifacts
+9. Immutable revisions, compare view, and revision-scoped recommendation actions
+10. Persisted CSV/PDF artifacts, AI narratives, and seeded benchmark comparisons
 
 Saved evaluations belong to the authenticated user and can be resumed from the
 workspace list.
@@ -67,6 +72,7 @@ tables:
 - `Evaluation`
 - `EvaluationRevision`
 - `EvaluationArtifact`
+- `EvaluationNarrative`
 - `EvaluationRecommendationAction`
 - `Stage1FinancialAnswer`
 - `Stage1TopicAnswer`
@@ -79,6 +85,7 @@ The evaluation row stores startup context plus denormalized summary metrics so
 the workspace list and dashboard can render without recomputing every answer
 from scratch. Immutable revision snapshots preserve completed outputs, while
 artifact rows track persisted CSV/PDF generation for specific revisions.
+Narrative rows track queued or completed AI explanations for specific revisions.
 
 ## Deterministic Scoring Boundary
 
@@ -99,16 +106,26 @@ Priority bands remain:
 
 ## Exports
 
-- CSV and PDF are generated as persisted artifacts tied to the active revision.
-- Artifact binaries are stored under `ARTIFACTS_DIR` and mounted to the Docker
-  `artifacts_data` volume in the default Compose stack.
+- CSV and PDF are generated as persisted artifacts tied to a specific revision.
+- Artifact jobs are queued in Redis and executed by `apps/worker`.
+- Artifact binaries are stored in object storage through the storage abstraction:
+  MinIO locally, S3-compatible storage in production.
+- PDF rendering uses the same `ReportDocument` source as the branded report UI.
 - The report route under `/app/report/[id]` remains the branded presentation
-  view for completed results and revision snapshots.
+  view, and the worker uses an internal render route for HTML-to-PDF generation.
+
+## Revision Semantics
+
+- Draft revisions are mutable and owned by the active evaluation.
+- Completed revisions are immutable snapshots.
+- Reopening clones the latest completed revision into a new draft revision.
+- Recommendation actions, narratives, artifacts, benchmarks, compare results,
+  and report views are revision-scoped. Completed history is not overlaid with
+  live mutable state.
 
 ## Delivery Baseline
 
 - Local reproducibility is centered on `docker compose up --build`.
-- The default supported stack is `web + api + db` plus a persistent artifacts
-  volume.
+- The default supported stack is `web + api + db + worker + redis + minio`.
 - Optional observability and Kubernetes assets remain under `infra/`, but they
   are not part of the core assessment acceptance path.

@@ -7,8 +7,9 @@ web application with:
 - deterministic scoring
 - saved evaluations in PostgreSQL
 - immutable revision history and comparison
-- dashboard, review, and report views
-- persisted CSV and PDF export artifacts
+- dashboard, review, benchmark, and report views
+- persisted CSV and PDF export artifacts backed by object storage
+- async worker-driven PDF rendering and AI narratives
 - Docker-based local setup
 
 ## Product Scope
@@ -34,12 +35,15 @@ risk ratings, opportunity ratings, or final scores.
 
 - `apps/web`: Next.js 15, App Router, Tailwind, server/client contract helpers
 - `apps/api`: NestJS 11, Prisma, Swagger, session auth, CSRF, idempotency
+- `apps/worker`: BullMQ worker for export jobs and narrative generation
 - `packages/scoring`: shared scoring engine and workbook-derived catalogs
 - `packages/contracts`: ts-rest contract layer used by web and API
 - `packages/shared`: shared Zod schemas, DTOs, enums, and response shapes
 - `packages/db`: Prisma schema, migrations, and seed data
 - `packages/ui`: reusable UI primitives
 - `PostgreSQL`: required persistence layer
+- `Redis`: async job queue backing service
+- `MinIO`: local S3-compatible artifact storage
 
 ## Repository Layout
 
@@ -47,6 +51,7 @@ risk ratings, opportunity ratings, or final scores.
 apps/
   api/                  NestJS API
   web/                  Next.js frontend
+  worker/               BullMQ async export and narrative worker
 packages/
   config/               Shared TS, ESLint, and Prettier config
   contracts/            Shared HTTP contract layer
@@ -102,13 +107,16 @@ The Compose stack starts:
 - `db` on port `5432`
 - `api` on port `4000`
 - `web` on port `3000`
-- a persistent `artifacts_data` volume for generated CSV and PDF files
+- `redis` for queued jobs
+- `minio` for persisted CSV/PDF artifact storage
+- `worker` for async PDF rendering, CSV generation, and AI narratives
 
 Default runtime values:
 
 - Postgres DB: `zeeus_assessment`
 - Session cookie: `zeeus_assessment_session`
-- Artifact storage path in the API container: `/app/.artifacts`
+- MinIO bucket: `zeeus-artifacts`
+- Internal render origin: `http://web:3000`
 
 ## Scoring Summary
 
@@ -125,11 +133,15 @@ Default runtime values:
 - Stage II risks and opportunities use deterministic matrix lookups.
 - Confidence and sensitivity hints are explanatory only and never change saved
   scores.
+- Benchmarks are derived from immutable revision snapshots and seeded baseline
+  profiles. They never change canonical saved results.
+- AI narratives are generated from immutable revision snapshots and evidence
+  metadata only. They do not participate in scoring.
 
 ## Common Commands
 
 - `npm run dev`: run web and API in watch mode
-- `npm run dev:services`: run Postgres only
+- `npm run dev:services`: run Postgres, Redis, MinIO, and bucket init
 - `npm run db:setup`: migrate and seed the local database
 - `npm run db:reset`: reset and reseed the database
 - `npm run prisma:generate`: regenerate Prisma client
@@ -158,7 +170,9 @@ Health checks:
 - `http://localhost:4000/api/health`
 - `http://localhost:4000/api/docs`
 - `http://localhost:3000`
-- generate a CSV or PDF artifact from the dashboard or review screen and confirm it remains downloadable from revision history
+- generate a CSV or PDF artifact from the dashboard or review screen and confirm it remains downloadable from revision history after restarting `api` and `worker`
+- request an AI narrative from the dashboard and confirm it transitions from `pending` to `ready`
+- verify the benchmark view loads for the active revision
 
 ## Docs
 
@@ -174,6 +188,8 @@ Health checks:
 - The evaluation flow is the primary product slice.
 - Enterprise identity, admin, and observability modules remain available in the
   codebase, but they are not the critical-path hackathon scope.
+- Completed revisions are audit-stable. Reports, compare views, artifacts, AI
+  narratives, and benchmarks all read from immutable revision snapshots.
 - The running application lives under `apps/` and shared packages under
   `packages/`.
 

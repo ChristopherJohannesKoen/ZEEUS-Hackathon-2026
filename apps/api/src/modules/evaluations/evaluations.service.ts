@@ -1,13 +1,12 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import type { Response } from 'express';
 import { createHash } from 'node:crypto';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import path from 'node:path';
 import {
   buildDashboard,
   buildImpactSummary,
   buildInitialSummary,
   buildReportResponse,
+  getBenchmarkReferenceProfile,
   getOpportunityCatalog,
   getRiskCatalog,
   getScoringVersionInfo,
@@ -20,9 +19,13 @@ import {
 import {
   ReportResponseSchema,
   type CreateEvaluationArtifactPayload,
+  type CreateEvaluationNarrativePayload,
   type CreateEvaluationPayload,
   type DashboardResponse,
+  type EvaluationBenchmarkSummary,
   type EvaluationArtifactListResponse,
+  type EvaluationNarrativeListResponse,
+  type EvaluationNarrativeSummary,
   type EvaluationContextPayload,
   type EvaluationDetail,
   type EvaluationListItem,
@@ -53,6 +56,8 @@ import {
 import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { EvaluationJobsService } from './evaluation-jobs.service';
+import { EvaluationStorageService } from './evaluation-storage.service';
 
 const topicOrder = new Map(
   getStageOneTopicCatalog().map((item, index) => [item.topicCode, index] as const)
@@ -69,8 +74,6 @@ const defaultFinancialPayload: Stage1FinancialAnswersPayload = {
   marketGrowthLevel: 'not_evaluated'
 };
 
-const defaultArtifactsRoot = path.resolve(process.cwd(), '.artifacts');
-
 const artifactSelect = Prisma.validator<Prisma.EvaluationArtifactSelect>()({
   id: true,
   evaluationId: true,
@@ -81,16 +84,48 @@ const artifactSelect = Prisma.validator<Prisma.EvaluationArtifactSelect>()({
   mimeType: true,
   byteSize: true,
   checksumSha256: true,
+  storageKey: true,
   requestedAt: true,
   readyAt: true,
   failedAt: true,
   errorMessage: true,
+  createdByUserId: true,
   createdAt: true,
   revision: {
     select: {
       revisionNumber: true
     }
   }
+});
+
+const narrativeSelect = Prisma.validator<Prisma.EvaluationNarrativeSelect>()({
+  id: true,
+  evaluationId: true,
+  revisionId: true,
+  kind: true,
+  status: true,
+  model: true,
+  promptVersion: true,
+  content: true,
+  requestedAt: true,
+  readyAt: true,
+  failedAt: true,
+  errorMessage: true,
+  createdByUserId: true,
+  createdAt: true,
+  revision: {
+    select: {
+      revisionNumber: true
+    }
+  }
+});
+
+const recommendationActionSelect = Prisma.validator<Prisma.EvaluationRecommendationActionSelect>()({
+  recommendationId: true,
+  status: true,
+  ownerNote: true,
+  updatedAt: true,
+  revisionId: true
 });
 
 const evaluationStateSelect = Prisma.validator<Prisma.EvaluationSelect>()({
@@ -123,14 +158,6 @@ const evaluationStateSelect = Prisma.validator<Prisma.EvaluationSelect>()({
   artifacts: {
     select: artifactSelect,
     orderBy: [{ createdAt: 'desc' }, { id: 'desc' }]
-  },
-  recommendationActions: {
-    select: {
-      recommendationId: true,
-      status: true,
-      ownerNote: true,
-      updatedAt: true
-    }
   },
   stage1Financial: {
     select: {
@@ -225,10 +252,15 @@ type EvaluationRevisionSummaryRecord = Prisma.EvaluationRevisionGetPayload<{
 
 type DatabaseClient = Prisma.TransactionClient | PrismaService;
 type EvaluationArtifactRecord = EvaluationStateRecord['artifacts'][number];
-type EvaluationRecommendationActionRecord = EvaluationStateRecord['recommendationActions'][number];
+type EvaluationNarrativeRecord = Prisma.EvaluationNarrativeGetPayload<{
+  select: typeof narrativeSelect;
+}>;
 type EvaluationStage1TopicRecord = EvaluationStateRecord['stage1TopicAnswers'][number];
 type EvaluationStage2RiskRecord = EvaluationStateRecord['stage2RiskAnswers'][number];
 type EvaluationStage2OpportunityRecord = EvaluationStateRecord['stage2OpportunityAnswers'][number];
+type EvaluationRecommendationActionRecord = Prisma.EvaluationRecommendationActionGetPayload<{
+  select: typeof recommendationActionSelect;
+}>;
 
 type BuildOutputsResult = {
   detail: EvaluationDetail;
@@ -241,7 +273,9 @@ type BuildOutputsResult = {
 export class EvaluationsService {
   constructor(
     private readonly prismaService: PrismaService,
-    private readonly auditService: AuditService
+    private readonly auditService: AuditService,
+    private readonly evaluationJobsService: EvaluationJobsService,
+    private readonly evaluationStorageService: EvaluationStorageService
   ) {}
 
   async listEvaluations(currentUser: SessionUser): Promise<EvaluationListResponse> {
@@ -945,7 +979,11 @@ export class EvaluationsService {
 
     return {
       ...this.serializeRevisionSummary(revision),
-      report: ReportResponseSchema.parse(revision.reportSnapshot as unknown)
+      report: await this.hydrateRevisionReport(
+        revision.id,
+        revision.reportSnapshot,
+        'revision_artifacts'
+      )
     };
   }
 
@@ -987,8 +1025,10 @@ export class EvaluationsService {
       throw new NotFoundException('One or both evaluation revisions were not found.');
     }
 
-    const leftReport = ReportResponseSchema.parse(leftRevision.reportSnapshot as unknown);
-    const rightReport = ReportResponseSchema.parse(rightRevision.reportSnapshot as unknown);
+    const [leftReport, rightReport] = await Promise.all([
+      this.hydrateRevisionReport(leftRevision.id, leftRevision.reportSnapshot, 'revision_artifacts'),
+      this.hydrateRevisionReport(rightRevision.id, rightRevision.reportSnapshot, 'revision_artifacts')
+    ]);
 
     return {
       evaluationId,
@@ -1026,27 +1066,24 @@ export class EvaluationsService {
         evaluationId,
         revisionId: evaluation.currentRevisionId,
         kind: payload.kind,
-        status: 'ready'
+        status: {
+          in: ['pending', 'processing', 'ready']
+        }
       },
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       select: artifactSelect
     });
 
-    if (existing && existing.checksumSha256) {
-      const storagePath = this.resolveArtifactStoragePath(
-        existing.checksumSha256,
-        existing.filename
-      );
-
-      try {
-        await readFile(storagePath);
+    if (existing) {
+      if (
+        existing.status !== 'ready' ||
+        !existing.storageKey ||
+        (await this.evaluationStorageService.objectExists(existing.storageKey))
+      ) {
         return this.serializeArtifactSummary(existing);
-      } catch {
-        // Fall through and regenerate if the binary no longer exists on disk.
       }
     }
 
-    const report = await this.getCurrentReportFromState(evaluation);
     const filename = `evaluation-${evaluation.id}-revision-${evaluation.currentRevisionNumber}.${payload.kind}`;
     const pendingArtifact = await this.prismaService.evaluationArtifact.create({
       data: {
@@ -1075,73 +1112,14 @@ export class EvaluationsService {
       }
     });
 
-    try {
-      const content =
-        payload.kind === 'csv'
-          ? Buffer.from(this.buildCsvReport(report), 'utf8')
-          : this.buildPdfReport(report);
-      const checksumSha256 = createHash('sha256').update(content).digest('hex');
-      const storagePath = this.resolveArtifactStoragePath(checksumSha256, filename);
-      await mkdir(path.dirname(storagePath), { recursive: true });
-      await writeFile(storagePath, content);
-
-      const readyArtifact = await this.prismaService.evaluationArtifact.update({
-        where: {
-          id: pendingArtifact.id
-        },
-        data: {
-          status: 'ready',
-          byteSize: content.byteLength,
-          checksumSha256,
-          storageKey: storagePath,
-          readyAt: new Date(),
-          failedAt: null,
-          errorMessage: null
-        },
-        select: artifactSelect
-      });
-
-      await this.auditService.log({
-        actorId: currentUser.id,
-        action: 'artifact.ready',
-        targetType: 'evaluation_artifact',
-        targetId: readyArtifact.id,
-        metadata: {
-          evaluationId,
-          revisionId: evaluation.currentRevisionId,
-          kind: payload.kind,
-          byteSize: content.byteLength
-        }
-      });
-
-      return this.serializeArtifactSummary(readyArtifact);
-    } catch (error) {
-      await this.prismaService.evaluationArtifact.update({
-        where: {
-          id: pendingArtifact.id
-        },
-        data: {
-          status: 'failed',
-          failedAt: new Date(),
-          errorMessage: error instanceof Error ? error.message : 'Artifact generation failed.'
-        }
-      });
-
-      await this.auditService.log({
-        actorId: currentUser.id,
-        action: 'artifact.failed',
-        targetType: 'evaluation_artifact',
-        targetId: pendingArtifact.id,
-        metadata: {
-          evaluationId,
-          revisionId: evaluation.currentRevisionId,
-          kind: payload.kind,
-          error: error instanceof Error ? error.message : 'Artifact generation failed.'
-        }
-      });
-
-      throw error;
+    if (this.evaluationJobsService.isEnabled()) {
+      await this.evaluationJobsService.enqueueArtifact(pendingArtifact.id);
+      return this.serializeArtifactSummary(pendingArtifact);
     }
+
+    await this.processArtifactInline(pendingArtifact.id);
+    const readyArtifact = await this.getOwnedArtifactRecord(evaluationId, pendingArtifact.id, currentUser.id);
+    return this.serializeArtifactSummary(readyArtifact);
   }
 
   async listArtifacts(
@@ -1177,21 +1155,107 @@ export class EvaluationsService {
   ) {
     const artifact = await this.getOwnedArtifactRecord(evaluationId, artifactId, currentUser.id);
 
-    if (artifact.status !== 'ready' || !artifact.checksumSha256) {
+    if (artifact.status !== 'ready' || !artifact.storageKey) {
       throw new BadRequestException('The requested artifact is not ready yet.');
     }
 
-    const storagePath = this.resolveArtifactStoragePath(artifact.checksumSha256, artifact.filename);
-    const binary = await readFile(storagePath);
+    const binary = await this.evaluationStorageService.readObject(artifact.storageKey);
     response.setHeader('Content-Type', artifact.mimeType);
     response.setHeader('Content-Disposition', `attachment; filename="${artifact.filename}"`);
     response.write(binary);
     response.end();
   }
 
+  async createNarrative(
+    currentUser: SessionUser,
+    evaluationId: string,
+    payload: CreateEvaluationNarrativePayload
+  ): Promise<EvaluationNarrativeSummary> {
+    const evaluation = await this.getOwnedEvaluationState(
+      this.prismaService,
+      evaluationId,
+      currentUser.id
+    );
+
+    const existing = await this.prismaService.evaluationNarrative.findFirst({
+      where: {
+        evaluationId,
+        revisionId: evaluation.currentRevisionId,
+        kind: payload.kind,
+        status: {
+          in: ['pending', 'processing', 'ready']
+        }
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      select: narrativeSelect
+    });
+
+    if (existing) {
+      return this.serializeNarrativeSummary(existing);
+    }
+
+    const pendingNarrative = await this.prismaService.evaluationNarrative.create({
+      data: {
+        evaluationId,
+        revisionId: evaluation.currentRevisionId,
+        kind: payload.kind,
+        status: 'pending',
+        createdByUserId: currentUser.id,
+        requestedAt: new Date()
+      },
+      select: narrativeSelect
+    });
+
+    await this.auditService.log({
+      actorId: currentUser.id,
+      action: 'narrative.requested',
+      targetType: 'evaluation_narrative',
+      targetId: pendingNarrative.id,
+      metadata: {
+        evaluationId,
+        revisionId: evaluation.currentRevisionId,
+        kind: payload.kind
+      }
+    });
+
+    if (this.evaluationJobsService.isEnabled()) {
+      await this.evaluationJobsService.enqueueNarrative(pendingNarrative.id);
+      return this.serializeNarrativeSummary(pendingNarrative);
+    }
+
+    await this.processNarrativeInline(pendingNarrative.id);
+    const readyNarrative = await this.getOwnedNarrativeRecord(
+      evaluationId,
+      pendingNarrative.id,
+      currentUser.id
+    );
+    return this.serializeNarrativeSummary(readyNarrative);
+  }
+
+  async listNarratives(
+    currentUser: SessionUser,
+    evaluationId: string
+  ): Promise<EvaluationNarrativeListResponse> {
+    await this.assertEvaluationOwnership(this.prismaService, evaluationId, currentUser.id);
+    const narratives = await this.prismaService.evaluationNarrative.findMany({
+      where: {
+        evaluationId
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      select: narrativeSelect
+    });
+
+    return {
+      items: narratives.map((narrative: EvaluationNarrativeRecord) =>
+        this.serializeNarrativeSummary(narrative)
+      )
+    };
+  }
+
   async updateRecommendationAction(
     currentUser: SessionUser,
     evaluationId: string,
+    revisionNumber: number,
     recommendationId: string,
     payload: UpdateRecommendationActionPayload
   ): Promise<DashboardResponse> {
@@ -1209,15 +1273,26 @@ export class EvaluationsService {
       throw new NotFoundException('Recommendation not found for this evaluation.');
     }
 
+    if (!evaluation.currentRevisionId || evaluation.currentRevisionNumber !== revisionNumber) {
+      throw new BadRequestException(
+        'Recommendation actions can only be updated for the current editable revision.'
+      );
+    }
+
+    if (evaluation.status === 'completed' || evaluation.status === 'archived') {
+      throw new BadRequestException('Completed revisions are read-only.');
+    }
+
     await this.prismaService.evaluationRecommendationAction.upsert({
       where: {
-        evaluationId_recommendationId: {
-          evaluationId,
+        revisionId_recommendationId: {
+          revisionId: evaluation.currentRevisionId,
           recommendationId
         }
       },
       create: {
         evaluationId,
+        revisionId: evaluation.currentRevisionId,
         recommendationId,
         status: payload.status,
         ownerNote: payload.ownerNote ?? null,
@@ -1236,6 +1311,7 @@ export class EvaluationsService {
       targetType: 'evaluation',
       targetId: evaluationId,
       metadata: {
+        revisionNumber,
         recommendationId,
         status: payload.status
       }
@@ -1243,6 +1319,181 @@ export class EvaluationsService {
 
     const refreshedReport = await this.getCurrentReport(currentUser, evaluationId);
     return refreshedReport.dashboard;
+  }
+
+  async getBenchmarks(
+    currentUser: SessionUser,
+    evaluationId: string,
+    revisionNumber?: number
+  ): Promise<EvaluationBenchmarkSummary> {
+    await this.assertEvaluationOwnership(this.prismaService, evaluationId, currentUser.id);
+    const evaluation = await this.getOwnedEvaluationState(
+      this.prismaService,
+      evaluationId,
+      currentUser.id
+    );
+    const targetRevisionNumber = revisionNumber ?? evaluation.currentRevisionNumber;
+
+    if (!targetRevisionNumber) {
+      throw new NotFoundException('Benchmark data is not available until the first revision exists.');
+    }
+
+    const revisions = await this.prismaService.evaluationRevision.findMany({
+      where: {
+        evaluationId
+      },
+      orderBy: [{ revisionNumber: 'asc' }],
+      select: {
+        id: true,
+        revisionNumber: true,
+        reportSnapshot: true
+      }
+    });
+
+    const targetRevision = revisions.find(
+      (item: { id: string; revisionNumber: number; reportSnapshot: Prisma.JsonValue }) =>
+        item.revisionNumber === targetRevisionNumber
+    );
+
+    if (!targetRevision) {
+      throw new NotFoundException('Benchmark revision not found.');
+    }
+
+    const reports = await Promise.all(
+      revisions.map(
+        async (
+          revision: { id: string; revisionNumber: number; reportSnapshot: Prisma.JsonValue }
+        ): Promise<{ revisionNumber: number; report: ReportResponse }> => ({
+          revisionNumber: revision.revisionNumber,
+          report: await this.hydrateRevisionReport(revision.id, revision.reportSnapshot)
+        })
+      )
+    );
+    const current = reports.find(
+      (item: { revisionNumber: number; report: ReportResponse }) =>
+        item.revisionNumber === targetRevisionNumber
+    );
+
+    if (!current) {
+      throw new NotFoundException('Benchmark report is unavailable.');
+    }
+
+    const previous = [...reports]
+      .filter((item) => item.revisionNumber < targetRevisionNumber)
+      .sort((left, right) => right.revisionNumber - left.revisionNumber)[0];
+    const reference = getBenchmarkReferenceProfile({
+      name: current.report.evaluation.name,
+      country: current.report.evaluation.country,
+      naceDivision: current.report.evaluation.naceDivision,
+      offeringType: current.report.evaluation.offeringType,
+      launched: current.report.evaluation.launched,
+      currentStage: current.report.evaluation.currentStage,
+      innovationApproach: current.report.evaluation.innovationApproach
+    });
+
+    const bestFinancial = Math.max(
+      ...reports.map(
+        (item: { revisionNumber: number; report: ReportResponse }) =>
+          item.report.dashboard.financialTotal
+      )
+    );
+    const bestRisk = Math.min(
+      ...reports.map(
+        (item: { revisionNumber: number; report: ReportResponse }) =>
+          item.report.dashboard.riskOverall
+      )
+    );
+    const bestOpportunity = Math.max(
+      ...reports.map(
+        (item: { revisionNumber: number; report: ReportResponse }) =>
+          item.report.dashboard.opportunityOverall
+      )
+    );
+
+    const metrics: EvaluationBenchmarkSummary['metrics'] = [
+      {
+        label: 'Financial total',
+        current: current.report.dashboard.financialTotal,
+        previous: previous?.report.dashboard.financialTotal ?? null,
+        best: bestFinancial,
+        reference: reference.financialTotal,
+        deltaFromPrevious: previous
+          ? current.report.dashboard.financialTotal - previous.report.dashboard.financialTotal
+          : null,
+        deltaFromReference: current.report.dashboard.financialTotal - reference.financialTotal
+      },
+      {
+        label: 'Risk overall',
+        current: current.report.dashboard.riskOverall,
+        previous: previous?.report.dashboard.riskOverall ?? null,
+        best: bestRisk,
+        reference: reference.riskOverall,
+        deltaFromPrevious: previous
+          ? Number(
+              (current.report.dashboard.riskOverall - previous.report.dashboard.riskOverall).toFixed(
+                2
+              )
+            )
+          : null,
+        deltaFromReference: Number(
+          (current.report.dashboard.riskOverall - reference.riskOverall).toFixed(2)
+        )
+      },
+      {
+        label: 'Opportunity overall',
+        current: current.report.dashboard.opportunityOverall,
+        previous: previous?.report.dashboard.opportunityOverall ?? null,
+        best: bestOpportunity,
+        reference: reference.opportunityOverall,
+        deltaFromPrevious: previous
+          ? Number(
+              (
+                current.report.dashboard.opportunityOverall -
+                previous.report.dashboard.opportunityOverall
+              ).toFixed(2)
+            )
+          : null,
+        deltaFromReference: Number(
+          (current.report.dashboard.opportunityOverall - reference.opportunityOverall).toFixed(2)
+        )
+      }
+    ];
+
+    const previousTopics = new Map(
+      (previous?.report.evaluation.stage1Topics ?? []).map(
+        (topic: ReportResponse['evaluation']['stage1Topics'][number]) =>
+          [topic.topicCode, topic.priorityBand] as const
+      )
+    );
+    const topicShifts = current.report.evaluation.stage1Topics
+      .filter(
+        (topic: ReportResponse['evaluation']['stage1Topics'][number]) =>
+          topic.priorityBand === 'relevant' ||
+          topic.priorityBand === 'high_priority' ||
+          previousTopics.get(topic.topicCode) !== topic.priorityBand ||
+          reference.topicBands[topic.topicCode] !== topic.priorityBand
+      )
+      .map((topic: ReportResponse['evaluation']['stage1Topics'][number]) => ({
+        topicCode: topic.topicCode,
+        title: topic.title,
+        currentBand: topic.priorityBand,
+        previousBand: previousTopics.get(topic.topicCode) ?? null,
+        referenceBand: reference.topicBands[topic.topicCode] ?? null
+      }))
+      .slice(0, 8);
+
+    return {
+      evaluationId,
+      revisionNumber: targetRevisionNumber,
+      referenceProfile: {
+        stage: current.report.evaluation.currentStage,
+        naceDivision: current.report.evaluation.naceDivision,
+        label: reference.label
+      },
+      metrics,
+      topicShifts,
+      takeaways: this.buildBenchmarkTakeaways(metrics, topicShifts)
+    };
   }
 
   async getImpactSummary(
@@ -1272,11 +1523,17 @@ export class EvaluationsService {
 
   async exportCsv(currentUser: SessionUser, evaluationId: string, response: Response) {
     const artifact = await this.createArtifact(currentUser, evaluationId, { kind: 'csv' });
+    if (artifact.status !== 'ready') {
+      await this.processArtifactInline(artifact.id);
+    }
     await this.downloadArtifact(currentUser, evaluationId, artifact.id, response);
   }
 
   async exportPdf(currentUser: SessionUser, evaluationId: string, response: Response) {
     const artifact = await this.createArtifact(currentUser, evaluationId, { kind: 'pdf' });
+    if (artifact.status !== 'ready') {
+      await this.processArtifactInline(artifact.id);
+    }
     await this.downloadArtifact(currentUser, evaluationId, artifact.id, response);
   }
 
@@ -1286,6 +1543,7 @@ export class EvaluationsService {
     createdByUserId: string
   ) {
     const evaluation = await this.getEvaluationState(client, evaluationId);
+    const previousRevisionId = evaluation.currentRevisionId;
     const versionInfo = getScoringVersionInfo();
     const now = new Date();
     const nextRevisionNumber = evaluation.currentRevisionNumber + 1;
@@ -1337,6 +1595,28 @@ export class EvaluationsService {
         lastScoredAt: now
       }
     });
+
+    if (previousRevisionId) {
+      const previousActions = await client.evaluationRecommendationAction.findMany({
+        where: {
+          revisionId: previousRevisionId
+        },
+        select: recommendationActionSelect
+      });
+
+      if (previousActions.length > 0) {
+        await client.evaluationRecommendationAction.createMany({
+          data: previousActions.map((action: EvaluationRecommendationActionRecord) => ({
+            evaluationId,
+            revisionId: revision.id,
+            recommendationId: action.recommendationId,
+            status: action.status,
+            ownerNote: action.ownerNote ?? null,
+            updatedByUserId: createdByUserId
+          }))
+        });
+      }
+    }
 
     return {
       detail: outputs.detail,
@@ -1417,16 +1697,13 @@ export class EvaluationsService {
           (opportunityOrder.get(left.opportunityCode) ?? Number.MAX_SAFE_INTEGER) -
           (opportunityOrder.get(right.opportunityCode) ?? Number.MAX_SAFE_INTEGER)
       );
-    const dashboard = this.attachRecommendationActionsToDashboard(
-      buildDashboard(
-        evaluation.id,
-        initialSummary,
-        stage1Financial,
-        stage1Topics,
-        stage2Risks,
-        stage2Opportunities
-      ),
-      evaluation.recommendationActions
+    const dashboard = buildDashboard(
+      evaluation.id,
+      initialSummary,
+      stage1Financial,
+      stage1Topics,
+      stage2Risks,
+      stage2Opportunities
     );
     const scoringVersionInfo = overrides?.scoringVersionInfo ?? {
       scoringVersion: evaluation.scoringVersion,
@@ -1517,11 +1794,7 @@ export class EvaluationsService {
       return this.buildOutputsFromState(evaluation).report;
     }
 
-    const report = ReportResponseSchema.parse(revision.reportSnapshot as unknown);
-    const dashboard = this.attachRecommendationActionsToDashboard(
-      report.dashboard,
-      evaluation.recommendationActions
-    );
+    const report = await this.hydrateRevisionReport(evaluation.currentRevisionId, revision.reportSnapshot);
     return {
       ...report,
       evaluation: {
@@ -1529,8 +1802,47 @@ export class EvaluationsService {
         artifacts: evaluation.artifacts.map((item: EvaluationArtifactRecord) =>
           this.serializeArtifactSummary(item)
         )
+      }
+    };
+  }
+
+  private async hydrateRevisionReport(
+    revisionId: string,
+    reportSnapshot: Prisma.JsonValue,
+    artifactScope: 'evaluation_artifacts' | 'revision_artifacts' = 'evaluation_artifacts'
+  ) {
+    const report = ReportResponseSchema.parse(reportSnapshot as unknown);
+    const [actions, artifacts] = await Promise.all([
+      this.prismaService.evaluationRecommendationAction.findMany({
+        where: {
+          revisionId
+        },
+        orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+        select: recommendationActionSelect
+      }),
+      this.prismaService.evaluationArtifact.findMany({
+        where:
+          artifactScope === 'revision_artifacts'
+            ? {
+                revisionId
+              }
+            : {
+                evaluationId: report.evaluation.id
+              },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        select: artifactSelect
+      })
+    ]);
+
+    return {
+      ...report,
+      evaluation: {
+        ...report.evaluation,
+        artifacts: artifacts.map((artifact: EvaluationArtifactRecord) =>
+          this.serializeArtifactSummary(artifact)
+        )
       },
-      dashboard
+      dashboard: this.attachRecommendationActionsToDashboard(report.dashboard, actions)
     };
   }
 
@@ -1655,6 +1967,25 @@ export class EvaluationsService {
     return artifact;
   }
 
+  private async getOwnedNarrativeRecord(evaluationId: string, narrativeId: string, userId: string) {
+    const narrative = await this.prismaService.evaluationNarrative.findFirst({
+      where: {
+        id: narrativeId,
+        evaluationId,
+        evaluation: {
+          userId
+        }
+      },
+      select: narrativeSelect
+    });
+
+    if (!narrative) {
+      throw new NotFoundException('Evaluation narrative not found.');
+    }
+
+    return narrative;
+  }
+
   private serializeEvaluationListItem(evaluation: EvaluationListRecord): EvaluationListItem {
     return {
       id: evaluation.id,
@@ -1720,6 +2051,25 @@ export class EvaluationsService {
     };
   }
 
+  private serializeNarrativeSummary(narrative: EvaluationNarrativeRecord): EvaluationNarrativeSummary {
+    return {
+      id: narrative.id,
+      evaluationId: narrative.evaluationId,
+      revisionId: narrative.revisionId,
+      revisionNumber: narrative.revision?.revisionNumber ?? null,
+      kind: narrative.kind,
+      status: narrative.status,
+      model: narrative.model,
+      promptVersion: narrative.promptVersion,
+      content: narrative.content,
+      requestedAt: narrative.requestedAt.toISOString(),
+      readyAt: narrative.readyAt ? narrative.readyAt.toISOString() : null,
+      failedAt: narrative.failedAt ? narrative.failedAt.toISOString() : null,
+      errorMessage: narrative.errorMessage,
+      createdAt: narrative.createdAt.toISOString()
+    };
+  }
+
   private attachRecommendationActionsToDashboard(
     dashboard: DashboardResponse,
     actions: EvaluationRecommendationActionRecord[]
@@ -1745,14 +2095,6 @@ export class EvaluationsService {
     };
   }
 
-  private resolveArtifactStoragePath(checksumSha256: string, filename: string) {
-    const artifactsRoot = process.env.ARTIFACTS_DIR
-      ? path.resolve(process.env.ARTIFACTS_DIR)
-      : defaultArtifactsRoot;
-    const extension = path.extname(filename);
-    return path.join(artifactsRoot, checksumSha256.slice(0, 2), `${checksumSha256}${extension}`);
-  }
-
   private async logRevisionCreated(
     actorId: string,
     evaluationId: string,
@@ -1773,6 +2115,484 @@ export class EvaluationsService {
         revisionNumber
       }
     });
+  }
+
+  private buildBenchmarkTakeaways(
+    metrics: EvaluationBenchmarkSummary['metrics'],
+    topicShifts: EvaluationBenchmarkSummary['topicShifts']
+  ) {
+    const takeaways: string[] = [];
+    const financial = metrics.find((item) => item.label === 'Financial total');
+    const risk = metrics.find((item) => item.label === 'Risk overall');
+    const opportunity = metrics.find((item) => item.label === 'Opportunity overall');
+
+    if (financial?.deltaFromPrevious && financial.deltaFromPrevious > 0) {
+      takeaways.push('Financial resilience improved versus the previous saved revision.');
+    }
+
+    if (risk && risk.deltaFromReference !== null && risk.deltaFromReference !== undefined) {
+      if (risk.deltaFromReference > 0) {
+        takeaways.push('Outside-in risk remains above the seeded reference profile for this stage and NACE division.');
+      } else {
+        takeaways.push('Outside-in risk is at or below the seeded reference profile.');
+      }
+    }
+
+    if (
+      opportunity &&
+      opportunity.deltaFromReference !== null &&
+      opportunity.deltaFromReference !== undefined
+    ) {
+      if (opportunity.deltaFromReference >= 0) {
+        takeaways.push('Opportunity capture is matching or outperforming the reference profile.');
+      } else {
+        takeaways.push('Opportunity capture is still trailing the seeded reference profile.');
+      }
+    }
+
+    if (topicShifts.some((item) => item.referenceBand === 'high_priority')) {
+      takeaways.push('Reference-high-priority topics should be monitored even when the current score has not crossed the threshold yet.');
+    }
+
+    return takeaways.slice(0, 4);
+  }
+
+  private async processArtifactInline(artifactId: string) {
+    const artifact = await this.prismaService.evaluationArtifact.findUnique({
+      where: {
+        id: artifactId
+      },
+      select: {
+        ...artifactSelect,
+        evaluation: {
+          select: {
+            id: true
+          }
+        },
+        revision: {
+          select: {
+            id: true,
+            revisionNumber: true,
+            reportSnapshot: true
+          }
+        }
+      }
+    });
+
+    if (!artifact || !artifact.revisionId || !artifact.revision) {
+      throw new NotFoundException('Artifact revision snapshot not found.');
+    }
+
+    await this.markArtifactProcessing(artifactId);
+
+    try {
+      const report = await this.hydrateRevisionReport(artifact.revisionId, artifact.revision.reportSnapshot);
+      const content =
+        artifact.kind === 'csv'
+          ? Buffer.from(this.buildCsvReport(report), 'utf8')
+          : this.buildPdfReport(report);
+      const checksumSha256 = createHash('sha256').update(content).digest('hex');
+      const storageKey = this.evaluationStorageService.buildStorageKey(checksumSha256, artifact.filename);
+      await this.evaluationStorageService.writeObject(storageKey, content, artifact.mimeType);
+      await this.markArtifactReady(artifactId, {
+        storageKey,
+        checksumSha256,
+        byteSize: content.byteLength
+      });
+    } catch (error) {
+      await this.markArtifactFailed(
+        artifactId,
+        error instanceof Error ? error.message : 'Artifact generation failed.'
+      );
+      throw error;
+    }
+  }
+
+  private createNarrativeContent(
+    kind: CreateEvaluationNarrativePayload['kind'],
+    report: ReportResponse
+  ) {
+    const topTopic = report.dashboard.materialAlerts[0];
+    const topRisk = report.dashboard.topRisks[0];
+    const topOpportunity = report.dashboard.topOpportunities[0];
+
+    if (kind === 'executive_summary') {
+      return [
+        `${report.evaluation.name} currently scores ${report.dashboard.financialTotal}/12 on the deterministic financial screen, with overall risk at ${report.dashboard.riskOverall.toFixed(1)} and opportunity at ${report.dashboard.opportunityOverall.toFixed(1)}.`,
+        topTopic
+          ? `${topTopic.title} is the strongest inside-out materiality signal at ${topTopic.score}, which makes it the clearest near-term sustainability priority.`
+          : 'No material topics are above the reporting threshold yet, so the next priority is collecting stronger evidence before the next review.',
+        topOpportunity
+          ? `${topOpportunity.title} is the clearest upside signal, while ${topRisk?.title ?? 'outside-in risks'} should be monitored as the main constraint on execution.`
+          : `${topRisk?.title ?? 'Outside-in risk'} remains the strongest external consideration for the current profile.`
+      ].join('\n\n');
+    }
+
+    if (kind === 'material_topics') {
+      return [
+        `The current materiality profile is driven by ${topTopic?.title ?? 'the saved topic scores'} and the evidence basis attached to each Stage I answer.`,
+        `Topics marked relevant indicate credible sustainability relevance, while high-priority topics indicate the startup is already above the stronger action threshold.`,
+        report.dashboard.sensitivityHints[0]
+          ? `The most important near-threshold hint is: ${report.dashboard.sensitivityHints[0].message}`
+          : 'No near-threshold shifts were detected from the saved assumptions.'
+      ].join('\n\n');
+    }
+
+    if (kind === 'risks_opportunities') {
+      return [
+        topRisk
+          ? `${topRisk.title} is the most material external risk signal and should anchor the short-term mitigation discussion.`
+          : 'No external risks are currently rated above neutral.',
+        topOpportunity
+          ? `${topOpportunity.title} is the strongest opportunity signal and should inform roadmap and partnership decisions.`
+          : 'No external opportunities are currently rated above neutral.',
+        'These explanations are generated from the immutable revision snapshot and do not alter any deterministic scores.'
+      ].join('\n\n');
+    }
+
+    return [
+      'Evidence quality is the main determinant of confidence in this assessment.',
+      `The current confidence band is ${report.dashboard.confidenceBand}, based on the measured, estimated, and assumed evidence basis saved across Stage I and Stage II.`,
+      'Focus next on collecting defensible evidence for the highest-priority topic, the strongest risk, and the strongest opportunity before the next revision.'
+    ].join('\n\n');
+  }
+
+  private async processNarrativeInline(narrativeId: string) {
+    const narrative = await this.prismaService.evaluationNarrative.findUnique({
+      where: {
+        id: narrativeId
+      },
+      select: {
+        ...narrativeSelect,
+        revision: {
+          select: {
+            id: true,
+            reportSnapshot: true
+          }
+        }
+      }
+    });
+
+    if (!narrative || !narrative.revisionId || !narrative.revision) {
+      throw new NotFoundException('Narrative revision snapshot not found.');
+    }
+
+    await this.markNarrativeProcessing(narrativeId);
+
+    try {
+      const report = await this.hydrateRevisionReport(
+        narrative.revisionId,
+        narrative.revision.reportSnapshot
+      );
+      await this.markNarrativeReady(narrativeId, {
+        model: 'template-v1',
+        promptVersion: '2026.04.ready-software.1',
+        content: this.createNarrativeContent(narrative.kind, report)
+      });
+    } catch (error) {
+      await this.markNarrativeFailed(
+        narrativeId,
+        error instanceof Error ? error.message : 'Narrative generation failed.'
+      );
+      throw error;
+    }
+  }
+
+  async getInternalArtifactJobData(artifactId: string) {
+    const artifact = await this.prismaService.evaluationArtifact.findUnique({
+      where: {
+        id: artifactId
+      },
+      select: {
+        ...artifactSelect,
+        evaluation: {
+          select: {
+            id: true,
+            name: true
+          }
+        },
+        revision: {
+          select: {
+            id: true,
+            revisionNumber: true,
+            reportSnapshot: true
+          }
+        }
+      }
+    });
+
+    if (!artifact || !artifact.revisionId || !artifact.revision) {
+      throw new NotFoundException('Artifact job payload not found.');
+    }
+
+    return {
+      id: artifact.id,
+      evaluationId: artifact.evaluationId,
+      evaluationName: artifact.evaluation.name,
+      revisionId: artifact.revisionId,
+      revisionNumber: artifact.revision.revisionNumber,
+      kind: artifact.kind,
+      filename: artifact.filename,
+      mimeType: artifact.mimeType,
+      report: await this.hydrateRevisionReport(artifact.revisionId, artifact.revision.reportSnapshot)
+    };
+  }
+
+  async markArtifactProcessing(artifactId: string) {
+    const artifact = await this.prismaService.evaluationArtifact.update({
+      where: {
+        id: artifactId
+      },
+      data: {
+        status: 'processing',
+        failedAt: null,
+        errorMessage: null
+      },
+      select: artifactSelect
+    });
+
+    await this.auditService.log({
+      actorId: artifact.createdByUserId ?? null,
+      action: 'artifact.processing',
+      targetType: 'evaluation_artifact',
+      targetId: artifactId,
+      metadata: {
+        evaluationId: artifact.evaluationId,
+        revisionId: artifact.revisionId,
+        kind: artifact.kind
+      }
+    });
+  }
+
+  async markArtifactReady(
+    artifactId: string,
+    input: {
+      storageKey: string;
+      checksumSha256: string;
+      byteSize: number;
+    }
+  ) {
+    const artifact = await this.prismaService.evaluationArtifact.update({
+      where: {
+        id: artifactId
+      },
+      data: {
+        status: 'ready',
+        storageKey: input.storageKey,
+        checksumSha256: input.checksumSha256,
+        byteSize: input.byteSize,
+        readyAt: new Date(),
+        failedAt: null,
+        errorMessage: null
+      },
+      select: artifactSelect
+    });
+
+    await this.auditService.log({
+      actorId: artifact.createdByUserId ?? null,
+      action: 'artifact.ready',
+      targetType: 'evaluation_artifact',
+      targetId: artifactId,
+      metadata: {
+        evaluationId: artifact.evaluationId,
+        revisionId: artifact.revisionId,
+        kind: artifact.kind,
+        byteSize: input.byteSize
+      }
+    });
+  }
+
+  async markArtifactFailed(artifactId: string, errorMessage: string) {
+    const artifact = await this.prismaService.evaluationArtifact.update({
+      where: {
+        id: artifactId
+      },
+      data: {
+        status: 'failed',
+        failedAt: new Date(),
+        errorMessage
+      },
+      select: artifactSelect
+    });
+
+    await this.auditService.log({
+      actorId: artifact.createdByUserId ?? null,
+      action: 'artifact.failed',
+      targetType: 'evaluation_artifact',
+      targetId: artifactId,
+      metadata: {
+        evaluationId: artifact.evaluationId,
+        revisionId: artifact.revisionId,
+        kind: artifact.kind,
+        error: errorMessage
+      }
+    });
+  }
+
+  async getInternalNarrativeJobData(narrativeId: string) {
+    const narrative = await this.prismaService.evaluationNarrative.findUnique({
+      where: {
+        id: narrativeId
+      },
+      select: {
+        ...narrativeSelect,
+        revision: {
+          select: {
+            id: true,
+            revisionNumber: true,
+            reportSnapshot: true
+          }
+        }
+      }
+    });
+
+    if (!narrative || !narrative.revisionId || !narrative.revision) {
+      throw new NotFoundException('Narrative job payload not found.');
+    }
+
+    return {
+      id: narrative.id,
+      evaluationId: narrative.evaluationId,
+      revisionId: narrative.revisionId,
+      revisionNumber: narrative.revision.revisionNumber,
+      kind: narrative.kind,
+      report: await this.hydrateRevisionReport(narrative.revisionId, narrative.revision.reportSnapshot)
+    };
+  }
+
+  async markNarrativeProcessing(narrativeId: string) {
+    const narrative = await this.prismaService.evaluationNarrative.update({
+      where: {
+        id: narrativeId
+      },
+      data: {
+        status: 'processing',
+        failedAt: null,
+        errorMessage: null
+      },
+      select: narrativeSelect
+    });
+
+    await this.auditService.log({
+      actorId: narrative.createdByUserId ?? null,
+      action: 'narrative.processing',
+      targetType: 'evaluation_narrative',
+      targetId: narrativeId,
+      metadata: {
+        evaluationId: narrative.evaluationId,
+        revisionId: narrative.revisionId,
+        kind: narrative.kind
+      }
+    });
+  }
+
+  async markNarrativeReady(
+    narrativeId: string,
+    input: {
+      model: string;
+      promptVersion: string;
+      content: string;
+    }
+  ) {
+    const narrative = await this.prismaService.evaluationNarrative.update({
+      where: {
+        id: narrativeId
+      },
+      data: {
+        status: 'ready',
+        model: input.model,
+        promptVersion: input.promptVersion,
+        content: input.content,
+        readyAt: new Date(),
+        failedAt: null,
+        errorMessage: null
+      },
+      select: narrativeSelect
+    });
+
+    await this.auditService.log({
+      actorId: narrative.createdByUserId ?? null,
+      action: 'narrative.ready',
+      targetType: 'evaluation_narrative',
+      targetId: narrativeId,
+      metadata: {
+        evaluationId: narrative.evaluationId,
+        revisionId: narrative.revisionId,
+        kind: narrative.kind,
+        model: input.model
+      }
+    });
+  }
+
+  async markNarrativeFailed(narrativeId: string, errorMessage: string) {
+    const narrative = await this.prismaService.evaluationNarrative.update({
+      where: {
+        id: narrativeId
+      },
+      data: {
+        status: 'failed',
+        failedAt: new Date(),
+        errorMessage
+      },
+      select: narrativeSelect
+    });
+
+    await this.auditService.log({
+      actorId: narrative.createdByUserId ?? null,
+      action: 'narrative.failed',
+      targetType: 'evaluation_narrative',
+      targetId: narrativeId,
+      metadata: {
+        evaluationId: narrative.evaluationId,
+        revisionId: narrative.revisionId,
+        kind: narrative.kind,
+        error: errorMessage
+      }
+    });
+  }
+
+  async getInternalRenderReport(evaluationId: string, revisionNumber?: number) {
+    const revision = revisionNumber
+      ? await this.prismaService.evaluationRevision.findUnique({
+          where: {
+            evaluationId_revisionNumber: {
+              evaluationId,
+              revisionNumber
+            }
+          },
+          select: {
+            id: true,
+            reportSnapshot: true
+          }
+        })
+      : await this.prismaService.evaluation.findUnique({
+          where: {
+            id: evaluationId
+          },
+          select: {
+            currentRevisionId: true
+          }
+        }).then(async (evaluation) => {
+          if (!evaluation?.currentRevisionId) {
+            return null;
+          }
+
+          return this.prismaService.evaluationRevision.findUnique({
+            where: {
+              id: evaluation.currentRevisionId
+            },
+            select: {
+              id: true,
+              reportSnapshot: true
+            }
+          });
+        });
+
+    if (!revision) {
+      throw new NotFoundException('Render revision not found.');
+    }
+
+    return this.hydrateRevisionReport(revision.id, revision.reportSnapshot, 'revision_artifacts');
   }
 
   private buildContextChanges(leftReport: ReportResponse, rightReport: ReportResponse) {

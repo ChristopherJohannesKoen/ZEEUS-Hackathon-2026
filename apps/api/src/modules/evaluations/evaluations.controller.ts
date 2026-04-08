@@ -15,12 +15,15 @@ import {
 import { ApiCookieAuth, ApiHeader, ApiOperation, ApiProduces, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import {
-  CreateEvaluationArtifactPayloadSchema,
-  CreateEvaluationPayloadSchema,
-  EvaluationArtifactParamsSchema,
-  EvaluationIdParamsSchema,
-  EvaluationRevisionCompareQuerySchema,
-  EvaluationRevisionParamsSchema,
+    CreateEvaluationArtifactPayloadSchema,
+    CreateEvaluationNarrativePayloadSchema,
+    CreateEvaluationPayloadSchema,
+    EvaluationArtifactParamsSchema,
+    EvaluationBenchmarkQuerySchema,
+    EvaluationIdParamsSchema,
+    EvaluationRecommendationActionParamsSchema,
+    EvaluationRevisionCompareQuerySchema,
+    EvaluationRevisionParamsSchema,
   SaveStage1PayloadSchema,
   SaveStage1TopicsPayloadSchema,
   SaveStage2PayloadSchema,
@@ -394,26 +397,66 @@ export class EvaluationsController {
     );
   }
 
-  @Put(':id/recommendations/:recommendationId')
+  @Put(':id/revisions/:revisionNumber/recommendations/:recommendationId')
   @ApiOperation({ summary: 'Update the action status for a deterministic recommendation' })
   updateRecommendationAction(
     @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
     @Param() params: unknown,
     @Body() body: unknown
   ) {
-    const parsedParams = parseZodSchema(
-      z.object({
-        id: z.string(),
-        recommendationId: z.string()
-      }),
-      params
-    );
+    const parsedParams = parseZodSchema(EvaluationRecommendationActionParamsSchema, params);
 
     return this.evaluationsService.updateRecommendationAction(
       currentUser,
       parsedParams.id,
+      parsedParams.revisionNumber,
       parsedParams.recommendationId,
       parseZodSchema(UpdateRecommendationActionPayloadSchema, body)
+    );
+  }
+
+  @Post(':id/narratives')
+  @UseInterceptors(IdempotencyInterceptor)
+  @ApiHeader({ name: 'Idempotency-Key', required: true })
+  @ApiOperation({ summary: 'Request an async narrative explanation for the active revision' })
+  createNarrative(
+    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
+    @Param() params: unknown,
+    @Body() body: unknown
+  ) {
+    return this.evaluationsService.createNarrative(
+      currentUser,
+      parseZodSchema(EvaluationIdParamsSchema, params).id,
+      parseZodSchema(CreateEvaluationNarrativePayloadSchema, body)
+    );
+  }
+
+  @Get(':id/narratives')
+  @ApiOperation({ summary: 'List persisted narratives for an evaluation' })
+  listNarratives(
+    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
+    @Param() params: unknown
+  ) {
+    return this.evaluationsService.listNarratives(
+      currentUser,
+      parseZodSchema(EvaluationIdParamsSchema, params).id
+    );
+  }
+
+  @Get(':id/benchmarks')
+  @ApiOperation({ summary: 'Get self and seeded-reference benchmarking for a revision' })
+  getBenchmarks(
+    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
+    @Param() params: unknown,
+    @Query() query: unknown
+  ) {
+    const parsedParams = parseZodSchema(EvaluationIdParamsSchema, params);
+    const parsedQuery = parseZodSchema(EvaluationBenchmarkQuerySchema, query);
+
+    return this.evaluationsService.getBenchmarks(
+      currentUser,
+      parsedParams.id,
+      parsedQuery.revisionNumber
     );
   }
 

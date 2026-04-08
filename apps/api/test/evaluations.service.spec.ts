@@ -32,12 +32,30 @@ function createService(prismaOverrides: Record<string, unknown>) {
   const auditService = {
     log: vi.fn()
   };
+  const jobsService = {
+    isEnabled: vi.fn().mockReturnValue(false),
+    enqueueArtifact: vi.fn(),
+    enqueueNarrative: vi.fn()
+  };
+  const storageService = {
+    objectExists: vi.fn().mockResolvedValue(false),
+    readObject: vi.fn(),
+    writeObject: vi.fn(),
+    buildStorageKey: vi.fn()
+  };
 
-  const service = new EvaluationsService(prismaOverrides as never, auditService as never);
+  const service = new EvaluationsService(
+    prismaOverrides as never,
+    auditService as never,
+    jobsService as never,
+    storageService as never
+  );
 
   return {
     service,
-    auditService
+    auditService,
+    jobsService,
+    storageService
   };
 }
 
@@ -325,6 +343,12 @@ describe('EvaluationsService', () => {
     const prismaService = {
       evaluation: {
         findFirst: vi.fn().mockResolvedValue({ id: 'evaluation_1' })
+      },
+      evaluationRecommendationAction: {
+        findMany: vi.fn().mockResolvedValue([])
+      },
+      evaluationArtifact: {
+        findMany: vi.fn().mockResolvedValue([])
       }
     };
     const { service } = createService(prismaService);
@@ -390,6 +414,12 @@ describe('EvaluationsService', () => {
             reportSnapshot: rightReport
           }
         ])
+      },
+      evaluationRecommendationAction: {
+        findMany: vi.fn().mockResolvedValue([])
+      },
+      evaluationArtifact: {
+        findMany: vi.fn().mockResolvedValue([])
       }
     };
 
@@ -408,13 +438,13 @@ describe('EvaluationsService', () => {
 
   it('persists recommendation actions and returns a refreshed dashboard view', async () => {
     const initialState = buildEvaluationStateFixture({
-      revisionId: null,
+      revisionId: 'revision_3',
       revisionNumber: 3
     });
     const initialReport = buildReportFixture(initialState, 3);
     const recommendationId = initialReport.dashboard.recommendations[0]!.id;
     const refreshedState = buildEvaluationStateFixture({
-      revisionId: null,
+      revisionId: 'revision_3',
       revisionNumber: 3,
       recommendationAction: {
         recommendationId,
@@ -428,8 +458,28 @@ describe('EvaluationsService', () => {
       evaluation: {
         findFirst: vi.fn().mockResolvedValueOnce(initialState).mockResolvedValueOnce(refreshedState)
       },
+      evaluationRevision: {
+        findUnique: vi.fn().mockResolvedValue({
+          reportSnapshot: initialReport
+        })
+      },
       evaluationRecommendationAction: {
+        findMany: vi
+          .fn()
+          .mockResolvedValueOnce([])
+          .mockResolvedValueOnce([
+            {
+              recommendationId,
+              revisionId: 'revision_3',
+              status: 'in_progress',
+              ownerNote: 'Track this with the operating team.',
+              updatedAt: new Date('2026-04-07T08:05:00.000Z')
+            }
+          ]),
         upsert: vi.fn().mockResolvedValue(undefined)
+      },
+      evaluationArtifact: {
+        findMany: vi.fn().mockResolvedValue([])
       }
     };
 
@@ -437,6 +487,7 @@ describe('EvaluationsService', () => {
     const result = await service.updateRecommendationAction(
       currentUser,
       'evaluation_1',
+      3,
       recommendationId,
       {
         status: 'in_progress',
@@ -446,13 +497,14 @@ describe('EvaluationsService', () => {
 
     expect(prismaService.evaluationRecommendationAction.upsert).toHaveBeenCalledWith({
       where: {
-        evaluationId_recommendationId: {
-          evaluationId: 'evaluation_1',
+        revisionId_recommendationId: {
+          revisionId: 'revision_3',
           recommendationId
         }
       },
       create: {
         evaluationId: 'evaluation_1',
+        revisionId: 'revision_3',
         recommendationId,
         status: 'in_progress',
         ownerNote: 'Track this with the operating team.',
@@ -469,6 +521,7 @@ describe('EvaluationsService', () => {
         action: 'evaluation.recommendation_action_updated',
         targetId: 'evaluation_1',
         metadata: expect.objectContaining({
+          revisionNumber: 3,
           recommendationId,
           status: 'in_progress'
         })

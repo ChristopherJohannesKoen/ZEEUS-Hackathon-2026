@@ -19,7 +19,7 @@ Open:
 ## Daily Commands
 
 - `npm run dev`: run API and web together
-- `npm run dev:services`: start Postgres only
+- `npm run dev:services`: start Postgres, Redis, MinIO, and bucket init
 - `npm run db:setup`: apply migrations and seed data
 - `npm run db:reset`: reset the database
 - `npm run prisma:generate`: regenerate Prisma client
@@ -45,6 +45,8 @@ The fastest realistic smoke path is:
 4. use the review step to complete the evaluation
 5. open revision history and compare the latest two revisions
 6. generate a CSV or PDF artifact and confirm it downloads
+7. request an AI narrative and confirm it becomes ready
+8. open the benchmarks view and confirm seeded baseline metrics render
 
 ## Workbook Catalog Refresh
 
@@ -81,5 +83,7 @@ docker compose ps
   running ports match the actual local URLs.
 - If you change workbook-derived logic, rerun `node scripts/extract-workbook-catalogs.mjs`
   and then rerun tests.
-- If generated exports do not appear in revision history, confirm `ARTIFACTS_DIR`
-  exists locally or that the Docker `artifacts_data` volume is mounted.
+- If exports stay queued, confirm `redis`, `minio`, and `worker` are running and
+  that `INTERNAL_SERVICE_TOKEN`, `REDIS_URL`, and S3 settings are present.
+- If downloads fail after generation, confirm the `zeeus-artifacts` bucket
+  exists and that the worker can reach `WEB_INTERNAL_ORIGIN`.

@@ -15,6 +15,7 @@ These values are enough for the default local stack:
 | `APP_ENV`                       | runtime posture                 | `local`                                                                        |
 | `APP_URL`                       | public web origin               | `http://localhost:3000`                                                        |
 | `API_ORIGIN`                    | API origin used by the web tier | `http://localhost:4000`                                                        |
+| `WEB_INTERNAL_ORIGIN`           | internal report-render origin   | `http://localhost:3000`                                                        |
 | `API_PORT`                      | Nest listen port                | `4000`                                                                         |
 | `WEB_PORT`                      | Next listen port                | `3000`                                                                         |
 | `DB_PORT`                       | Postgres host port              | `5432`                                                                         |
@@ -22,7 +23,15 @@ These values are enough for the default local stack:
 | `POSTGRES_PASSWORD`             | Postgres password               | `postgres`                                                                     |
 | `POSTGRES_DB`                   | Postgres database name          | `zeeus_assessment`                                                             |
 | `DATABASE_URL`                  | Prisma connection string        | `postgresql://postgres:postgres@localhost:5432/zeeus_assessment?schema=public` |
-| `ARTIFACTS_DIR`                 | local artifact storage path     | `.artifacts`                                                                   |
+| `REDIS_URL`                     | BullMQ queue connection         | `redis://localhost:6379`                                                       |
+| `ARTIFACTS_DIR`                 | local artifact fallback path    | `.artifacts`                                                                   |
+| `S3_ENDPOINT`                   | S3-compatible object storage    | `http://localhost:9000`                                                        |
+| `S3_FORCE_PATH_STYLE`           | MinIO compatibility toggle      | `true`                                                                         |
+| `S3_BUCKET`                     | artifact bucket name            | `zeeus-artifacts`                                                              |
+| `S3_REGION`                     | object storage region           | `us-east-1`                                                                    |
+| `S3_ACCESS_KEY_ID`              | object storage access key       | `minioadmin`                                                                   |
+| `S3_SECRET_ACCESS_KEY`          | object storage secret           | `minioadmin123`                                                                |
+| `INTERNAL_SERVICE_TOKEN`        | worker/internal render token    | `zeeus-internal-token`                                                         |
 | `SESSION_COOKIE_NAME`           | session cookie key              | `zeeus_assessment_session`                                                     |
 | `SESSION_COOKIE_ENCRYPTION_KEY` | 64-hex cookie encryption key    | required                                                                       |
 | `SEED_OWNER_EMAIL`              | seeded owner account email      | `owner@example.com`                                                            |
@@ -48,9 +57,14 @@ These values are enough for the default local stack:
 - session cookie name: `zeeus_assessment_session`
 - API port: `4000`
 - web port: `3000`
-- artifact storage path inside the API container: `/app/.artifacts`
+- Redis on `6379`
+- MinIO on `9000`
+- artifact bucket: `zeeus-artifacts`
+- internal render origin: `http://web:3000`
 
 The API container runs Prisma migrate + seed before starting the server.
+The worker uses Redis plus the internal render route to create PDF/CSV
+artifacts and AI narratives.
 
 ## Test And Perf Env Files
 
@@ -66,7 +80,7 @@ Keep those files as examples only. The normal local dev path still starts from
 The repository still contains optional envs for:
 
 - enterprise identity
-- feature-flagged email, storage, cache, and observability integrations
+- feature-flagged email and observability integrations
 - CSP reporting
 
 Those are not required for the hackathon-critical stack and can stay disabled in

@@ -6,9 +6,13 @@ import type {
   AuthResponse,
   BreakGlassLoginPayload,
   CreateEvaluationArtifactPayload,
+  CreateEvaluationNarrativePayload,
   CreateEvaluationPayload,
-  EvaluationDetail,
   EvaluationArtifactSummary,
+  EvaluationBenchmarkSummary,
+  EvaluationDetail,
+  EvaluationNarrativeListResponse,
+  EvaluationNarrativeSummary,
   ForgotPasswordPayload,
   ForgotPasswordResponse,
   OkResponse,
@@ -493,8 +497,57 @@ export function requestEvaluationArtifact(
   });
 }
 
+export function getEvaluationArtifactStatus(evaluationId: string, artifactId: string) {
+  return withApiErrors(async () => {
+    const response = await browserClient.evaluations.getArtifact({
+      params: { id: evaluationId, artifactId }
+    });
+    return unwrapContractResponse<EvaluationArtifactSummary>(response, [200]);
+  });
+}
+
+export function createEvaluationNarrative(
+  evaluationId: string,
+  body: CreateEvaluationNarrativePayload
+) {
+  return executeMutation<EvaluationNarrativeSummary>({
+    method: 'POST',
+    expectedStatuses: [201],
+    idempotent: true,
+    call: (headers) =>
+      browserClient.evaluations.createNarrative({
+        params: { id: evaluationId },
+        body,
+        headers: {
+          'idempotency-key': headers['idempotency-key']!,
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export function listEvaluationNarratives(evaluationId: string) {
+  return withApiErrors(async () => {
+    const response = await browserClient.evaluations.listNarratives({
+      params: { id: evaluationId }
+    });
+    return unwrapContractResponse<EvaluationNarrativeListResponse>(response, [200]);
+  });
+}
+
+export function getEvaluationBenchmarks(evaluationId: string, revisionNumber?: number) {
+  return withApiErrors(async () => {
+    const response = await browserClient.evaluations.getBenchmarks({
+      params: { id: evaluationId },
+      query: revisionNumber ? { revisionNumber } : {}
+    });
+    return unwrapContractResponse<EvaluationBenchmarkSummary>(response, [200]);
+  });
+}
+
 export function updateRecommendationAction(
   evaluationId: string,
+  revisionNumber: number,
   recommendationId: string,
   body: UpdateRecommendationActionPayload
 ) {
@@ -503,7 +556,7 @@ export function updateRecommendationAction(
     expectedStatuses: [200],
     call: (headers) =>
       browserClient.evaluations.updateRecommendationAction({
-        params: { id: evaluationId, recommendationId },
+        params: { id: evaluationId, revisionNumber, recommendationId },
         body,
         headers: {
           'x-csrf-token': headers['x-csrf-token']!

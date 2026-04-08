@@ -42,9 +42,11 @@ function buildDraftState(recommendations: Recommendation[]): DraftState {
 
 export function RecommendationActionsBoard({
   evaluationId,
+  revisionNumber,
   recommendations
 }: {
   evaluationId: string;
+  revisionNumber: number;
   recommendations: DashboardResponse['recommendations'];
 }) {
   const router = useRouter();
@@ -63,7 +65,7 @@ export function RecommendationActionsBoard({
       setErrorMessage(null);
 
       try {
-        await updateRecommendationAction(evaluationId, recommendationId, {
+        await updateRecommendationAction(evaluationId, revisionNumber, recommendationId, {
           status: current.status,
           ownerNote: current.ownerNote.trim() || null
         });

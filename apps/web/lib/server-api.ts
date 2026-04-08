@@ -4,8 +4,10 @@ import type {
   DashboardResponse,
   EvaluationArtifactListResponse,
   EvaluationArtifactSummary,
+  EvaluationBenchmarkSummary,
   EvaluationDetail,
   EvaluationListResponse,
+  EvaluationNarrativeListResponse,
   EvaluationRevisionCompareResponse,
   EvaluationRevisionDetail,
   EvaluationRevisionListResponse,
@@ -228,6 +230,27 @@ export function getEvaluationArtifact(evaluationId: string, artifactId: string) 
     () =>
       serverClient.evaluations.getArtifact({
         params: { id: evaluationId, artifactId }
+      }),
+    [200]
+  );
+}
+
+export function getEvaluationNarratives(evaluationId: string) {
+  return protectedServerRequest<EvaluationNarrativeListResponse>(
+    () =>
+      serverClient.evaluations.listNarratives({
+        params: { id: evaluationId }
+      }),
+    [200]
+  );
+}
+
+export function getEvaluationBenchmarks(evaluationId: string, revisionNumber?: number) {
+  return protectedServerRequest<EvaluationBenchmarkSummary>(
+    () =>
+      serverClient.evaluations.getBenchmarks({
+        params: { id: evaluationId },
+        query: revisionNumber ? { revisionNumber } : {}
       }),
     [200]
   );

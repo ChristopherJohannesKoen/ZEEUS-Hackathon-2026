@@ -9,6 +9,12 @@ Primary health endpoints:
 - `http://localhost:4000/api/metrics`
 - `http://localhost:3000`
 
+Operational runtime checks:
+
+- `docker compose ps`
+- `docker logs zeeus-hackathon-2026-worker-1 --tail 100`
+- MinIO console: `http://localhost:9001`
+
 ## Docker Operations
 
 Start the full stack:
@@ -38,8 +44,9 @@ docker compose down --remove-orphans
 The default seed creates the local owner account and populates deterministic
 lookup data used by the assessment flow.
 
-Generated CSV and PDF artifacts are stored under `ARTIFACTS_DIR`. In Docker,
-that path is backed by the `artifacts_data` volume.
+Generated CSV and PDF artifacts are stored in object storage. The default local
+stack uses MinIO with the `zeeus-artifacts` bucket. `ARTIFACTS_DIR` remains a
+local fallback for non-S3 development or worker fallback paths.
 
 ## Observability
 
@@ -56,11 +63,16 @@ they are not required for the core local stack.
 - open `/app/report/[id]`
 - compare the latest two revisions
 - generate and download CSV/PDF artifacts
+- request an AI narrative from the dashboard
+- open the benchmarks view
 - confirm saved evaluations render in `/app/evaluations`
 
 ## Common Failure Modes
 
 - Postgres unhealthy: inspect `docker compose ps` and container logs
+- Redis or worker unhealthy: inspect `docker compose ps` and worker logs
+- MinIO unhealthy or missing bucket: confirm `bucket-init` completed and that
+  `S3_BUCKET` matches the configured bucket name
 - Prisma client drift: rerun `npm run prisma:generate`
 - missing seed data: rerun `npm run db:setup`
 - workbook logic drift: rerun `node scripts/extract-workbook-catalogs.mjs`

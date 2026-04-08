@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next';
+import { resolveSiteOrigin } from '../lib/runtime-mode';
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -6,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: '*',
       allow: '/'
     },
-    sitemap: `${process.env.NEXT_PUBLIC_SITE_ORIGIN ?? 'http://localhost:3000'}/sitemap.xml`
+    sitemap: `${resolveSiteOrigin()}/sitemap.xml`
   };
 }

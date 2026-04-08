@@ -1,4 +1,5 @@
 import type { MetadataRoute } from 'next';
+import { resolveSiteOrigin } from '../lib/runtime-mode';
 
 const publicRoutes = [
   '',
@@ -12,7 +13,7 @@ const publicRoutes = [
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const origin = process.env.NEXT_PUBLIC_SITE_ORIGIN ?? 'http://localhost:3000';
+  const origin = resolveSiteOrigin();
 
   return publicRoutes.map((route) => ({
     url: `${origin}${route}`,

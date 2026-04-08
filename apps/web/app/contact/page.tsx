@@ -1,11 +1,13 @@
 import Link from 'next/link';
 import { Card, buttonClassName } from '@packages/ui';
 import { MarketingShell } from '../../components/marketing-shell';
+import { isPublicSpaceMode } from '../../lib/runtime-mode';
 import { getCurrentUser, getPublicSiteContent } from '../../lib/server-api';
 
 export default async function ContactPage() {
   const [currentUser, content] = await Promise.all([getCurrentUser(), getPublicSiteContent()]);
   const article = content.articles.find((item) => item.slug === 'contact-support');
+  const publicPreviewMode = isPublicSpaceMode;
 
   return (
     <MarketingShell
@@ -24,15 +26,18 @@ export default async function ContactPage() {
         <Card className="border-surface-border bg-[#f4f9ee]">
           <h2 className="text-2xl font-black text-slate-950">Next best step</h2>
           <p className="mt-3 text-sm leading-7 text-slate-600">
-            Founders should start with the evaluation workflow. Partners should open the program
-            console and review submission and evidence workflows.
+            {publicPreviewMode
+              ? 'This deployment is the public ZEEUS website preview. Use it to review the method, resources, and partner overview.'
+              : 'Founders should start with the evaluation workflow. Partners should open the program console and review submission and evidence workflows.'}
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
               className={buttonClassName({ className: 'bg-brand hover:bg-brand-dark' })}
-              href={currentUser ? '/app/evaluate/start' : '/signup'}
+              href={
+                publicPreviewMode ? '/methodology' : currentUser ? '/app/evaluate/start' : '/signup'
+              }
             >
-              Founder workspace
+              {publicPreviewMode ? 'Methodology' : 'Founder workspace'}
             </Link>
             <Link className={buttonClassName({ variant: 'secondary' })} href="/partners">
               Partner overview

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Badge } from '@packages/ui';
 import { SiteHeader } from '../components/site-header';
 import { ZeeusLogo } from '../components/zeeus-logo';
+import { isPublicSpaceMode } from '../lib/runtime-mode';
 import { getCurrentUser, getPublicSiteContent } from '../lib/server-api';
 
 const workflowSteps = [
@@ -51,8 +52,27 @@ const principles = [
 
 export default async function Page() {
   const [currentUser, content] = await Promise.all([getCurrentUser(), getPublicSiteContent()]);
-  const primaryHref = currentUser ? '/app/evaluate/start' : '/signup';
-  const secondaryHref = currentUser ? '/app/evaluations' : '/login';
+  const publicPreviewMode = isPublicSpaceMode;
+  const primaryHref = publicPreviewMode
+    ? '/methodology'
+    : currentUser
+      ? '/app/evaluate/start'
+      : '/signup';
+  const primaryLabel = publicPreviewMode
+    ? 'Explore methodology'
+    : currentUser
+      ? 'Start evaluation'
+      : 'Create account';
+  const secondaryHref = publicPreviewMode
+    ? '/partners'
+    : currentUser
+      ? '/app/evaluations'
+      : '/login';
+  const secondaryLabel = publicPreviewMode
+    ? 'View partner programs'
+    : currentUser
+      ? 'Open workspace'
+      : 'Sign in';
 
   return (
     <div className="min-h-screen bg-white">
@@ -85,15 +105,21 @@ export default async function Page() {
                   className="btn-primary bg-white text-brand-dark hover:bg-brand-lime hover:text-brand-dark"
                   href={primaryHref}
                 >
-                  {currentUser ? 'Start evaluation' : 'Create account'}
+                  {primaryLabel}
                 </Link>
                 <Link
                   className="btn-secondary border-white/30 bg-white/10 text-white hover:bg-white/15 hover:text-white"
                   href={secondaryHref}
                 >
-                  {currentUser ? 'Open workspace' : 'Sign in'}
+                  {secondaryLabel}
                 </Link>
               </div>
+              {publicPreviewMode ? (
+                <p className="max-w-3xl text-sm leading-7 text-white/75">
+                  This Space hosts the public website preview. Authenticated founder and reviewer
+                  workflows stay on the full stack deployment.
+                </p>
+              ) : null}
             </div>
 
             <div className="card-surface relative overflow-hidden border-white/15 bg-white/10 p-8 text-white shadow-[0_24px_80px_-48px_rgba(0,0,0,0.45)]">
@@ -281,7 +307,11 @@ export default async function Page() {
                 className="btn-primary bg-brand-lime text-brand-dark hover:bg-white"
                 href={primaryHref}
               >
-                {currentUser ? 'Create a new evaluation' : 'Start with an account'}
+                {publicPreviewMode
+                  ? 'Review the public method'
+                  : currentUser
+                    ? 'Create a new evaluation'
+                    : 'Start with an account'}
               </Link>
             </div>
           </div>

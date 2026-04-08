@@ -23,6 +23,7 @@ web application with:
 - persisted CSV and PDF export artifacts backed by object storage
 - async worker-driven PDF rendering and AI narratives
 - Docker-based local setup
+- Hugging Face Spaces public-website deployment path
 
 ## Product Scope
 
@@ -117,6 +118,26 @@ docker compose up --build
 ```
 
 The Compose stack starts:
+
+## Hugging Face Spaces
+
+The repo also includes a Hugging Face Spaces deployment path for the public
+website surface. This deployment mode is intentionally **public-site only**:
+
+- public marketing and methodology pages stay available
+- resources and SDG goal pages stay available
+- founder workspace, partner console, auth, and internal render routes are disabled
+- iframe-safe headers are enabled for the Space host
+
+Publish the Space bundle with:
+
+```powershell
+npm run hf:space:publish -- ChristopherJKoen/zeeus-ultimate-site
+```
+
+The publisher script builds a staged bundle in `.hf-space-build`, creates a
+Docker Space if needed, and uploads the current repo snapshot with the Space
+overlay files from `deploy/huggingface-space`.
 
 - `db` on port `5432`
 - `api` on port `4000`

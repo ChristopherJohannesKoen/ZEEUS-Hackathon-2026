@@ -35,6 +35,8 @@ import { cookies } from 'next/headers';
 import { unstable_noStore as noStore } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { ApiRequestError, toApiError, unwrapContractResponse } from './api-error';
+import { isPublicSpaceMode } from './runtime-mode';
+import { getSpaceSdgGoal, spacePublicSiteContent } from './space-public-content';
 
 const apiOrigin = process.env.API_ORIGIN ?? 'http://localhost:4000';
 const sessionCookieName = process.env.SESSION_COOKIE_NAME ?? 'zeeus_assessment_session';
@@ -81,6 +83,10 @@ async function protectedServerRequest<T>(
   operation: () => Promise<{ status: number; body: unknown; headers: Headers }>,
   expectedStatuses: readonly number[]
 ) {
+  if (isPublicSpaceMode) {
+    redirect('/');
+  }
+
   try {
     return await executeServerRequest<T>(operation, expectedStatuses);
   } catch (error) {
@@ -93,6 +99,10 @@ async function protectedServerRequest<T>(
 }
 
 export async function getCurrentUser() {
+  if (isPublicSpaceMode) {
+    return undefined;
+  }
+
   try {
     const response = await executeServerRequest<AuthResponse>(() => serverClient.auth.me(), [200]);
     return response.user;
@@ -317,6 +327,10 @@ export function getProgram(programId: string) {
 }
 
 export function getPublicSiteContent() {
+  if (isPublicSpaceMode) {
+    return Promise.resolve(spacePublicSiteContent);
+  }
+
   return executeServerRequest<PublicSiteContent>(() => serverClient.content.site(), [200]);
 }
 
@@ -328,6 +342,21 @@ export function getEditorialOverview() {
 }
 
 export function getSdgGoal(goalNumber: number) {
+  if (isPublicSpaceMode) {
+    const goal = getSpaceSdgGoal(goalNumber);
+
+    if (!goal) {
+      throw new ApiRequestError(
+        'SDG goal not available in the public preview.',
+        404,
+        [],
+        undefined
+      );
+    }
+
+    return Promise.resolve(goal);
+  }
+
   return executeServerRequest<SdgGoalDetail>(
     () =>
       serverClient.content.sdgGoal({

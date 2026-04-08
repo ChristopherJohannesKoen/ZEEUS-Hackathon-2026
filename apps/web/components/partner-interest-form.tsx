@@ -1,10 +1,13 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, useTransition } from 'react';
-import { Button, Card, Field, Input, Textarea } from '@packages/ui';
+import { Button, Card, Field, Input, Textarea, buttonClassName } from '@packages/ui';
 import { submitPartnerInterest } from '../lib/client-api';
+import { isPublicSpaceMode } from '../lib/runtime-mode';
 
 export function PartnerInterestForm() {
+  const publicSpaceMode = isPublicSpaceMode;
   const [isPending, startTransition] = useTransition();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -15,6 +18,29 @@ export function PartnerInterestForm() {
     websiteUrl: '',
     message: ''
   });
+
+  if (publicSpaceMode) {
+    return (
+      <Card className="border-surface-border">
+        <h2 className="text-2xl font-black text-slate-950">Hosted partner intake</h2>
+        <p className="mt-3 text-sm leading-7 text-slate-600">
+          This Hugging Face deployment runs the public website preview only. Partner-interest
+          submissions are disabled here so the Space stays stateless and public-safe.
+        </p>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link
+            className={buttonClassName({ className: 'bg-brand hover:bg-brand-dark' })}
+            href="/contact"
+          >
+            Open contact guidance
+          </Link>
+          <Link className={buttonClassName({ variant: 'secondary' })} href="/resources">
+            View resources
+          </Link>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <Card className="border-surface-border">

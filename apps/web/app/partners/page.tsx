@@ -2,11 +2,13 @@ import Link from 'next/link';
 import { Card, buttonClassName } from '@packages/ui';
 import { MarketingShell } from '../../components/marketing-shell';
 import { PartnerInterestForm } from '../../components/partner-interest-form';
+import { isPublicSpaceMode } from '../../lib/runtime-mode';
 import { getCurrentUser, getPublicSiteContent } from '../../lib/server-api';
 
 export default async function PartnersPage() {
   const [currentUser, content] = await Promise.all([getCurrentUser(), getPublicSiteContent()]);
   const article = content.articles.find((item) => item.slug === 'partner-programs');
+  const publicPreviewMode = isPublicSpaceMode;
 
   return (
     <MarketingShell
@@ -24,9 +26,13 @@ export default async function PartnersPage() {
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
               className={buttonClassName({ className: 'bg-brand hover:bg-brand-dark' })}
-              href={currentUser ? '/app/programs' : '/login'}
+              href={publicPreviewMode ? '/contact' : currentUser ? '/app/programs' : '/login'}
             >
-              {currentUser ? 'Open program console' : 'Sign in to program console'}
+              {publicPreviewMode
+                ? 'Public preview deployment'
+                : currentUser
+                  ? 'Open program console'
+                  : 'Sign in to program console'}
             </Link>
             <Link className={buttonClassName({ variant: 'secondary' })} href="/contact">
               Contact support

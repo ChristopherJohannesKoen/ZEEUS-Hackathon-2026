@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { IBM_Plex_Sans, Space_Grotesk } from 'next/font/google';
 import { connection } from 'next/server';
+import { resolveSiteOrigin } from '../lib/runtime-mode';
 import './globals.css';
 
 const bodyFont = IBM_Plex_Sans({
@@ -16,7 +17,7 @@ const displayFont = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_ORIGIN ?? 'http://localhost:3000'),
+  metadataBase: new URL(resolveSiteOrigin()),
   title: {
     default: 'ZEEUS Sustainability by Design',
     template: '%s | ZEEUS'

@@ -1,9 +1,11 @@
 import Link from 'next/link';
 import { buttonClassName } from '@packages/ui';
 import type { SessionUser } from '@packages/shared';
+import { isPublicSpaceMode } from '../lib/runtime-mode';
 import { ZeeusLogo } from './zeeus-logo';
 
 export function SiteHeader({ currentUser }: { currentUser?: SessionUser }) {
+  const publicPreviewMode = isPublicSpaceMode;
   const publicLinks = [
     { href: '/how-it-works', label: 'How it works' },
     { href: '/methodology', label: 'Methodology' },
@@ -30,10 +32,10 @@ export function SiteHeader({ currentUser }: { currentUser?: SessionUser }) {
             ))}
           </div>
           <Link
-            href="/app"
+            href={publicPreviewMode ? '/partners' : '/app'}
             className="hidden text-sm font-medium text-slate-600 transition hover:text-brand-dark md:inline-flex"
           >
-            Workspace
+            {publicPreviewMode ? 'Programs' : 'Workspace'}
           </Link>
           {currentUser ? (
             <Link
@@ -42,6 +44,24 @@ export function SiteHeader({ currentUser }: { currentUser?: SessionUser }) {
             >
               {currentUser.name}
             </Link>
+          ) : publicPreviewMode ? (
+            <>
+              <Link
+                className={buttonClassName({
+                  variant: 'ghost',
+                  className: 'text-slate-700 hover:bg-surface-muted'
+                })}
+                href="/resources"
+              >
+                Resources
+              </Link>
+              <Link
+                className={buttonClassName({ className: 'bg-brand hover:bg-brand-dark' })}
+                href="/partners"
+              >
+                Public preview
+              </Link>
+            </>
           ) : (
             <>
               <Link

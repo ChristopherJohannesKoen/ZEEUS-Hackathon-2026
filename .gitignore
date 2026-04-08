@@ -12,6 +12,7 @@ coverage
 .prisma
 playwright-report
 test-results
+.hf-space-build
 apps/web/tsconfig.tsbuildinfo
 *.tsbuildinfo
 server/

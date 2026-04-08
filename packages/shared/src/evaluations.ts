@@ -101,12 +101,7 @@ export const EvaluationNarrativeKindSchema = z.enum([
 ]);
 export type EvaluationNarrativeKind = z.infer<typeof EvaluationNarrativeKindSchema>;
 
-export const EvaluationNarrativeStatusSchema = z.enum([
-  'pending',
-  'processing',
-  'ready',
-  'failed'
-]);
+export const EvaluationNarrativeStatusSchema = z.enum(['pending', 'processing', 'ready', 'failed']);
 export type EvaluationNarrativeStatus = z.infer<typeof EvaluationNarrativeStatusSchema>;
 
 export const ScoringVersionInfoSchema = z.object({
@@ -402,7 +397,9 @@ export type EvaluationNarrativeListResponse = z.infer<typeof EvaluationNarrative
 export const CreateEvaluationNarrativePayloadSchema = z.object({
   kind: EvaluationNarrativeKindSchema
 });
-export type CreateEvaluationNarrativePayload = z.infer<typeof CreateEvaluationNarrativePayloadSchema>;
+export type CreateEvaluationNarrativePayload = z.infer<
+  typeof CreateEvaluationNarrativePayloadSchema
+>;
 
 export const EvaluationRecommendationActionStateSchema = z.object({
   recommendationId: z.string(),

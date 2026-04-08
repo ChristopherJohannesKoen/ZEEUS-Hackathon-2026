@@ -6,7 +6,11 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 import { chromium, type Browser } from 'playwright';
-import { ReportResponseSchema, type EvaluationNarrativeKind, type ReportResponse } from '@packages/shared';
+import {
+  ReportResponseSchema,
+  type EvaluationNarrativeKind,
+  type ReportResponse
+} from '@packages/shared';
 import { z } from 'zod';
 
 const queueName = 'zeeus-evaluation-jobs';
@@ -65,7 +69,11 @@ class ArtifactStorage {
 
   buildStorageKey(checksumSha256: string, filename: string) {
     const extension = path.extname(filename);
-    return path.posix.join('artifacts', checksumSha256.slice(0, 2), `${checksumSha256}${extension}`);
+    return path.posix.join(
+      'artifacts',
+      checksumSha256.slice(0, 2),
+      `${checksumSha256}${extension}`
+    );
   }
 
   async writeObject(storageKey: string, content: Buffer, mimeType: string) {
@@ -196,11 +204,7 @@ function buildCsvReport(report: ReportResponse) {
       `${opportunity.opportunityCode}.likelihood`,
       opportunity.likelihood
     );
-    pushSection(
-      'stage2_opportunity',
-      `${opportunity.opportunityCode}.impact`,
-      opportunity.impact
-    );
+    pushSection('stage2_opportunity', `${opportunity.opportunityCode}.impact`, opportunity.impact);
     pushSection(
       'stage2_opportunity',
       `${opportunity.opportunityCode}.ratingScore`,
@@ -318,7 +322,12 @@ async function renderPdf(evaluationId: string, revisionNumber: number) {
   }
 }
 
-async function completeArtifact(artifactId: string, content: Buffer, filename: string, mimeType: string) {
+async function completeArtifact(
+  artifactId: string,
+  content: Buffer,
+  filename: string,
+  mimeType: string
+) {
   const checksumSha256 = createHash('sha256').update(content).digest('hex');
   const storageKey = storage.buildStorageKey(checksumSha256, filename);
   await storage.writeObject(storageKey, content, mimeType);

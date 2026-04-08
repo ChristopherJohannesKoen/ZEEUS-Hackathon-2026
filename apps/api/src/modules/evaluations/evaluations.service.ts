@@ -1026,8 +1026,16 @@ export class EvaluationsService {
     }
 
     const [leftReport, rightReport] = await Promise.all([
-      this.hydrateRevisionReport(leftRevision.id, leftRevision.reportSnapshot, 'revision_artifacts'),
-      this.hydrateRevisionReport(rightRevision.id, rightRevision.reportSnapshot, 'revision_artifacts')
+      this.hydrateRevisionReport(
+        leftRevision.id,
+        leftRevision.reportSnapshot,
+        'revision_artifacts'
+      ),
+      this.hydrateRevisionReport(
+        rightRevision.id,
+        rightRevision.reportSnapshot,
+        'revision_artifacts'
+      )
     ]);
 
     return {
@@ -1118,7 +1126,11 @@ export class EvaluationsService {
     }
 
     await this.processArtifactInline(pendingArtifact.id);
-    const readyArtifact = await this.getOwnedArtifactRecord(evaluationId, pendingArtifact.id, currentUser.id);
+    const readyArtifact = await this.getOwnedArtifactRecord(
+      evaluationId,
+      pendingArtifact.id,
+      currentUser.id
+    );
     return this.serializeArtifactSummary(readyArtifact);
   }
 
@@ -1335,7 +1347,9 @@ export class EvaluationsService {
     const targetRevisionNumber = revisionNumber ?? evaluation.currentRevisionNumber;
 
     if (!targetRevisionNumber) {
-      throw new NotFoundException('Benchmark data is not available until the first revision exists.');
+      throw new NotFoundException(
+        'Benchmark data is not available until the first revision exists.'
+      );
     }
 
     const revisions = await this.prismaService.evaluationRevision.findMany({
@@ -1361,9 +1375,11 @@ export class EvaluationsService {
 
     const reports = await Promise.all(
       revisions.map(
-        async (
-          revision: { id: string; revisionNumber: number; reportSnapshot: Prisma.JsonValue }
-        ): Promise<{ revisionNumber: number; report: ReportResponse }> => ({
+        async (revision: {
+          id: string;
+          revisionNumber: number;
+          reportSnapshot: Prisma.JsonValue;
+        }): Promise<{ revisionNumber: number; report: ReportResponse }> => ({
           revisionNumber: revision.revisionNumber,
           report: await this.hydrateRevisionReport(revision.id, revision.reportSnapshot)
         })
@@ -1430,9 +1446,9 @@ export class EvaluationsService {
         reference: reference.riskOverall,
         deltaFromPrevious: previous
           ? Number(
-              (current.report.dashboard.riskOverall - previous.report.dashboard.riskOverall).toFixed(
-                2
-              )
+              (
+                current.report.dashboard.riskOverall - previous.report.dashboard.riskOverall
+              ).toFixed(2)
             )
           : null,
         deltaFromReference: Number(
@@ -1794,7 +1810,10 @@ export class EvaluationsService {
       return this.buildOutputsFromState(evaluation).report;
     }
 
-    const report = await this.hydrateRevisionReport(evaluation.currentRevisionId, revision.reportSnapshot);
+    const report = await this.hydrateRevisionReport(
+      evaluation.currentRevisionId,
+      revision.reportSnapshot
+    );
     return {
       ...report,
       evaluation: {
@@ -2051,7 +2070,9 @@ export class EvaluationsService {
     };
   }
 
-  private serializeNarrativeSummary(narrative: EvaluationNarrativeRecord): EvaluationNarrativeSummary {
+  private serializeNarrativeSummary(
+    narrative: EvaluationNarrativeRecord
+  ): EvaluationNarrativeSummary {
     return {
       id: narrative.id,
       evaluationId: narrative.evaluationId,
@@ -2132,7 +2153,9 @@ export class EvaluationsService {
 
     if (risk && risk.deltaFromReference !== null && risk.deltaFromReference !== undefined) {
       if (risk.deltaFromReference > 0) {
-        takeaways.push('Outside-in risk remains above the seeded reference profile for this stage and NACE division.');
+        takeaways.push(
+          'Outside-in risk remains above the seeded reference profile for this stage and NACE division.'
+        );
       } else {
         takeaways.push('Outside-in risk is at or below the seeded reference profile.');
       }
@@ -2151,7 +2174,9 @@ export class EvaluationsService {
     }
 
     if (topicShifts.some((item) => item.referenceBand === 'high_priority')) {
-      takeaways.push('Reference-high-priority topics should be monitored even when the current score has not crossed the threshold yet.');
+      takeaways.push(
+        'Reference-high-priority topics should be monitored even when the current score has not crossed the threshold yet.'
+      );
     }
 
     return takeaways.slice(0, 4);
@@ -2186,13 +2211,19 @@ export class EvaluationsService {
     await this.markArtifactProcessing(artifactId);
 
     try {
-      const report = await this.hydrateRevisionReport(artifact.revisionId, artifact.revision.reportSnapshot);
+      const report = await this.hydrateRevisionReport(
+        artifact.revisionId,
+        artifact.revision.reportSnapshot
+      );
       const content =
         artifact.kind === 'csv'
           ? Buffer.from(this.buildCsvReport(report), 'utf8')
           : this.buildPdfReport(report);
       const checksumSha256 = createHash('sha256').update(content).digest('hex');
-      const storageKey = this.evaluationStorageService.buildStorageKey(checksumSha256, artifact.filename);
+      const storageKey = this.evaluationStorageService.buildStorageKey(
+        checksumSha256,
+        artifact.filename
+      );
       await this.evaluationStorageService.writeObject(storageKey, content, artifact.mimeType);
       await this.markArtifactReady(artifactId, {
         storageKey,
@@ -2334,7 +2365,10 @@ export class EvaluationsService {
       kind: artifact.kind,
       filename: artifact.filename,
       mimeType: artifact.mimeType,
-      report: await this.hydrateRevisionReport(artifact.revisionId, artifact.revision.reportSnapshot)
+      report: await this.hydrateRevisionReport(
+        artifact.revisionId,
+        artifact.revision.reportSnapshot
+      )
     };
   }
 
@@ -2456,7 +2490,10 @@ export class EvaluationsService {
       revisionId: narrative.revisionId,
       revisionNumber: narrative.revision.revisionNumber,
       kind: narrative.kind,
-      report: await this.hydrateRevisionReport(narrative.revisionId, narrative.revision.reportSnapshot)
+      report: await this.hydrateRevisionReport(
+        narrative.revisionId,
+        narrative.revision.reportSnapshot
+      )
     };
   }
 
@@ -2565,28 +2602,30 @@ export class EvaluationsService {
             reportSnapshot: true
           }
         })
-      : await this.prismaService.evaluation.findUnique({
-          where: {
-            id: evaluationId
-          },
-          select: {
-            currentRevisionId: true
-          }
-        }).then(async (evaluation) => {
-          if (!evaluation?.currentRevisionId) {
-            return null;
-          }
-
-          return this.prismaService.evaluationRevision.findUnique({
+      : await this.prismaService.evaluation
+          .findUnique({
             where: {
-              id: evaluation.currentRevisionId
+              id: evaluationId
             },
             select: {
-              id: true,
-              reportSnapshot: true
+              currentRevisionId: true
             }
+          })
+          .then(async (evaluation) => {
+            if (!evaluation?.currentRevisionId) {
+              return null;
+            }
+
+            return this.prismaService.evaluationRevision.findUnique({
+              where: {
+                id: evaluation.currentRevisionId
+              },
+              select: {
+                id: true,
+                reportSnapshot: true
+              }
+            });
           });
-        });
 
     if (!revision) {
       throw new NotFoundException('Render revision not found.');

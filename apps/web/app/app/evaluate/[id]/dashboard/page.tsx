@@ -280,7 +280,10 @@ export default async function DashboardPage({ params }: { params: Params }) {
           </div>
           <div className="mt-5 grid gap-3">
             {benchmarks.takeaways.map((takeaway) => (
-              <div className="rounded-[28px] bg-[#f4f9ee] px-5 py-4 text-sm leading-7 text-slate-700" key={takeaway}>
+              <div
+                className="rounded-[28px] bg-[#f4f9ee] px-5 py-4 text-sm leading-7 text-slate-700"
+                key={takeaway}
+              >
                 {takeaway}
               </div>
             ))}
@@ -320,10 +323,7 @@ export default async function DashboardPage({ params }: { params: Params }) {
             </div>
           </div>
           <div className="mt-6">
-            <NarrativeActionsPanel
-              evaluationId={evaluation.id}
-              narratives={narratives.items}
-            />
+            <NarrativeActionsPanel evaluationId={evaluation.id} narratives={narratives.items} />
           </div>
         </Card>
       </div>

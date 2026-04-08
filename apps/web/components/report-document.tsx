@@ -58,9 +58,7 @@ export function ReportDocument({
 
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             <div className="rounded-[28px] bg-white/10 p-5">
-              <p className="text-xs uppercase tracking-[0.22em] text-[#d9ef9b]">
-                Financial total
-              </p>
+              <p className="text-xs uppercase tracking-[0.22em] text-[#d9ef9b]">Financial total</p>
               <p className="mt-3 text-4xl font-black">{report.dashboard.financialTotal}/12</p>
             </div>
             <div className="rounded-[28px] bg-white/10 p-5">

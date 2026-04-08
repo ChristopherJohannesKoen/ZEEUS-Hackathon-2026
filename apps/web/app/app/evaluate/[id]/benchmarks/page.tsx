@@ -113,7 +113,8 @@ export default async function EvaluationBenchmarksPage({
                     <Badge tone={priorityTone(shift.currentBand)}>{shift.currentBand}</Badge>
                   </div>
                   <p className="mt-3 text-sm text-slate-600">
-                    Previous: {shift.previousBand ?? 'n/a'} / Reference: {shift.referenceBand ?? 'n/a'}
+                    Previous: {shift.previousBand ?? 'n/a'} / Reference:{' '}
+                    {shift.referenceBand ?? 'n/a'}
                   </p>
                 </div>
               ))}
@@ -124,7 +125,10 @@ export default async function EvaluationBenchmarksPage({
             <h2 className="text-2xl font-black text-slate-950">Benchmark takeaways</h2>
             <div className="mt-5 grid gap-3">
               {benchmarks.takeaways.map((takeaway) => (
-                <div className="rounded-[28px] bg-[#f4f9ee] px-5 py-4 text-sm leading-7 text-slate-700" key={takeaway}>
+                <div
+                  className="rounded-[28px] bg-[#f4f9ee] px-5 py-4 text-sm leading-7 text-slate-700"
+                  key={takeaway}
+                >
                   {takeaway}
                 </div>
               ))}

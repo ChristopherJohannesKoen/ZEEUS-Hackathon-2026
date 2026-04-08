@@ -477,14 +477,14 @@ function extractNaceCode(naceDivision: string) {
 }
 
 export function getBenchmarkReferenceProfile(context: EvaluationContextPayload) {
-  const stageBaseline = benchmarkBaselines.stageBaselines[
-    context.currentStage as keyof BenchmarkBaselines['stageBaselines']
-  ];
+  const stageBaseline =
+    benchmarkBaselines.stageBaselines[
+      context.currentStage as keyof BenchmarkBaselines['stageBaselines']
+    ];
   const naceCode = extractNaceCode(context.naceDivision);
   const naceAdjustment =
-    benchmarkBaselines.naceAdjustments[
-      naceCode as keyof BenchmarkBaselines['naceAdjustments']
-    ] ?? benchmarkBaselines.naceAdjustments.default;
+    benchmarkBaselines.naceAdjustments[naceCode as keyof BenchmarkBaselines['naceAdjustments']] ??
+    benchmarkBaselines.naceAdjustments.default;
 
   const topicBands = Object.fromEntries(
     Object.entries(stageBaseline.topicBands).map(([topicCode, priorityBand]) => [
@@ -496,14 +496,20 @@ export function getBenchmarkReferenceProfile(context: EvaluationContextPayload) 
   for (const [topicCode, band] of Object.entries(naceAdjustment.topicBands)) {
     const currentBand = topicBands[topicCode as TopicCode];
 
-    if (!currentBand || benchmarkPriorityOrder[band as PriorityBand] > benchmarkPriorityOrder[currentBand]) {
+    if (
+      !currentBand ||
+      benchmarkPriorityOrder[band as PriorityBand] > benchmarkPriorityOrder[currentBand]
+    ) {
       topicBands[topicCode as TopicCode] = band as PriorityBand;
     }
   }
 
   return {
     label: `${stageBaseline.label} / ${naceAdjustment.label}`,
-    financialTotal: Math.max(0, Math.min(12, stageBaseline.financialTotal + naceAdjustment.financialDelta)),
+    financialTotal: Math.max(
+      0,
+      Math.min(12, stageBaseline.financialTotal + naceAdjustment.financialDelta)
+    ),
     riskOverall: Number((stageBaseline.riskOverall + naceAdjustment.riskDelta).toFixed(2)),
     opportunityOverall: Number(
       (stageBaseline.opportunityOverall + naceAdjustment.opportunityDelta).toFixed(2)

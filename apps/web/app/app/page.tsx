@@ -32,7 +32,7 @@ export default async function DashboardPage() {
             </h1>
             <p className="max-w-2xl text-sm leading-7 text-white/80">
               Continue saved assessments, review materiality outputs, and move directly into the
-              dashboard and report flow built for the hackathon submission.
+              dashboard and report flow for startup sustainability guidance and export.
             </p>
           </div>
           <div className="mt-6 flex flex-wrap gap-3">

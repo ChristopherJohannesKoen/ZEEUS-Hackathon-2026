@@ -6,22 +6,47 @@ import { ZeeusLogo } from './zeeus-logo';
 
 export function SiteHeader({ currentUser }: { currentUser?: SessionUser }) {
   const publicPreviewMode = isPublicSpaceMode;
-  const publicLinks = [
-    { href: '/how-it-works', label: 'How it works' },
-    { href: '/methodology', label: 'Methodology' },
+  const navLinks = [
+    { href: '/', label: 'Home' },
+    { href: '/#how-it-works', label: 'How it works' },
+    { href: '/#what-you-get', label: 'What you get' },
+    { href: '/#about-zeeus', label: 'About ZEEUS' },
     { href: '/faq', label: 'FAQ' },
-    { href: '/partners', label: 'Partners' }
+    { href: '/contact', label: 'Contact' }
   ];
+  const primaryHref = publicPreviewMode
+    ? '/how-it-works'
+    : currentUser
+      ? '/app/evaluate/start'
+      : '/signup';
+  const primaryLabel = publicPreviewMode ? 'Explore workflow' : 'Start evaluation';
 
   return (
-    <header className="sticky top-0 z-30 border-b border-surface-border/80 bg-white/90 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
+    <header className="sticky top-0 z-40 border-b border-surface-border/80 bg-white/95 backdrop-blur">
+      <div className="border-b border-surface-border/80 bg-brand-dark text-white">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-6 py-2 text-[11px] font-medium tracking-[0.08em] text-white/78">
+          <p>Developed by IfaS | Trier University of Applied Sciences under the ZEEUS project.</p>
+          <div className="hidden items-center gap-4 md:flex">
+            <Link className="transition hover:text-white" href="/#about-zeeus">
+              About ZEEUS
+            </Link>
+            <Link className="transition hover:text-white" href="/contact">
+              Contact
+            </Link>
+            <Link className="transition hover:text-white" href="/resources">
+              Resources
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-4">
         <Link href="/" className="shrink-0">
-          <ZeeusLogo />
+          <ZeeusLogo priority />
         </Link>
-        <nav className="flex items-center gap-4">
-          <div className="hidden items-center gap-4 lg:flex">
-            {publicLinks.map((item) => (
+        <nav className="flex items-center gap-3">
+          <div className="hidden items-center gap-5 xl:flex">
+            {navLinks.map((item) => (
               <Link
                 className="text-sm font-medium text-slate-600 transition hover:text-brand-dark"
                 href={item.href}
@@ -31,18 +56,12 @@ export function SiteHeader({ currentUser }: { currentUser?: SessionUser }) {
               </Link>
             ))}
           </div>
-          <Link
-            href={publicPreviewMode ? '/partners' : '/app'}
-            className="hidden text-sm font-medium text-slate-600 transition hover:text-brand-dark md:inline-flex"
-          >
-            {publicPreviewMode ? 'Programs' : 'Workspace'}
-          </Link>
           {currentUser ? (
             <Link
               className={buttonClassName({ className: 'bg-brand hover:bg-brand-dark' })}
               href="/app"
             >
-              {currentUser.name}
+              Open workspace
             </Link>
           ) : publicPreviewMode ? (
             <>
@@ -57,9 +76,9 @@ export function SiteHeader({ currentUser }: { currentUser?: SessionUser }) {
               </Link>
               <Link
                 className={buttonClassName({ className: 'bg-brand hover:bg-brand-dark' })}
-                href="/partners"
+                href={primaryHref}
               >
-                Public preview
+                {primaryLabel}
               </Link>
             </>
           ) : (
@@ -75,9 +94,9 @@ export function SiteHeader({ currentUser }: { currentUser?: SessionUser }) {
               </Link>
               <Link
                 className={buttonClassName({ className: 'bg-brand hover:bg-brand-dark' })}
-                href="/signup"
+                href={primaryHref}
               >
-                Create account
+                {primaryLabel}
               </Link>
             </>
           )}

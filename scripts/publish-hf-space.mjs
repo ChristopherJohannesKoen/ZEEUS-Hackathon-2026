@@ -79,6 +79,10 @@ for (const entry of topLevelEntries) {
 await cp(path.join(overlayDir, 'README.md'), path.join(stageDir, 'README.md'));
 await cp(path.join(overlayDir, 'Dockerfile'), path.join(stageDir, 'Dockerfile'));
 await cp(path.join(overlayDir, '.dockerignore'), path.join(stageDir, '.dockerignore'));
+await cp(
+  path.join(overlayDir, 'space-entrypoint.sh'),
+  path.join(stageDir, 'deploy', 'huggingface-space', 'space-entrypoint.sh')
+);
 
 console.log(`Prepared Hugging Face Space bundle in ${stageDir}`);
 
@@ -104,7 +108,7 @@ run('hf', [
   '--repo-type',
   'space',
   '--commit-message',
-  'Deploy ZEEUS public website preview'
+  'Deploy ZEEUS full-stack Space demo'
 ]);
 
 console.log(`Published https://huggingface.co/spaces/${repoId}`);

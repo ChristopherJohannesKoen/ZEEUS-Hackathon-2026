@@ -31,6 +31,7 @@ const openAiBaseUrl = (process.env.OPENAI_BASE_URL ?? 'https://api.openai.com/v1
 );
 const openAiModel = process.env.OPENAI_MODEL?.trim() || 'gpt-5.4-mini';
 const narrativePromptVersion = '2026.04.ready-software.3';
+const builtinNarrativePromptVersion = `${narrativePromptVersion}+builtin.1`;
 
 const artifactJobSchema = z.object({
   id: z.string(),
@@ -306,6 +307,91 @@ function buildNarrativeSourceReferences(
   return references;
 }
 
+function buildBuiltinNarrative(
+  kind: EvaluationNarrativeKind,
+  report: ReportResponse,
+  guidanceArticles: Array<{
+    id: string;
+    slug: string;
+    title: string;
+    summary: string;
+    category: string;
+  }>
+) {
+  const topTopic = report.dashboard.materialAlerts[0];
+  const topRisk = report.dashboard.topRisks[0];
+  const topOpportunity = report.dashboard.topOpportunities[0];
+  const guidanceTitles = guidanceArticles.slice(0, 2).map((article) => article.title);
+  const guidanceLabel =
+    guidanceTitles.length > 0 ? ` Useful background: ${guidanceTitles.join(' and ')}.` : '';
+  const evidenceCounts = report.evidenceSummary.items.reduce(
+    (counts, item) => {
+      counts[item.evidenceBasis] += 1;
+      return counts;
+    },
+    { measured: 0, estimated: 0, assumed: 0 }
+  );
+
+  let content: string;
+
+  switch (kind) {
+    case 'executive_summary':
+      content = [
+        `${report.evaluation.name} currently shows a financial total of ${report.dashboard.financialTotal}/12, an overall risk score of ${report.dashboard.riskOverall}, an overall opportunity score of ${report.dashboard.opportunityOverall}, and a ${report.dashboard.confidenceBand} confidence band. This gives the team an early view of where resilience is forming, where exposure is building, and where sustainability may strengthen future positioning.`,
+        topTopic
+          ? `${topTopic.title} is the strongest inside-out materiality signal at this stage, with a ${topTopic.priorityBand.replace('_', ' ')} band and a score of ${topTopic.score}.`
+          : 'No Stage I topic has crossed the materiality threshold yet, so the current result should be treated as exploratory and assumption-led.',
+        topRisk || topOpportunity
+          ? `${topRisk ? `${topRisk.title} is the strongest outside-in risk signal` : 'No outside-in risk is above neutral yet'}, while ${topOpportunity ? `${topOpportunity.title} is the strongest opportunity signal` : 'no outside-in opportunity is above neutral yet'}. The best next move is to improve evidence around the top topic, top risk, and top opportunity before treating any result as stable.${guidanceLabel}`
+          : `The current profile remains exploratory, so the best next step is to improve evidence quality before treating any result as stable.${guidanceLabel}`
+      ].join('\n\n');
+      break;
+    case 'material_topics':
+      content = [
+        `${report.evaluation.name} currently has ${report.impactSummary.relevantTopics.length} relevant material topics and ${report.impactSummary.highPriorityTopics.length} high-priority topics. The practical goal now is to narrow attention to the few issues that genuinely deserve founder time.`,
+        topTopic
+          ? `${topTopic.title} is the leading Stage I topic. Its current band is ${topTopic.priorityBand.replace('_', ' ')}, which means it should guide evidence collection, design trade-offs, and how the venture explains sustainability relevance to partners or funders.`
+          : 'No topic has crossed the materiality threshold yet, which usually means either the venture is still very early or the underlying assumptions need sharpening.',
+        report.dashboard.sensitivityHints[0]
+          ? `${report.dashboard.sensitivityHints[0].message} The next evidence package should focus on the inputs most likely to move that topic between bands.${guidanceLabel}`
+          : `The next evidence package should focus on turning the highest-scoring assumptions into measured or better-supported estimates.${guidanceLabel}`
+      ].join('\n\n');
+      break;
+    case 'risks_opportunities':
+      content = [
+        `${report.evaluation.name} currently combines an overall risk score of ${report.dashboard.riskOverall} with an overall opportunity score of ${report.dashboard.opportunityOverall}. This outside-in view helps the team see how sustainability-related conditions could affect execution, resilience, and market fit.`,
+        topRisk
+          ? `${topRisk.title} is the strongest current risk signal. It should be treated as a planning input: clarify exposure, identify assumptions that could fail, and decide what evidence would reduce uncertainty fastest.`
+          : 'No outside-in risk is currently above neutral, which means the saved answers do not yet point to a concentrated external sustainability threat.',
+        topOpportunity
+          ? `${topOpportunity.title} is the strongest opportunity signal. It may represent a differentiation path if the team can back it with operational evidence, customer relevance, and a realistic delivery plan.${guidanceLabel}`
+          : `No outside-in opportunity is above neutral yet, so the current result should be treated as an early baseline rather than a final positioning story.${guidanceLabel}`
+      ].join('\n\n');
+      break;
+    case 'evidence_guidance':
+    default:
+      content = [
+        `${report.evaluation.name} currently has ${report.evidenceSummary.totalCount} linked evidence items, with ${evidenceCounts.measured} measured, ${evidenceCounts.estimated} estimated, and ${evidenceCounts.assumed} assumed entries. Evidence quality determines whether the current outputs are only directional or ready to support stronger decisions.`,
+        report.evidenceSummary.items[0]
+          ? `Start by reviewing the strongest current evidence item, ${report.evidenceSummary.items[0].title}, then confirm that the highest-priority topic, strongest risk, and strongest opportunity each have a clear owner, source date, and traceable basis.`
+          : 'No evidence items are linked yet, so the first step is to add at least one concrete source for the highest-priority topic, strongest risk, and strongest opportunity.',
+        `Prioritize measured inputs where they are available, use estimates transparently where they are not, and label assumptions clearly so they can be revisited in the next revision.${guidanceLabel}`
+      ].join('\n\n');
+      break;
+  }
+
+  return {
+    provider: 'builtin',
+    model: 'deterministic-template-v1',
+    promptVersion: builtinNarrativePromptVersion,
+    inputTokens: null,
+    outputTokens: null,
+    estimatedCostUsd: null,
+    content,
+    sourceReferences: buildNarrativeSourceReferences(kind, report, guidanceArticles)
+  };
+}
+
 async function generateOpenAiNarrative(
   kind: EvaluationNarrativeKind,
   report: ReportResponse,
@@ -369,6 +455,10 @@ async function generateNarrative(
 ) {
   if (aiProvider !== 'openai') {
     throw new Error(`Unsupported AI provider: ${aiProvider}`);
+  }
+
+  if (!openAiApiKey) {
+    return buildBuiltinNarrative(kind, report, guidanceArticles);
   }
 
   return generateOpenAiNarrative(kind, report, guidanceArticles);

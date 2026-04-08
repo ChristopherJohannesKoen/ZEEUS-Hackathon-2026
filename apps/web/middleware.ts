@@ -6,8 +6,9 @@ const apiOrigin = process.env.API_ORIGIN ?? 'http://localhost:4000';
 const cspReportUri = process.env.CSP_REPORT_URI?.trim();
 const publicSpaceMode =
   readBooleanEnv(process.env.NEXT_PUBLIC_HF_SPACE_PUBLIC_MODE) ||
-  readBooleanEnv(process.env.HF_SPACE_PUBLIC_MODE) ||
-  Boolean(process.env.SPACE_ID || process.env.SPACE_HOST);
+  readBooleanEnv(process.env.HF_SPACE_PUBLIC_MODE);
+const spaceHostedMode = Boolean(process.env.SPACE_ID || process.env.SPACE_HOST);
+const allowEmbedding = publicSpaceMode || spaceHostedMode;
 
 export function middleware(request: NextRequest) {
   if (publicSpaceMode) {
@@ -37,14 +38,14 @@ export function middleware(request: NextRequest) {
     apiOrigin,
     environment: process.env.NODE_ENV,
     nonce,
-    allowEmbedding: publicSpaceMode
+    allowEmbedding
   });
   const reportOnlyPolicy = readBooleanEnv(process.env.CSP_REPORT_ONLY)
     ? buildContentSecurityPolicy({
         apiOrigin,
         environment: process.env.NODE_ENV,
         nonce,
-        allowEmbedding: publicSpaceMode,
+        allowEmbedding,
         reportOnly: true,
         reportUri: cspReportUri
       })
@@ -63,7 +64,7 @@ export function middleware(request: NextRequest) {
   if (reportOnlyPolicy) {
     response.headers.set('Content-Security-Policy-Report-Only', reportOnlyPolicy);
   }
-  if (!publicSpaceMode) {
+  if (!allowEmbedding) {
     response.headers.set('X-Frame-Options', 'DENY');
   }
   response.headers.set('X-Content-Type-Options', 'nosniff');
@@ -74,11 +75,11 @@ export function middleware(request: NextRequest) {
   );
   response.headers.set(
     'Cross-Origin-Opener-Policy',
-    publicSpaceMode ? 'unsafe-none' : 'same-origin'
+    allowEmbedding ? 'unsafe-none' : 'same-origin'
   );
   response.headers.set(
     'Cross-Origin-Resource-Policy',
-    publicSpaceMode ? 'cross-origin' : 'same-origin'
+    allowEmbedding ? 'cross-origin' : 'same-origin'
   );
 
   if (process.env.NODE_ENV === 'production') {

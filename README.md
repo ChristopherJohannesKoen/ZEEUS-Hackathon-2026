@@ -23,7 +23,7 @@ web application with:
 - persisted CSV and PDF export artifacts backed by object storage
 - async worker-driven PDF rendering and AI narratives
 - Docker-based local setup
-- Hugging Face Spaces public-website deployment path
+- Hugging Face Spaces full-stack deployment path
 
 ## Product Scope
 
@@ -121,13 +121,27 @@ The Compose stack starts:
 
 ## Hugging Face Spaces
 
-The repo also includes a Hugging Face Spaces deployment path for the public
-website surface. This deployment mode is intentionally **public-site only**:
+The repo also includes a Hugging Face Spaces deployment profile that runs the
+current product slice as a single-container full-stack demo:
 
-- public marketing and methodology pages stay available
-- resources and SDG goal pages stay available
-- founder workspace, partner console, auth, and internal render routes are disabled
-- iframe-safe headers are enabled for the Space host
+- public marketing and methodology pages
+- signup, login, and saved founder workspaces
+- impact summary, SDG alignment, dashboard, evidence, scenarios, and reports
+- async CSV/PDF exports and narrative jobs
+- seeded organization, partner-program, submission, and reviewer workflows
+- iframe-safe headers remain enabled for the Space host without forcing preview mode
+
+The Space starts local PostgreSQL and Redis inside the container. Artifact files
+persist to the local filesystem and automatically use `/data` when persistent
+Space storage is available. If `OPENAI_API_KEY` is not configured, narrative
+requests fall back to the built-in deterministic explainer so the demo remains
+functional.
+
+Seeded demo accounts:
+
+- Owner: `owner@example.com` / `ChangeMe123!`
+- Admin: `admin@example.com` / `ChangeMe123!`
+- Member: `member@example.com` / `ChangeMe123!`
 
 Publish the Space bundle with:
 

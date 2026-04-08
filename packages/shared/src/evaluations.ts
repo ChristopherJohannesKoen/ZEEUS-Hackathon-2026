@@ -104,6 +104,26 @@ export type EvaluationNarrativeKind = z.infer<typeof EvaluationNarrativeKindSche
 export const EvaluationNarrativeStatusSchema = z.enum(['pending', 'processing', 'ready', 'failed']);
 export type EvaluationNarrativeStatus = z.infer<typeof EvaluationNarrativeStatusSchema>;
 
+export const EvaluationNarrativeSourceReferenceTypeSchema = z.enum([
+  'report_section',
+  'guidance_article',
+  'evidence_item'
+]);
+export type EvaluationNarrativeSourceReferenceType = z.infer<
+  typeof EvaluationNarrativeSourceReferenceTypeSchema
+>;
+
+export const EvaluationNarrativeSourceReferenceSchema = z.object({
+  type: EvaluationNarrativeSourceReferenceTypeSchema,
+  id: z.string().nullable().default(null),
+  label: z.string(),
+  href: z.string().nullable().default(null),
+  description: z.string().nullable().default(null)
+});
+export type EvaluationNarrativeSourceReference = z.infer<
+  typeof EvaluationNarrativeSourceReferenceSchema
+>;
+
 export const ScoringVersionInfoSchema = z.object({
   scoringVersion: z.string().min(1),
   catalogVersion: z.string().min(1)
@@ -385,6 +405,7 @@ export const EvaluationNarrativeSummarySchema = z.object({
   outputTokens: z.number().int().nonnegative().nullable().default(null),
   estimatedCostUsd: z.number().nonnegative().nullable().default(null),
   content: z.string().nullable().default(null),
+  sourceReferences: z.array(EvaluationNarrativeSourceReferenceSchema).default([]),
   requestedAt: z.string(),
   readyAt: z.string().nullable().default(null),
   failedAt: z.string().nullable().default(null),
@@ -540,11 +561,65 @@ export const DashboardResponseSchema = z.object({
 });
 export type DashboardResponse = z.infer<typeof DashboardResponseSchema>;
 
+export const ReportEvidenceItemSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  kind: z.enum(['file', 'link', 'note']),
+  evidenceBasis: EvidenceBasisSchema,
+  ownerName: z.string().nullable().default(null),
+  sourceDate: z.string().nullable().default(null),
+  sourceUrl: z.string().nullable().default(null),
+  linkedTopicCode: TopicCodeSchema.nullable().default(null),
+  fileName: z.string().nullable().default(null)
+});
+export type ReportEvidenceItem = z.infer<typeof ReportEvidenceItemSchema>;
+
+export const ReportEvidenceSummarySchema = z.object({
+  totalCount: z.number().int().min(0).default(0),
+  items: z.array(ReportEvidenceItemSchema).default([])
+});
+export type ReportEvidenceSummary = z.infer<typeof ReportEvidenceSummarySchema>;
+
+export const ReportProgramBrandingSchema = z.object({
+  primaryLabel: z.string(),
+  partnerLabel: z.string().nullable().default(null),
+  coBrandingLabel: z.string().nullable().default(null),
+  watermarkLabel: z.string().nullable().default(null)
+});
+export type ReportProgramBranding = z.infer<typeof ReportProgramBrandingSchema>;
+
+export const ReportSubmissionReviewStateSchema = z.object({
+  programId: z.string(),
+  programName: z.string(),
+  submissionStatus: z.enum([
+    'draft',
+    'submitted',
+    'in_review',
+    'changes_requested',
+    'approved',
+    'archived'
+  ]),
+  lastReviewedAt: z.string().nullable().default(null),
+  reviewerStatusSummary: z.array(
+    z.object({
+      status: z.enum(['pending', 'in_review', 'changes_requested', 'approved']),
+      count: z.number().int().min(0)
+    })
+  )
+});
+export type ReportSubmissionReviewState = z.infer<typeof ReportSubmissionReviewStateSchema>;
+
 export const ReportResponseSchema = z.object({
   evaluation: EvaluationDetailSchema,
   impactSummary: ImpactSummaryResponseSchema,
   sdgAlignment: SdgAlignmentResponseSchema,
-  dashboard: DashboardResponseSchema
+  dashboard: DashboardResponseSchema,
+  evidenceSummary: ReportEvidenceSummarySchema.default({
+    totalCount: 0,
+    items: []
+  }),
+  programBranding: ReportProgramBrandingSchema.nullable().default(null),
+  submissionReviewState: ReportSubmissionReviewStateSchema.nullable().default(null)
 });
 export type ReportResponse = z.infer<typeof ReportResponseSchema>;
 

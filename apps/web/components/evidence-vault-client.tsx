@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import type { EvidenceAssetSummary, TopicCode } from '@packages/shared';
 import { Button, Card, Field, Input, Select, Textarea } from '@packages/ui';
-import { createEvidenceAsset } from '../lib/client-api';
+import { createEvidenceAsset, uploadEvidenceFile } from '../lib/client-api';
 
 const topicOptions: TopicCode[] = ['E1', 'E2', 'E3', 'E4', 'E5', 'S1', 'S2', 'S3', 'S4', 'G1'];
 
@@ -18,6 +18,8 @@ export function EvidenceVaultClient({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [fileInputKey, setFileInputKey] = useState(0);
   const [formState, setFormState] = useState({
     kind: 'link',
     title: '',
@@ -45,17 +47,34 @@ export function EvidenceVaultClient({
             setErrorMessage(null);
             startTransition(async () => {
               try {
-                await createEvidenceAsset(evaluationId, {
-                  kind: formState.kind as 'file' | 'link' | 'note',
-                  title: formState.title,
-                  description: formState.description || null,
-                  sourceUrl: formState.sourceUrl || null,
-                  ownerName: formState.ownerName || null,
-                  sourceDate: formState.sourceDate || null,
-                  evidenceBasis: formState.evidenceBasis as 'measured' | 'estimated' | 'assumed',
-                  confidenceWeight: Number(formState.confidenceWeight),
-                  linkedTopicCode: (formState.linkedTopicCode || null) as TopicCode | null
-                });
+                if (formState.kind === 'file') {
+                  if (!selectedFile) {
+                    throw new Error('Choose a file before saving a file evidence item.');
+                  }
+
+                  const payload = new FormData();
+                  payload.set('file', selectedFile);
+                  payload.set('title', formState.title || selectedFile.name);
+                  payload.set('description', formState.description || '');
+                  payload.set('ownerName', formState.ownerName || '');
+                  payload.set('sourceDate', formState.sourceDate || '');
+                  payload.set('evidenceBasis', formState.evidenceBasis);
+                  payload.set('confidenceWeight', formState.confidenceWeight);
+                  payload.set('linkedTopicCode', formState.linkedTopicCode || '');
+                  await uploadEvidenceFile(evaluationId, payload);
+                } else {
+                  await createEvidenceAsset(evaluationId, {
+                    kind: formState.kind as 'file' | 'link' | 'note',
+                    title: formState.title,
+                    description: formState.description || null,
+                    sourceUrl: formState.sourceUrl || null,
+                    ownerName: formState.ownerName || null,
+                    sourceDate: formState.sourceDate || null,
+                    evidenceBasis: formState.evidenceBasis as 'measured' | 'estimated' | 'assumed',
+                    confidenceWeight: Number(formState.confidenceWeight),
+                    linkedTopicCode: (formState.linkedTopicCode || null) as TopicCode | null
+                  });
+                }
                 setFormState({
                   kind: 'link',
                   title: '',
@@ -67,6 +86,8 @@ export function EvidenceVaultClient({
                   confidenceWeight: '0.5',
                   linkedTopicCode: ''
                 });
+                setSelectedFile(null);
+                setFileInputKey((current) => current + 1);
                 router.refresh();
               } catch (error) {
                 setErrorMessage(
@@ -79,18 +100,38 @@ export function EvidenceVaultClient({
           <Field label="Evidence kind">
             <Select
               value={formState.kind}
-              onChange={(event) => setFormState((current) => ({ ...current, kind: event.target.value }))}
+              onChange={(event) =>
+                setFormState((current) => ({ ...current, kind: event.target.value }))
+              }
             >
               <option value="link">External link</option>
               <option value="note">Internal note</option>
-              <option value="file">File reference</option>
+              <option value="file">Binary upload</option>
             </Select>
           </Field>
+          {formState.kind === 'file' ? (
+            <Field label="File">
+              <Input
+                key={fileInputKey}
+                required
+                type="file"
+                onChange={(event) => {
+                  const nextFile = event.target.files?.[0] ?? null;
+                  setSelectedFile(nextFile);
+                  if (nextFile && !formState.title) {
+                    setFormState((current) => ({ ...current, title: nextFile.name }));
+                  }
+                }}
+              />
+            </Field>
+          ) : null}
           <Field label="Title">
             <Input
               required
               value={formState.title}
-              onChange={(event) => setFormState((current) => ({ ...current, title: event.target.value }))}
+              onChange={(event) =>
+                setFormState((current) => ({ ...current, title: event.target.value }))
+              }
             />
           </Field>
           <Field label="Description">
@@ -102,15 +143,19 @@ export function EvidenceVaultClient({
             />
           </Field>
           <div className="grid gap-4 md:grid-cols-2">
-            <Field label="Source URL">
-              <Input
-                placeholder="https://..."
-                value={formState.sourceUrl}
-                onChange={(event) =>
-                  setFormState((current) => ({ ...current, sourceUrl: event.target.value }))
-                }
-              />
-            </Field>
+            {formState.kind !== 'file' ? (
+              <Field label="Source URL">
+                <Input
+                  placeholder="https://..."
+                  value={formState.sourceUrl}
+                  onChange={(event) =>
+                    setFormState((current) => ({ ...current, sourceUrl: event.target.value }))
+                  }
+                />
+              </Field>
+            ) : (
+              <div />
+            )}
             <Field label="Owner">
               <Input
                 value={formState.ownerName}
@@ -210,12 +255,28 @@ export function EvidenceVaultClient({
               ) : null}
               <div className="mt-4 grid gap-2 text-sm text-slate-600">
                 {item.sourceUrl ? (
-                  <a className="font-medium text-brand-dark" href={item.sourceUrl} rel="noreferrer" target="_blank">
+                  <a
+                    className="font-medium text-brand-dark"
+                    href={item.sourceUrl}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
                     Open source
+                  </a>
+                ) : null}
+                {item.hasBinary ? (
+                  <a
+                    className="font-medium text-brand-dark"
+                    href={`/api/evaluations/${evaluationId}/evidence/${item.id}/download`}
+                  >
+                    Download file{item.fileName ? ` (${item.fileName})` : ''}
                   </a>
                 ) : null}
                 {item.ownerName ? <p>Owner: {item.ownerName}</p> : null}
                 {item.sourceDate ? <p>Source date: {item.sourceDate}</p> : null}
+                {item.byteSize !== null ? (
+                  <p>File size: {(item.byteSize / 1024).toFixed(1)} KB</p>
+                ) : null}
                 {item.confidenceWeight !== null ? (
                   <p>Confidence weight: {(item.confidenceWeight * 100).toFixed(0)}%</p>
                 ) : null}

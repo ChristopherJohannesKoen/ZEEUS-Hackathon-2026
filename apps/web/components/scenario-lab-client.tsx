@@ -62,7 +62,9 @@ export function ScenarioLabClient({
             <Input
               required
               value={formState.name}
-              onChange={(event) => setFormState((current) => ({ ...current, name: event.target.value }))}
+              onChange={(event) =>
+                setFormState((current) => ({ ...current, name: event.target.value }))
+              }
             />
           </Field>
           <Field label="Focus area">

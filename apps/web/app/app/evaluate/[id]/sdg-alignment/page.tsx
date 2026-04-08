@@ -27,8 +27,8 @@ export default async function SdgAlignmentPage({ params }: { params: Params }) {
             Merged stage and business SDGs
           </h1>
           <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
-            Stage and NACE suggestions are de-duplicated, tagged, and linked to both the official
-            UN goal pages and the in-app SDG target explorer.
+            Stage and NACE suggestions are de-duplicated, tagged, and linked to both the official UN
+            goal pages and the in-app SDG target explorer.
           </p>
         </Card>
 

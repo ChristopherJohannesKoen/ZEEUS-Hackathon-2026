@@ -978,6 +978,12 @@ export function buildReportResponse(input: {
     sdgAlignment: {
       items: input.evaluation.initialSummary.mergedSdgs
     },
-    dashboard: input.dashboard
+    dashboard: input.dashboard,
+    evidenceSummary: {
+      totalCount: 0,
+      items: []
+    },
+    programBranding: null,
+    submissionReviewState: null
   };
 }

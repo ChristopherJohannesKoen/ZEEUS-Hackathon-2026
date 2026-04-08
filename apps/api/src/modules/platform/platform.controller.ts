@@ -1,21 +1,40 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
   Param,
   Post,
+  Put,
+  Res,
+  UploadedFile,
   UseGuards,
   UseInterceptors
 } from '@nestjs/common';
-import { ApiCookieAuth, ApiHeader, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiConsumes,
+  ApiCookieAuth,
+  ApiHeader,
+  ApiOperation,
+  ApiProduces,
+  ApiTags
+} from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   CreateEvidenceAssetPayloadSchema,
+  CreateProgramSubmissionPayloadSchema,
+  CreateReviewAssignmentPayloadSchema,
+  CreateReviewCommentPayloadSchema,
   CreateScenarioRunPayloadSchema,
+  EvidenceAssetParamsSchema,
   EvaluationIdParamsSchema,
   OrganizationParamsSchema,
   SdgGoalParamsSchema,
-  ProgramParamsSchema
+  ProgramParamsSchema,
+  ProgramSubmissionParamsSchema,
+  UpdateProgramSubmissionStatusPayloadSchema
 } from '@packages/shared';
+import type { Response } from 'express';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { SessionGuard } from '../../common/guards/session.guard';
 import type { AuthenticatedRequest } from '../../common/types/authenticated-request';
@@ -116,6 +135,67 @@ export class PlatformController {
     );
   }
 
+  @Post('evaluations/:id/evidence/upload')
+  @ApiCookieAuth()
+  @UseGuards(SessionGuard)
+  @UseInterceptors(IdempotencyInterceptor, FileInterceptor('file'))
+  @ApiHeader({ name: 'Idempotency-Key', required: true })
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Upload a binary evidence file to the evidence vault' })
+  uploadEvidence(
+    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
+    @Param() params: unknown,
+    @UploadedFile()
+    file:
+      | {
+          buffer: Buffer;
+          originalname: string;
+          mimetype: string;
+          size: number;
+        }
+      | undefined,
+    @Body() body: Record<string, string | undefined>
+  ) {
+    if (!file) {
+      throw new BadRequestException('A file is required.');
+    }
+
+    return this.platformService.uploadEvidenceFile(
+      currentUser,
+      parseZodSchema(EvaluationIdParamsSchema, params).id,
+      file,
+      parseZodSchema(CreateEvidenceAssetPayloadSchema.omit({ kind: true, sourceUrl: true }), {
+        title: body.title,
+        description: body.description || null,
+        ownerName: body.ownerName || null,
+        sourceDate: body.sourceDate || null,
+        evidenceBasis: body.evidenceBasis,
+        confidenceWeight: body.confidenceWeight ? Number(body.confidenceWeight) : null,
+        linkedTopicCode: body.linkedTopicCode || null,
+        linkedRecommendationId: body.linkedRecommendationId || null
+      })
+    );
+  }
+
+  @Get('evaluations/:id/evidence/:evidenceId/download')
+  @ApiCookieAuth()
+  @UseGuards(SessionGuard)
+  @ApiProduces('application/octet-stream')
+  @ApiOperation({ summary: 'Download a binary evidence file' })
+  downloadEvidence(
+    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
+    @Param() params: unknown,
+    @Res() response: Response
+  ) {
+    const parsed = parseZodSchema(EvidenceAssetParamsSchema, params);
+    return this.platformService.downloadEvidence(
+      currentUser,
+      parsed.id,
+      parsed.evidenceId,
+      response
+    );
+  }
+
   @Get('evaluations/:id/scenarios')
   @ApiCookieAuth()
   @UseGuards(SessionGuard)
@@ -145,6 +225,82 @@ export class PlatformController {
       currentUser,
       parseZodSchema(EvaluationIdParamsSchema, params).id,
       parseZodSchema(CreateScenarioRunPayloadSchema, body)
+    );
+  }
+
+  @Post('programs/:programId/submissions')
+  @ApiCookieAuth()
+  @UseGuards(SessionGuard)
+  @UseInterceptors(IdempotencyInterceptor)
+  @ApiHeader({ name: 'Idempotency-Key', required: true })
+  @ApiOperation({ summary: 'Submit an evaluation revision into a partner program' })
+  createProgramSubmission(
+    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
+    @Param() params: unknown,
+    @Body() body: unknown
+  ) {
+    return this.platformService.createProgramSubmission(
+      currentUser,
+      parseZodSchema(ProgramParamsSchema, params).programId,
+      parseZodSchema(CreateProgramSubmissionPayloadSchema, body)
+    );
+  }
+
+  @Put('programs/:programId/submissions/:submissionId')
+  @ApiCookieAuth()
+  @UseGuards(SessionGuard)
+  @ApiOperation({ summary: 'Update the review status of a program submission' })
+  updateProgramSubmissionStatus(
+    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
+    @Param() params: unknown,
+    @Body() body: unknown
+  ) {
+    const parsedParams = parseZodSchema(ProgramSubmissionParamsSchema, params);
+    return this.platformService.updateProgramSubmissionStatus(
+      currentUser,
+      parsedParams.programId,
+      parsedParams.submissionId,
+      parseZodSchema(UpdateProgramSubmissionStatusPayloadSchema, body)
+    );
+  }
+
+  @Post('programs/:programId/submissions/:submissionId/assignments')
+  @ApiCookieAuth()
+  @UseGuards(SessionGuard)
+  @UseInterceptors(IdempotencyInterceptor)
+  @ApiHeader({ name: 'Idempotency-Key', required: true })
+  @ApiOperation({ summary: 'Assign a reviewer to a program submission' })
+  createReviewAssignment(
+    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
+    @Param() params: unknown,
+    @Body() body: unknown
+  ) {
+    const parsedParams = parseZodSchema(ProgramSubmissionParamsSchema, params);
+    return this.platformService.createReviewAssignment(
+      currentUser,
+      parsedParams.programId,
+      parsedParams.submissionId,
+      parseZodSchema(CreateReviewAssignmentPayloadSchema, body)
+    );
+  }
+
+  @Post('programs/:programId/submissions/:submissionId/comments')
+  @ApiCookieAuth()
+  @UseGuards(SessionGuard)
+  @UseInterceptors(IdempotencyInterceptor)
+  @ApiHeader({ name: 'Idempotency-Key', required: true })
+  @ApiOperation({ summary: 'Add a threaded review comment to a submission' })
+  createReviewComment(
+    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
+    @Param() params: unknown,
+    @Body() body: unknown
+  ) {
+    const parsedParams = parseZodSchema(ProgramSubmissionParamsSchema, params);
+    return this.platformService.createReviewComment(
+      currentUser,
+      parsedParams.programId,
+      parsedParams.submissionId,
+      parseZodSchema(CreateReviewCommentPayloadSchema, body)
     );
   }
 }

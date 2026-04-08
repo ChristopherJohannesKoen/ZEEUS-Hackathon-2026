@@ -13,7 +13,10 @@ export default async function EvidencePage({ params }: { params: Params }) {
   const { id } = await params;
 
   try {
-    const [evaluation, evidence] = await Promise.all([getEvaluation(id), getEvaluationEvidence(id)]);
+    const [evaluation, evidence] = await Promise.all([
+      getEvaluation(id),
+      getEvaluationEvidence(id)
+    ]);
 
     return (
       <div className="grid gap-6">

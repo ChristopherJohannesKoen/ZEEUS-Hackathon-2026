@@ -21,7 +21,10 @@ export default async function ResourcesPage() {
             </p>
             <h2 className="mt-3 text-xl font-bold text-slate-950">{resource.title}</h2>
             <p className="mt-3 text-sm leading-7 text-slate-600">{resource.description}</p>
-            <Link className="mt-5 inline-flex text-sm font-semibold text-brand-dark" href={resource.href}>
+            <Link
+              className="mt-5 inline-flex text-sm font-semibold text-brand-dark"
+              href={resource.href}
+            >
               Open {resource.fileLabel}
             </Link>
           </Card>

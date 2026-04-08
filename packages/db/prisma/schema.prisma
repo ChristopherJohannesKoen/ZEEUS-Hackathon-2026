@@ -355,6 +355,7 @@ model EvaluationNarrative {
   outputTokens    Int?
   estimatedCostUsd Float?
   content         String?
+  sourceReferences Json?
   requestedAt     DateTime                  @default(now())
   readyAt         DateTime?
   failedAt        DateTime?
@@ -516,6 +517,9 @@ model EvidenceAsset {
   linkedTopicCode      TopicCode?
   linkedRecommendationId String?
   storageKey           String?
+  fileName             String?
+  mimeType             String?
+  byteSize             Int?
   createdByUserId      String?
   createdBy            User?          @relation("EvidenceAssetCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
   createdAt            DateTime       @default(now())

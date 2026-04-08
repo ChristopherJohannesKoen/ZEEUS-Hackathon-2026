@@ -85,10 +85,18 @@ The worker consumes queued export and narrative jobs after the stack is healthy.
 - `npm run db:setup`: migrate and seed local DB
 - `npm run db:reset`: rebuild local DB from scratch
 - `npm run prisma:generate`: regenerate Prisma client
+- `npm run audit:deps`: fail on current high-severity dependency advisories
 - `npm run typecheck`: TypeScript validation
 - `npm test`: workspace test suites
 - `npm run build`: production builds
 - `node scripts/extract-workbook-catalogs.mjs`: refresh workbook-derived catalogs
+
+## Security Maintenance
+
+- Run `npm run audit:deps` before cutting a release and after any frontend test-tooling upgrade. The current CI gate fails on new high-severity dependency advisories.
+- Refresh Docker image tags for Postgres, Redis, and MinIO on a regular cadence; keep image bumps grouped with a smoke run of `docker compose up --build`.
+- Treat `OPENAI_API_KEY`, `INTERNAL_SERVICE_TOKEN`, and S3/MinIO credentials as deployment secrets only. Never hardcode them into seed data, screenshots, or checked-in `.env` files.
+- Evidence uploads now persist as binary objects in MinIO/S3-compatible storage. If reviewing a production incident, verify both the DB row and object-store key before marking the item lost.
 
 ## Verification Checklist
 

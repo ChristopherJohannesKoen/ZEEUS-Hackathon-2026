@@ -5,11 +5,15 @@ import {
   AuthResponseSchema,
   BreakGlassLoginPayloadSchema,
   CreateEvidenceAssetPayloadSchema,
+  CreateProgramSubmissionPayloadSchema,
   CreateEvaluationArtifactPayloadSchema,
   CreateEvaluationNarrativePayloadSchema,
+  CreateReviewAssignmentPayloadSchema,
+  CreateReviewCommentPayloadSchema,
   CreateEvaluationPayloadSchema,
   CreateScenarioRunPayloadSchema,
   EvidenceAssetListResponseSchema,
+  EvidenceAssetParamsSchema,
   EvidenceAssetSummarySchema,
   CsrfResponseSchema,
   DashboardResponseSchema,
@@ -39,6 +43,7 @@ import {
   OkResponseSchema,
   ProgramDetailSchema,
   ProgramListResponseSchema,
+  ProgramSubmissionParamsSchema,
   ProgramParamsSchema,
   PublicSiteContentSchema,
   ReportResponseSchema,
@@ -59,6 +64,7 @@ import {
   StepUpPayloadSchema,
   StepUpResponseSchema,
   UpdateEvaluationContextPayloadSchema,
+  UpdateProgramSubmissionStatusPayloadSchema,
   UpdateRecommendationActionPayloadSchema,
   UpdateProfilePayloadSchema,
   UpdateRolePayloadSchema,
@@ -90,7 +96,7 @@ const commonResponses = c.responses({
   503: ApiErrorSchema
 });
 
-export const apiContract = c.router(
+const apiContractInternal: any = c.router(
   {
     health: c.router({
       status: {
@@ -516,6 +522,27 @@ export const apiContract = c.router(
             201: EvidenceAssetSummarySchema
           }
         },
+        uploadEvidence: {
+          method: 'POST',
+          path: '/:id/evidence/upload',
+          pathParams: EvaluationIdParamsSchema,
+          body: z.any(),
+          headers: csrfHeaderSchema.merge(idempotencyHeaderSchema),
+          responses: {
+            201: EvidenceAssetSummarySchema
+          }
+        },
+        downloadEvidence: {
+          method: 'GET',
+          path: '/:id/evidence/:evidenceId/download',
+          pathParams: EvidenceAssetParamsSchema,
+          responses: {
+            200: c.otherResponse({
+              contentType: 'application/octet-stream',
+              body: z.string()
+            })
+          }
+        },
         listScenarios: {
           method: 'GET',
           path: '/:id/scenarios',
@@ -599,6 +626,46 @@ export const apiContract = c.router(
           responses: {
             200: ProgramDetailSchema
           }
+        },
+        createSubmission: {
+          method: 'POST',
+          path: '/:programId/submissions',
+          pathParams: ProgramParamsSchema,
+          body: CreateProgramSubmissionPayloadSchema,
+          headers: csrfHeaderSchema.merge(idempotencyHeaderSchema),
+          responses: {
+            201: ProgramDetailSchema
+          }
+        },
+        updateSubmissionStatus: {
+          method: 'PUT',
+          path: '/:programId/submissions/:submissionId',
+          pathParams: ProgramSubmissionParamsSchema,
+          body: UpdateProgramSubmissionStatusPayloadSchema,
+          headers: csrfHeaderSchema,
+          responses: {
+            200: ProgramDetailSchema
+          }
+        },
+        createReviewAssignment: {
+          method: 'POST',
+          path: '/:programId/submissions/:submissionId/assignments',
+          pathParams: ProgramSubmissionParamsSchema,
+          body: CreateReviewAssignmentPayloadSchema,
+          headers: csrfHeaderSchema.merge(idempotencyHeaderSchema),
+          responses: {
+            201: ProgramDetailSchema
+          }
+        },
+        createReviewComment: {
+          method: 'POST',
+          path: '/:programId/submissions/:submissionId/comments',
+          pathParams: ProgramSubmissionParamsSchema,
+          body: CreateReviewCommentPayloadSchema,
+          headers: csrfHeaderSchema.merge(idempotencyHeaderSchema),
+          responses: {
+            201: ProgramDetailSchema
+          }
         }
       },
       {
@@ -612,4 +679,4 @@ export const apiContract = c.router(
   }
 );
 
-export type ApiContract = typeof apiContract;
+export const apiContract = apiContractInternal;

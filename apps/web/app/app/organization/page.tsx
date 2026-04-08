@@ -7,9 +7,7 @@ export const dynamic = 'force-dynamic';
 export default async function OrganizationPage() {
   const organizations = await getOrganizations();
   const primaryOrganization = organizations.items[0];
-  const organization = primaryOrganization
-    ? await getOrganization(primaryOrganization.id)
-    : null;
+  const organization = primaryOrganization ? await getOrganization(primaryOrganization.id) : null;
 
   return (
     <div className="grid gap-6">

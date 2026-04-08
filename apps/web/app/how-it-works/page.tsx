@@ -37,8 +37,14 @@ export default async function HowItWorksPage() {
 
         <div className="grid gap-4">
           {[
-            ['1. Startup context', 'Capture country, NACE division, stage, offering type, and innovation approach.'],
-            ['2. Stage I', 'Score financial, environmental, social, and governance topics with deterministic logic.'],
+            [
+              '1. Startup context',
+              'Capture country, NACE division, stage, offering type, and innovation approach.'
+            ],
+            [
+              '2. Stage I',
+              'Score financial, environmental, social, and governance topics with deterministic logic.'
+            ],
             ['3. Stage II', 'Rate risks and opportunities with the workbook matrices.'],
             ['4. Outputs', 'Review SDGs, recommendations, dashboard metrics, and official exports.']
           ].map(([title, description]) => (

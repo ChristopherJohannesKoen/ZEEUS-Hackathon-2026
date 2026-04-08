@@ -55,7 +55,16 @@ const narrativeJobSchema = z.object({
     'risks_opportunities',
     'evidence_guidance'
   ]),
-  report: ReportResponseSchema
+  report: ReportResponseSchema,
+  guidanceArticles: z.array(
+    z.object({
+      id: z.string(),
+      slug: z.string(),
+      title: z.string(),
+      summary: z.string(),
+      category: z.string()
+    })
+  )
 });
 
 const openAiResponseSchema = z.object({
@@ -210,23 +219,104 @@ function buildNarrativeInstructions(kind: EvaluationNarrativeKind, report: Repor
   ].join('\n');
 }
 
-function buildNarrativePrompt(kind: EvaluationNarrativeKind, report: ReportResponse) {
+function articleHrefFromSlug(slug: string) {
+  if (slug === 'how-it-works') {
+    return '/how-it-works';
+  }
+
+  if (slug === 'methodology') {
+    return '/methodology';
+  }
+
+  if (slug === 'sdg-esrs-explainer') {
+    return '/sdg-esrs';
+  }
+
+  if (slug === 'partner-programs') {
+    return '/partners';
+  }
+
+  if (slug === 'contact-support') {
+    return '/contact';
+  }
+
+  return null;
+}
+
+function buildNarrativePrompt(
+  kind: EvaluationNarrativeKind,
+  report: ReportResponse,
+  guidanceArticles: Array<{ title: string; summary: string; category: string }>
+) {
   return [
     'You are writing a sustainability startup assessment narrative for ZEEUS.',
     'The deterministic report data below is authoritative. You must not alter, reinterpret, or override any scores, thresholds, SDG mappings, or recommendations.',
-    'Use only the provided report data.',
+    'Use the provided report data, guidance content, and evidence summary only.',
     'Do not mention AI, probabilities, or hidden calculations.',
     'Keep the tone concise, professional, and startup-friendly.',
+    'Where useful, echo the language of the evidence basis and cite the most relevant guidance source by title in the prose.',
     '',
     'Task instructions:',
     buildNarrativeInstructions(kind, report),
+    '',
+    'Guidance context:',
+    JSON.stringify(guidanceArticles),
     '',
     'Deterministic report payload:',
     JSON.stringify(report)
   ].join('\n');
 }
 
-async function generateOpenAiNarrative(kind: EvaluationNarrativeKind, report: ReportResponse) {
+function buildNarrativeSourceReferences(
+  kind: EvaluationNarrativeKind,
+  report: ReportResponse,
+  guidanceArticles: Array<{ id: string; slug: string; title: string; summary: string }>
+) {
+  const references = [
+    {
+      type: 'report_section' as const,
+      id: kind,
+      label:
+        kind === 'executive_summary'
+          ? 'Report: Executive summary metrics'
+          : kind === 'material_topics'
+            ? 'Report: Stage I materiality'
+            : kind === 'risks_opportunities'
+              ? 'Report: Stage II risks and opportunities'
+              : 'Report: Evidence appendix',
+      href: null,
+      description: `Revision ${report.evaluation.currentRevisionNumber} snapshot`
+    },
+    ...guidanceArticles.slice(0, 2).map((article) => ({
+      type: 'guidance_article' as const,
+      id: article.id,
+      label: article.title,
+      href: articleHrefFromSlug(article.slug),
+      description: article.summary
+    })),
+    ...report.evidenceSummary.items.slice(0, 3).map((item) => ({
+      type: 'evidence_item' as const,
+      id: item.id,
+      label: item.title,
+      href: `/app/evaluate/${report.evaluation.id}/evidence`,
+      description: item.fileName ?? item.sourceUrl ?? item.evidenceBasis
+    }))
+  ];
+
+  return references;
+}
+
+async function generateOpenAiNarrative(
+  kind: EvaluationNarrativeKind,
+  report: ReportResponse,
+  guidanceArticles: Array<{
+    id: string;
+    slug: string;
+    title: string;
+    summary: string;
+    category: string;
+  }>
+) {
   if (!openAiApiKey) {
     throw new Error('OPENAI_API_KEY is required for AI narrative generation.');
   }
@@ -239,7 +329,7 @@ async function generateOpenAiNarrative(kind: EvaluationNarrativeKind, report: Re
     },
     body: JSON.stringify({
       model: openAiModel,
-      input: buildNarrativePrompt(kind, report)
+      input: buildNarrativePrompt(kind, report, guidanceArticles)
     })
   });
 
@@ -261,16 +351,27 @@ async function generateOpenAiNarrative(kind: EvaluationNarrativeKind, report: Re
     inputTokens: parsed.usage?.input_tokens ?? null,
     outputTokens: parsed.usage?.output_tokens ?? null,
     estimatedCostUsd: null,
-    content
+    content,
+    sourceReferences: buildNarrativeSourceReferences(kind, report, guidanceArticles)
   };
 }
 
-async function generateNarrative(kind: EvaluationNarrativeKind, report: ReportResponse) {
+async function generateNarrative(
+  kind: EvaluationNarrativeKind,
+  report: ReportResponse,
+  guidanceArticles: Array<{
+    id: string;
+    slug: string;
+    title: string;
+    summary: string;
+    category: string;
+  }>
+) {
   if (aiProvider !== 'openai') {
     throw new Error(`Unsupported AI provider: ${aiProvider}`);
   }
 
-  return generateOpenAiNarrative(kind, report);
+  return generateOpenAiNarrative(kind, report, guidanceArticles);
 }
 
 async function renderPdf(evaluationId: string, revisionNumber: number) {
@@ -361,7 +462,7 @@ async function processNarrative(entityId: string) {
   await internalApiRequest(`/narratives/${entityId}/processing`, { method: 'POST' });
 
   try {
-    const narrative = await generateNarrative(job.kind, job.report);
+    const narrative = await generateNarrative(job.kind, job.report, job.guidanceArticles);
     await internalApiRequest(`/narratives/${entityId}/ready`, {
       method: 'POST',
       headers: {
@@ -374,7 +475,8 @@ async function processNarrative(entityId: string) {
         inputTokens: narrative.inputTokens,
         outputTokens: narrative.outputTokens,
         estimatedCostUsd: narrative.estimatedCostUsd,
-        content: narrative.content
+        content: narrative.content,
+        sourceReferences: narrative.sourceReferences
       })
     });
   } catch (error) {

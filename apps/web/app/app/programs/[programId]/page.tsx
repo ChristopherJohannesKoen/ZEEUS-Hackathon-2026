@@ -1,5 +1,6 @@
 import { forbidden, notFound } from 'next/navigation';
 import { Badge, Card } from '@packages/ui';
+import { ProgramWorkflowClient } from '../../../../components/program-workflow-client';
 import { ApiRequestError } from '../../../../lib/api-error';
 import { getProgram } from '../../../../lib/server-api';
 
@@ -65,36 +66,7 @@ export default async function ProgramDetailPage({ params }: { params: Params }) 
           </Card>
         </section>
 
-        <section className="grid gap-6 lg:grid-cols-2">
-          <Card className="border-surface-border">
-            <h2 className="text-xl font-black text-slate-950">Review assignments</h2>
-            <div className="mt-4 grid gap-3">
-              {program.reviewAssignments.map((assignment) => (
-                <div className="rounded-[24px] bg-[#f4f9ee] px-4 py-4" key={assignment.id}>
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="font-semibold text-slate-950">{assignment.reviewerName}</p>
-                    <Badge tone="amber">{assignment.status}</Badge>
-                  </div>
-                  <p className="mt-2 text-sm text-slate-600">
-                    Due {assignment.dueAt ?? 'not set'}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          <Card className="border-surface-border">
-            <h2 className="text-xl font-black text-slate-950">Review comments</h2>
-            <div className="mt-4 grid gap-3">
-              {program.reviewComments.map((comment) => (
-                <div className="rounded-[24px] bg-[#fbfdf8] px-4 py-4" key={comment.id}>
-                  <p className="font-semibold text-slate-950">{comment.authorName}</p>
-                  <p className="mt-3 text-sm leading-7 text-slate-600">{comment.body}</p>
-                </div>
-              ))}
-            </div>
-          </Card>
-        </section>
+        <ProgramWorkflowClient program={program} />
       </div>
     );
   } catch (error) {

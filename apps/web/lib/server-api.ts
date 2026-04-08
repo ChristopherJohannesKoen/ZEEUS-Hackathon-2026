@@ -38,7 +38,9 @@ import { ApiRequestError, toApiError, unwrapContractResponse } from './api-error
 const apiOrigin = process.env.API_ORIGIN ?? 'http://localhost:4000';
 const sessionCookieName = process.env.SESSION_COOKIE_NAME ?? 'zeeus_assessment_session';
 
-const serverClient = initClient(apiContract, {
+// Temporary until the oversized ts-rest contract is split back into typed subrouters.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const serverClient: any = initClient(apiContract, {
   baseUrl: `${apiOrigin}/api`,
   validateResponse: true,
   throwOnUnknownStatus: true,
@@ -285,7 +287,10 @@ export function getEvaluationScenarios(evaluationId: string) {
 }
 
 export function getOrganizations() {
-  return protectedServerRequest<OrganizationListResponse>(() => serverClient.organizations.list(), [200]);
+  return protectedServerRequest<OrganizationListResponse>(
+    () => serverClient.organizations.list(),
+    [200]
+  );
 }
 
 export function getOrganization(organizationId: string) {

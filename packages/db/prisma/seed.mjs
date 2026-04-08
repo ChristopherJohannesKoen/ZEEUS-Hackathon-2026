@@ -79,8 +79,7 @@ const knowledgeArticles = [
     title: 'How ZEEUS works',
     summary:
       'The platform mirrors the workbook flow with a faster web experience, saved drafts, revision history, and clearer outputs.',
-    body:
-      'ZEEUS starts with startup context, moves through the Stage I inside-out assessment, then Stage II risks and opportunities, and finishes with impact summary, SDG alignment, dashboard, and report outputs. The workflow is intentionally guidance-oriented, not judgment-oriented. Founders are encouraged to use reasonable qualitative inputs early, then strengthen them with evidence over time.',
+    body: 'ZEEUS starts with startup context, moves through the Stage I inside-out assessment, then Stage II risks and opportunities, and finishes with impact summary, SDG alignment, dashboard, and report outputs. The workflow is intentionally guidance-oriented, not judgment-oriented. Founders are encouraged to use reasonable qualitative inputs early, then strengthen them with evidence over time.',
     category: 'how_it_works',
     sortOrder: 10
   },
@@ -89,8 +88,7 @@ const knowledgeArticles = [
     title: 'Methodology and scoring logic',
     summary:
       'Deterministic workbook-parity scoring remains the canonical engine behind the platform.',
-    body:
-      'Stage I combines financial indicators with environmental, social, and governance impact topics. Stage II applies probability and impact matrices for risks and opportunities. Relevant topics are surfaced from 2.0 upward, while high-priority topics start at 2.5. The platform preserves deterministic scoring and treats AI as an explanatory layer only.',
+    body: 'Stage I combines financial indicators with environmental, social, and governance impact topics. Stage II applies probability and impact matrices for risks and opportunities. Relevant topics are surfaced from 2.0 upward, while high-priority topics start at 2.5. The platform preserves deterministic scoring and treats AI as an explanatory layer only.',
     category: 'methodology',
     sortOrder: 20
   },
@@ -99,8 +97,7 @@ const knowledgeArticles = [
     title: 'SDGs, ESRS, and double materiality',
     summary:
       'The SDGs act as a map, while the assessment logic borrows from double-materiality thinking to keep startup decisions practical.',
-    body:
-      'The platform uses startup stage and business category to suggest likely SDG relevance, then refines that view through assessment logic. This keeps the SDGs useful as a directional map instead of a compliance checklist. The approach also reflects double materiality by looking at inside-out impacts and outside-in risks and opportunities.',
+    body: 'The platform uses startup stage and business category to suggest likely SDG relevance, then refines that view through assessment logic. This keeps the SDGs useful as a directional map instead of a compliance checklist. The approach also reflects double materiality by looking at inside-out impacts and outside-in risks and opportunities.',
     category: 'sdg_esrs',
     sortOrder: 30
   },
@@ -109,8 +106,7 @@ const knowledgeArticles = [
     title: 'Partner and program workflows',
     summary:
       'Programs can enroll startups, request submissions, assign reviewers, and track evidence-backed improvement over time.',
-    body:
-      'ZEEUS now supports dual-audience delivery. Founders can run evaluations and evidence workflows, while partners can manage programs, submissions, reviewer assignments, and official outputs. Evaluation lifecycle and program review lifecycle remain separate so canonical scoring is never altered by reviewers.',
+    body: 'ZEEUS now supports dual-audience delivery. Founders can run evaluations and evidence workflows, while partners can manage programs, submissions, reviewer assignments, and official outputs. Evaluation lifecycle and program review lifecycle remain separate so canonical scoring is never altered by reviewers.',
     category: 'partner',
     sortOrder: 40
   },
@@ -119,8 +115,7 @@ const knowledgeArticles = [
     title: 'Support and onboarding',
     summary:
       'Use the knowledge base, FAQ, and partner support channels to onboard new teams without losing methodological consistency.',
-    body:
-      'ZEEUS is designed to be explainable and reproducible. The public site provides plain-language guidance, while the workspace offers tooltips, scenario notes, evidence prompts, and reporting outputs. Partners can use branded program pages and reviewer workflows to coordinate startup support.',
+    body: 'ZEEUS is designed to be explainable and reproducible. The public site provides plain-language guidance, while the workspace offers tooltips, scenario notes, evidence prompts, and reporting outputs. Partners can use branded program pages and reviewer workflows to coordinate startup support.',
     category: 'contact',
     sortOrder: 50
   }
@@ -218,7 +213,8 @@ const resourceAssets = [
   {
     id: 'resource-methodology',
     title: 'Methodology note',
-    description: 'Short explanation of deterministic scoring and the relevant vs high-priority split.',
+    description:
+      'Short explanation of deterministic scoring and the relevant vs high-priority split.',
     category: 'methodology',
     href: '/methodology',
     fileLabel: 'Method note'
@@ -248,7 +244,8 @@ const sdgTargetFixtures = [
     goalSummary: 'Protect water resources, sanitation access, and responsible water use.',
     targetCode: '6.3',
     title: 'Improve water quality',
-    description: 'Reduce pollution, minimise hazardous releases, and increase safe treatment and reuse.',
+    description:
+      'Reduce pollution, minimise hazardous releases, and increase safe treatment and reuse.',
     officialUrl: 'https://sdgs.un.org/goals/goal6'
   },
   {
@@ -257,7 +254,8 @@ const sdgTargetFixtures = [
     goalSummary: 'Protect water resources, sanitation access, and responsible water use.',
     targetCode: '6.4',
     title: 'Increase water-use efficiency',
-    description: 'Improve efficiency across sectors and strengthen resilience against water scarcity.',
+    description:
+      'Improve efficiency across sectors and strengthen resilience against water scarcity.',
     officialUrl: 'https://sdgs.un.org/goals/goal6'
   },
   {
@@ -311,7 +309,8 @@ const sdgTargetFixtures = [
     goalSummary: 'Shift systems toward circular, efficient, and lower-impact production.',
     targetCode: '12.5',
     title: 'Substantially reduce waste generation',
-    description: 'Prioritise prevention, reduction, recycling, and reuse throughout the value chain.',
+    description:
+      'Prioritise prevention, reduction, recycling, and reuse throughout the value chain.',
     officialUrl: 'https://sdgs.un.org/goals/goal12'
   },
   {
@@ -1364,13 +1363,11 @@ async function main() {
       id: `comment:${seededSubmission.id}:1`,
       submissionId: seededSubmission.id,
       authorUserId: adminUser.id,
-      body:
-        'The deterministic result is sound. Please strengthen evidence for supplier assumptions and clarify the governance controls before formal approval.'
+      body: 'The deterministic result is sound. Please strengthen evidence for supplier assumptions and clarify the governance controls before formal approval.'
     },
     update: {
       authorUserId: adminUser.id,
-      body:
-        'The deterministic result is sound. Please strengthen evidence for supplier assumptions and clarify the governance controls before formal approval.'
+      body: 'The deterministic result is sound. Please strengthen evidence for supplier assumptions and clarify the governance controls before formal approval.'
     }
   });
 

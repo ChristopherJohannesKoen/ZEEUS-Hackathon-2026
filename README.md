@@ -7,7 +7,7 @@ web application with:
 - a public website for methodology, FAQ, resources, and partner onboarding
 - deterministic scoring
 - saved evaluations in PostgreSQL
-- organization, program, evidence, and scenario scaffolding
+- organization, program, evidence, and scenario workflows
 - immutable revision history and comparison
 - dashboard, review, benchmark, and report views
 - persisted CSV and PDF export artifacts backed by object storage
@@ -139,7 +139,7 @@ Default runtime values:
   scores.
 - Benchmarks are derived from immutable revision snapshots and seeded baseline
   profiles. They never change canonical saved results.
-- AI narratives are generated from immutable revision snapshots and evidence
+- AI narratives are generated from immutable revision snapshots, linked evidence, and structured guidance content
   metadata only. They do not participate in scoring.
 
 ## Common Commands

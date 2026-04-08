@@ -30,10 +30,7 @@ export default async function SdgEsrsPage() {
                 assessment outputs.
               </p>
               <div className="mt-4">
-                <Link
-                  className={buttonClassName({ variant: 'secondary' })}
-                  href={`/sdg/${goal}`}
-                >
+                <Link className={buttonClassName({ variant: 'secondary' })} href={`/sdg/${goal}`}>
                   Open SDG {goal}
                 </Link>
               </div>

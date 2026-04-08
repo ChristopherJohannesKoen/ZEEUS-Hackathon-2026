@@ -120,6 +120,15 @@ export const ProgramSubmissionSummarySchema = z.object({
 });
 export type ProgramSubmissionSummary = z.infer<typeof ProgramSubmissionSummarySchema>;
 
+export const ProgramEvaluationCandidateSchema = z.object({
+  evaluationId: z.string(),
+  name: z.string(),
+  status: EvaluationStatusSchema,
+  currentRevisionNumber: z.number().int().min(0),
+  updatedAt: z.string()
+});
+export type ProgramEvaluationCandidate = z.infer<typeof ProgramEvaluationCandidateSchema>;
+
 export const ReviewAssignmentSummarySchema = z.object({
   id: z.string(),
   submissionId: z.string(),
@@ -153,7 +162,8 @@ export const ProgramDetailSchema = ProgramSummarySchema.extend({
   members: z.array(ProgramMemberSummarySchema),
   submissions: z.array(ProgramSubmissionSummarySchema),
   reviewAssignments: z.array(ReviewAssignmentSummarySchema),
-  reviewComments: z.array(ReviewCommentSummarySchema)
+  reviewComments: z.array(ReviewCommentSummarySchema),
+  availableEvaluations: z.array(ProgramEvaluationCandidateSchema)
 });
 export type ProgramDetail = z.infer<typeof ProgramDetailSchema>;
 
@@ -268,6 +278,10 @@ export const EvidenceAssetSummarySchema = z.object({
   confidenceWeight: z.number().min(0).max(1).nullable().default(null),
   linkedTopicCode: TopicCodeSchema.nullable().default(null),
   linkedRecommendationId: z.string().nullable().default(null),
+  fileName: z.string().nullable().default(null),
+  mimeType: z.string().nullable().default(null),
+  byteSize: z.number().int().nonnegative().nullable().default(null),
+  hasBinary: z.boolean().default(false),
   createdAt: z.string()
 });
 export type EvidenceAssetSummary = z.infer<typeof EvidenceAssetSummarySchema>;
@@ -290,6 +304,42 @@ export const CreateEvidenceAssetPayloadSchema = z.object({
   linkedRecommendationId: z.string().trim().max(120).optional().nullable()
 });
 export type CreateEvidenceAssetPayload = z.infer<typeof CreateEvidenceAssetPayloadSchema>;
+
+export const EvidenceAssetParamsSchema = z.object({
+  id: z.string(),
+  evidenceId: z.string()
+});
+export type EvidenceAssetParams = z.infer<typeof EvidenceAssetParamsSchema>;
+
+export const CreateProgramSubmissionPayloadSchema = z.object({
+  evaluationId: z.string(),
+  revisionNumber: z.number().int().min(1).optional().nullable()
+});
+export type CreateProgramSubmissionPayload = z.infer<typeof CreateProgramSubmissionPayloadSchema>;
+
+export const ProgramSubmissionParamsSchema = z.object({
+  programId: z.string(),
+  submissionId: z.string()
+});
+export type ProgramSubmissionParams = z.infer<typeof ProgramSubmissionParamsSchema>;
+
+export const UpdateProgramSubmissionStatusPayloadSchema = z.object({
+  status: ProgramSubmissionStatusSchema
+});
+export type UpdateProgramSubmissionStatusPayload = z.infer<
+  typeof UpdateProgramSubmissionStatusPayloadSchema
+>;
+
+export const CreateReviewAssignmentPayloadSchema = z.object({
+  reviewerUserId: z.string(),
+  dueAt: z.string().optional().nullable()
+});
+export type CreateReviewAssignmentPayload = z.infer<typeof CreateReviewAssignmentPayloadSchema>;
+
+export const CreateReviewCommentPayloadSchema = z.object({
+  body: z.string().trim().min(2).max(4000)
+});
+export type CreateReviewCommentPayload = z.infer<typeof CreateReviewCommentPayloadSchema>;
 
 export const ScenarioRunSummarySchema = z.object({
   id: z.string(),

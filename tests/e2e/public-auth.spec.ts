@@ -18,7 +18,9 @@ test('renders the public landing page and auth links', async ({ page }) => {
     page.getByRole('navigation').getByRole('link', { name: 'Create account' })
   ).toBeVisible();
   await expect(page.getByRole('navigation').getByRole('link', { name: 'Sign in' })).toBeVisible();
-  await expect(page.getByRole('navigation').getByRole('link', { name: 'How it works' })).toBeVisible();
+  await expect(
+    page.getByRole('navigation').getByRole('link', { name: 'How it works' })
+  ).toBeVisible();
   await expect(page.getByRole('navigation').getByRole('link', { name: 'Partners' })).toBeVisible();
 });
 

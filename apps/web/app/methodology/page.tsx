@@ -12,7 +12,9 @@ export default async function MethodologyPage() {
       currentUser={currentUser}
       eyebrow="Methodology"
       title={article?.title ?? 'Methodology and scoring logic'}
-      intro={article?.summary ?? 'Deterministic scoring and clear thresholds remain the foundation.'}
+      intro={
+        article?.summary ?? 'Deterministic scoring and clear thresholds remain the foundation.'
+      }
     >
       <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
         <Card className="border-surface-border">

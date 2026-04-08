@@ -1,6 +1,15 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException
+} from '@nestjs/common';
+import { createHash } from 'node:crypto';
 import type {
   CreateEvidenceAssetPayload,
+  CreateProgramSubmissionPayload,
+  CreateReviewAssignmentPayload,
+  CreateReviewCommentPayload,
   CreateScenarioRunPayload,
   EvidenceAssetListResponse,
   EvidenceAssetSummary,
@@ -12,16 +21,19 @@ import type {
   ScenarioRunListResponse,
   ScenarioRunSummary,
   SdgGoalDetail,
-  SessionUser
+  SessionUser,
+  UpdateProgramSubmissionStatusPayload
 } from '@packages/shared';
 import { AuditService } from '../audit/audit.service';
+import { EvaluationStorageService } from '../evaluations/evaluation-storage.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class PlatformService {
   constructor(
     private readonly prismaService: PrismaService,
-    private readonly auditService: AuditService
+    private readonly auditService: AuditService,
+    private readonly evaluationStorageService: EvaluationStorageService
   ) {}
 
   async getSiteContent(): Promise<PublicSiteContent> {
@@ -168,7 +180,10 @@ export class PlatformService {
     };
   }
 
-  async getOrganization(currentUser: SessionUser, organizationId: string): Promise<OrganizationDetail> {
+  async getOrganization(
+    currentUser: SessionUser,
+    organizationId: string
+  ): Promise<OrganizationDetail> {
     const membership = await this.prismaService.organizationMember.findFirst({
       where: {
         organizationId,
@@ -224,15 +239,21 @@ export class PlatformService {
       memberCount: membership.organization.members.length,
       programCount: membership.organization.programs.length,
       createdAt: membership.organization.createdAt.toISOString(),
-      members: membership.organization.members.map((item: (typeof membership.organization.members)[number]) => ({
-        userId: item.user.id,
-        name: item.user.name,
-        email: item.user.email,
-        role: item.role as 'owner' | 'manager' | 'member' | 'reviewer',
-        joinedAt: item.joinedAt.toISOString()
-      })),
-      programs: membership.organization.programs.map((program: (typeof membership.organization.programs)[number]) =>
-        this.serializeProgramSummary(program, this.findProgramRole(program.members, currentUser.id))
+      members: membership.organization.members.map(
+        (item: (typeof membership.organization.members)[number]) => ({
+          userId: item.user.id,
+          name: item.user.name,
+          email: item.user.email,
+          role: item.role as 'owner' | 'manager' | 'member' | 'reviewer',
+          joinedAt: item.joinedAt.toISOString()
+        })
+      ),
+      programs: membership.organization.programs.map(
+        (program: (typeof membership.organization.programs)[number]) =>
+          this.serializeProgramSummary(
+            program,
+            this.findProgramRole(program.members, currentUser.id)
+          )
       )
     };
   }
@@ -363,6 +384,22 @@ export class PlatformService {
       program,
       this.findProgramRole(program.members, currentUser.id)
     );
+    const availableEvaluations = await this.prismaService.evaluation.findMany({
+      where: {
+        userId: currentUser.id,
+        currentRevisionId: {
+          not: null
+        }
+      },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        currentRevisionNumber: true,
+        updatedAt: true
+      },
+      orderBy: [{ updatedAt: 'desc' }]
+    });
 
     return {
       ...baseSummary,
@@ -390,35 +427,53 @@ export class PlatformService {
           | 'archived',
         evaluationStatus: submission.evaluation.status,
         submittedAt: submission.submittedAt ? submission.submittedAt.toISOString() : null,
-        lastReviewedAt: submission.lastReviewedAt
-          ? submission.lastReviewedAt.toISOString()
-          : null
+        lastReviewedAt: submission.lastReviewedAt ? submission.lastReviewedAt.toISOString() : null
       })),
-      reviewAssignments: program.submissions.flatMap((submission: (typeof program.submissions)[number]) =>
-        submission.reviewAssignments.map((assignment: (typeof submission.reviewAssignments)[number]) => ({
-          id: assignment.id,
-          submissionId: submission.id,
-          reviewerUserId: assignment.reviewer.id,
-          reviewerName: assignment.reviewer.name,
-          status: assignment.status as 'pending' | 'in_review' | 'changes_requested' | 'approved',
-          dueAt: assignment.dueAt ? assignment.dueAt.toISOString() : null,
-          decidedAt: assignment.decidedAt ? assignment.decidedAt.toISOString() : null
-        }))
+      reviewAssignments: program.submissions.flatMap(
+        (submission: (typeof program.submissions)[number]) =>
+          submission.reviewAssignments.map(
+            (assignment: (typeof submission.reviewAssignments)[number]) => ({
+              id: assignment.id,
+              submissionId: submission.id,
+              reviewerUserId: assignment.reviewer.id,
+              reviewerName: assignment.reviewer.name,
+              status: assignment.status as
+                | 'pending'
+                | 'in_review'
+                | 'changes_requested'
+                | 'approved',
+              dueAt: assignment.dueAt ? assignment.dueAt.toISOString() : null,
+              decidedAt: assignment.decidedAt ? assignment.decidedAt.toISOString() : null
+            })
+          )
       ),
-      reviewComments: program.submissions.flatMap((submission: (typeof program.submissions)[number]) =>
-        submission.reviewComments.map((comment: (typeof submission.reviewComments)[number]) => ({
-          id: comment.id,
-          submissionId: submission.id,
-          authorUserId: comment.author.id,
-          authorName: comment.author.name,
-          body: comment.body,
-          createdAt: comment.createdAt.toISOString()
-        }))
+      reviewComments: program.submissions.flatMap(
+        (submission: (typeof program.submissions)[number]) =>
+          submission.reviewComments.map((comment: (typeof submission.reviewComments)[number]) => ({
+            id: comment.id,
+            submissionId: submission.id,
+            authorUserId: comment.author.id,
+            authorName: comment.author.name,
+            body: comment.body,
+            createdAt: comment.createdAt.toISOString()
+          }))
+      ),
+      availableEvaluations: availableEvaluations.map(
+        (evaluation: (typeof availableEvaluations)[number]) => ({
+          evaluationId: evaluation.id,
+          name: evaluation.name,
+          status: evaluation.status,
+          currentRevisionNumber: evaluation.currentRevisionNumber,
+          updatedAt: evaluation.updatedAt.toISOString()
+        })
       )
     };
   }
 
-  async listEvidence(currentUser: SessionUser, evaluationId: string): Promise<EvidenceAssetListResponse> {
+  async listEvidence(
+    currentUser: SessionUser,
+    evaluationId: string
+  ): Promise<EvidenceAssetListResponse> {
     await this.assertOwnedEvaluation(currentUser.id, evaluationId);
 
     const items = await this.prismaService.evidenceAsset.findMany({
@@ -471,7 +526,347 @@ export class PlatformService {
     return this.serializeEvidence(item);
   }
 
-  async listScenarios(currentUser: SessionUser, evaluationId: string): Promise<ScenarioRunListResponse> {
+  async uploadEvidenceFile(
+    currentUser: SessionUser,
+    evaluationId: string,
+    file: {
+      buffer: Buffer;
+      originalname: string;
+      mimetype: string;
+      size: number;
+    },
+    payload: Omit<CreateEvidenceAssetPayload, 'kind' | 'sourceUrl'>
+  ): Promise<EvidenceAssetSummary> {
+    if (!file?.buffer?.byteLength) {
+      throw new BadRequestException('Evidence upload is missing a file.');
+    }
+
+    const evaluation = await this.assertOwnedEvaluation(currentUser.id, evaluationId);
+    const checksumSha256 = createHash('sha256').update(file.buffer).digest('hex');
+    const fileName = file.originalname || `${payload.title}.bin`;
+    const mimeType = file.mimetype || 'application/octet-stream';
+    const storageKey = this.evaluationStorageService.buildStorageKey(
+      checksumSha256,
+      fileName,
+      'evidence'
+    );
+
+    await this.evaluationStorageService.writeObject(storageKey, file.buffer, mimeType);
+
+    const item = await this.prismaService.evidenceAsset.create({
+      data: {
+        evaluationId,
+        revisionId: evaluation.currentRevisionId,
+        kind: 'file',
+        title: payload.title,
+        description: payload.description ?? null,
+        ownerName: payload.ownerName ?? null,
+        sourceDate: payload.sourceDate ? new Date(payload.sourceDate) : null,
+        evidenceBasis: payload.evidenceBasis,
+        confidenceWeight: payload.confidenceWeight ?? null,
+        linkedTopicCode: payload.linkedTopicCode ?? null,
+        linkedRecommendationId: payload.linkedRecommendationId ?? null,
+        storageKey,
+        fileName,
+        mimeType,
+        byteSize: file.size,
+        createdByUserId: currentUser.id
+      }
+    });
+
+    await this.auditService.log({
+      actorId: currentUser.id,
+      action: 'evidence.created',
+      targetType: 'evidence_asset',
+      targetId: item.id,
+      metadata: {
+        evaluationId,
+        byteSize: file.size,
+        mimeType
+      }
+    });
+
+    return this.serializeEvidence(item);
+  }
+
+  async downloadEvidence(
+    currentUser: SessionUser,
+    evaluationId: string,
+    evidenceId: string,
+    response: {
+      setHeader(name: string, value: string): void;
+      write(chunk: Buffer): void;
+      end(): void;
+    }
+  ) {
+    const item = await this.prismaService.evidenceAsset.findFirst({
+      where: {
+        id: evidenceId,
+        evaluationId,
+        evaluation: {
+          userId: currentUser.id
+        }
+      }
+    });
+
+    if (!item) {
+      throw new NotFoundException('Evidence asset not found.');
+    }
+
+    if (!item.storageKey || !item.fileName || !item.mimeType) {
+      throw new BadRequestException('This evidence item does not have a binary upload.');
+    }
+
+    const binary = await this.evaluationStorageService.readObject(item.storageKey);
+    response.setHeader('Content-Type', item.mimeType);
+    response.setHeader('Content-Disposition', `attachment; filename="${item.fileName}"`);
+    response.write(binary);
+    response.end();
+  }
+
+  async createProgramSubmission(
+    currentUser: SessionUser,
+    programId: string,
+    payload: CreateProgramSubmissionPayload
+  ): Promise<ProgramDetail> {
+    const access = await this.getProgramAccess(programId, currentUser.id);
+    const evaluation = await this.prismaService.evaluation.findFirst({
+      where: {
+        id: payload.evaluationId,
+        userId: currentUser.id
+      },
+      select: {
+        id: true,
+        organizationId: true,
+        currentRevisionId: true,
+        currentRevisionNumber: true
+      }
+    });
+
+    if (!evaluation) {
+      throw new ForbiddenException('Evaluation access denied.');
+    }
+
+    const revisionNumber = payload.revisionNumber ?? evaluation.currentRevisionNumber;
+
+    if (!revisionNumber || revisionNumber < 1) {
+      throw new BadRequestException('A saved revision is required before submission.');
+    }
+
+    const revision = await this.prismaService.evaluationRevision.findUnique({
+      where: {
+        evaluationId_revisionNumber: {
+          evaluationId: evaluation.id,
+          revisionNumber
+        }
+      },
+      select: {
+        id: true,
+        revisionNumber: true
+      }
+    });
+
+    if (!revision) {
+      throw new NotFoundException('Requested revision not found.');
+    }
+
+    const existing = await this.prismaService.programSubmission.findFirst({
+      where: {
+        programId,
+        evaluationId: evaluation.id,
+        revisionNumber
+      },
+      select: {
+        id: true
+      }
+    });
+
+    if (!existing) {
+      await this.prismaService.programSubmission.create({
+        data: {
+          programId,
+          organizationId: evaluation.organizationId ?? access.program.organizationId,
+          evaluationId: evaluation.id,
+          revisionId: revision.id,
+          revisionNumber: revision.revisionNumber,
+          status: 'submitted',
+          submittedAt: new Date()
+        }
+      });
+
+      await this.auditService.log({
+        actorId: currentUser.id,
+        action: 'evaluation.context_updated',
+        targetType: 'program_submission',
+        targetId: `${programId}:${evaluation.id}:${revision.revisionNumber}`,
+        metadata: {
+          programId,
+          evaluationId: evaluation.id,
+          revisionNumber: revision.revisionNumber
+        }
+      });
+    }
+
+    return this.getProgram(currentUser, programId);
+  }
+
+  async updateProgramSubmissionStatus(
+    currentUser: SessionUser,
+    programId: string,
+    submissionId: string,
+    payload: UpdateProgramSubmissionStatusPayload
+  ): Promise<ProgramDetail> {
+    const access = await this.getProgramAccess(programId, currentUser.id);
+
+    if (!access.canReview) {
+      throw new ForbiddenException('Only reviewers and managers can update submission state.');
+    }
+
+    if (access.role !== 'manager' && payload.status === 'archived') {
+      throw new ForbiddenException('Only program managers can archive submissions.');
+    }
+
+    await this.assertProgramSubmission(programId, submissionId);
+
+    await this.prismaService.programSubmission.update({
+      where: {
+        id: submissionId
+      },
+      data: {
+        status: payload.status,
+        submittedAt: payload.status === 'submitted' ? new Date() : undefined,
+        lastReviewedAt:
+          payload.status === 'in_review' ||
+          payload.status === 'changes_requested' ||
+          payload.status === 'approved'
+            ? new Date()
+            : undefined
+      }
+    });
+
+    await this.auditService.log({
+      actorId: currentUser.id,
+      action: 'evaluation.context_updated',
+      targetType: 'program_submission',
+      targetId: submissionId,
+      metadata: {
+        programId,
+        submissionStatus: payload.status
+      }
+    });
+
+    return this.getProgram(currentUser, programId);
+  }
+
+  async createReviewAssignment(
+    currentUser: SessionUser,
+    programId: string,
+    submissionId: string,
+    payload: CreateReviewAssignmentPayload
+  ): Promise<ProgramDetail> {
+    const access = await this.getProgramAccess(programId, currentUser.id);
+
+    if (access.role !== 'manager') {
+      throw new ForbiddenException('Only program managers can assign reviewers.');
+    }
+
+    await this.assertProgramSubmission(programId, submissionId);
+
+    const reviewerMember = await this.prismaService.programMember.findFirst({
+      where: {
+        programId,
+        userId: payload.reviewerUserId
+      },
+      select: {
+        role: true
+      }
+    });
+
+    if (!reviewerMember || !['reviewer', 'manager'].includes(reviewerMember.role)) {
+      throw new BadRequestException(
+        'Reviewer must be a manager or reviewer member of this program.'
+      );
+    }
+
+    const existing = await this.prismaService.reviewAssignment.findFirst({
+      where: {
+        submissionId,
+        reviewerUserId: payload.reviewerUserId
+      },
+      select: {
+        id: true
+      }
+    });
+
+    if (existing) {
+      await this.prismaService.reviewAssignment.update({
+        where: {
+          id: existing.id
+        },
+        data: {
+          dueAt: payload.dueAt ? new Date(payload.dueAt) : null,
+          status: 'pending'
+        }
+      });
+    } else {
+      await this.prismaService.reviewAssignment.create({
+        data: {
+          submissionId,
+          reviewerUserId: payload.reviewerUserId,
+          dueAt: payload.dueAt ? new Date(payload.dueAt) : null,
+          status: 'pending'
+        }
+      });
+    }
+
+    await this.auditService.log({
+      actorId: currentUser.id,
+      action: 'evaluation.context_updated',
+      targetType: 'review_assignment',
+      targetId: submissionId,
+      metadata: {
+        programId,
+        reviewerUserId: payload.reviewerUserId
+      }
+    });
+
+    return this.getProgram(currentUser, programId);
+  }
+
+  async createReviewComment(
+    currentUser: SessionUser,
+    programId: string,
+    submissionId: string,
+    payload: CreateReviewCommentPayload
+  ): Promise<ProgramDetail> {
+    await this.getProgramAccess(programId, currentUser.id);
+    await this.assertProgramSubmission(programId, submissionId);
+
+    await this.prismaService.reviewComment.create({
+      data: {
+        submissionId,
+        authorUserId: currentUser.id,
+        body: payload.body
+      }
+    });
+
+    await this.auditService.log({
+      actorId: currentUser.id,
+      action: 'evaluation.context_updated',
+      targetType: 'review_comment',
+      targetId: submissionId,
+      metadata: {
+        programId
+      }
+    });
+
+    return this.getProgram(currentUser, programId);
+  }
+
+  async listScenarios(
+    currentUser: SessionUser,
+    evaluationId: string
+  ): Promise<ScenarioRunListResponse> {
     await this.assertOwnedEvaluation(currentUser.id, evaluationId);
 
     const items = await this.prismaService.scenarioRun.findMany({
@@ -493,7 +888,9 @@ export class PlatformService {
   ): Promise<ScenarioRunSummary> {
     const evaluation = await this.assertOwnedEvaluation(currentUser.id, evaluationId);
     const revisionLabel =
-      evaluation.currentRevisionNumber > 0 ? `revision ${evaluation.currentRevisionNumber}` : 'draft';
+      evaluation.currentRevisionNumber > 0
+        ? `revision ${evaluation.currentRevisionNumber}`
+        : 'draft';
     const advisorySummary = [
       `Scenario focus: ${payload.focusArea}.`,
       payload.geography ? `Geography: ${payload.geography}.` : null,
@@ -571,6 +968,87 @@ export class PlatformService {
     }
   }
 
+  private async assertProgramSubmission(programId: string, submissionId: string) {
+    const submission = await this.prismaService.programSubmission.findFirst({
+      where: {
+        id: submissionId,
+        programId
+      },
+      select: {
+        id: true
+      }
+    });
+
+    if (!submission) {
+      throw new NotFoundException('Program submission not found.');
+    }
+  }
+
+  private async getProgramAccess(programId: string, userId: string) {
+    const program = await this.prismaService.program.findFirst({
+      where: {
+        id: programId,
+        OR: [
+          {
+            members: {
+              some: {
+                userId
+              }
+            }
+          },
+          {
+            organization: {
+              members: {
+                some: {
+                  userId
+                }
+              }
+            }
+          }
+        ]
+      },
+      select: {
+        id: true,
+        organizationId: true,
+        members: {
+          select: {
+            userId: true,
+            role: true
+          }
+        },
+        organization: {
+          select: {
+            members: {
+              select: {
+                userId: true,
+                role: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    if (!program) {
+      throw new ForbiddenException('Program access denied.');
+    }
+
+    const programRole = this.findProgramRole(program.members, userId);
+    const organizationRole =
+      program.organization.members.find(
+        (member: (typeof program.organization.members)[number]) => member.userId === userId
+      )?.role ?? null;
+    const effectiveRole =
+      programRole ??
+      (organizationRole === 'owner' || organizationRole === 'manager' ? 'manager' : null);
+
+    return {
+      program,
+      role: effectiveRole,
+      canReview: effectiveRole === 'manager' || effectiveRole === 'reviewer'
+    };
+  }
+
   private findProgramRole(
     members: Array<{ role: string; userId: string }>,
     userId: string
@@ -636,19 +1114,12 @@ export class PlatformService {
     sourceDate: Date | null;
     evidenceBasis: 'measured' | 'estimated' | 'assumed';
     confidenceWeight: number | null;
-    linkedTopicCode:
-      | 'E1'
-      | 'E2'
-      | 'E3'
-      | 'E4'
-      | 'E5'
-      | 'S1'
-      | 'S2'
-      | 'S3'
-      | 'S4'
-      | 'G1'
-      | null;
+    linkedTopicCode: 'E1' | 'E2' | 'E3' | 'E4' | 'E5' | 'S1' | 'S2' | 'S3' | 'S4' | 'G1' | null;
     linkedRecommendationId: string | null;
+    storageKey?: string | null;
+    fileName?: string | null;
+    mimeType?: string | null;
+    byteSize?: number | null;
     createdAt: Date;
   }): EvidenceAssetSummary {
     return {
@@ -666,6 +1137,10 @@ export class PlatformService {
       confidenceWeight: item.confidenceWeight,
       linkedTopicCode: item.linkedTopicCode,
       linkedRecommendationId: item.linkedRecommendationId,
+      fileName: item.fileName ?? null,
+      mimeType: item.mimeType ?? null,
+      byteSize: item.byteSize ?? null,
+      hasBinary: Boolean(item.fileName && item.storageKey),
       createdAt: item.createdAt.toISOString()
     };
   }

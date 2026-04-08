@@ -6,8 +6,11 @@ import type {
   AuthResponse,
   BreakGlassLoginPayload,
   CreateEvidenceAssetPayload,
+  CreateProgramSubmissionPayload,
   CreateEvaluationArtifactPayload,
   CreateEvaluationNarrativePayload,
+  CreateReviewAssignmentPayload,
+  CreateReviewCommentPayload,
   CreateEvaluationPayload,
   CreateScenarioRunPayload,
   EvidenceAssetSummary,
@@ -34,6 +37,7 @@ import type {
   SdgGoalDetail,
   StepUpResponse,
   UpdateEvaluationContextPayload,
+  UpdateProgramSubmissionStatusPayload,
   UpdateRecommendationActionPayload,
   UpdateProfilePayload,
   UserSummary
@@ -43,7 +47,9 @@ import { initClient } from '@ts-rest/core';
 import { toApiError, unwrapContractResponse } from './api-error';
 
 const unsafeMethods = new Set(['POST', 'PATCH', 'PUT', 'DELETE']);
-const browserClient = initClient(apiContract, {
+// Temporary until the oversized ts-rest contract is split back into typed subrouters.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const browserClient: any = initClient(apiContract, {
   baseUrl: '/api',
   credentials: 'same-origin',
   validateResponse: true,
@@ -484,10 +490,7 @@ export function getEvaluationBenchmarks(evaluationId: string, revisionNumber?: n
   });
 }
 
-export function createEvidenceAsset(
-  evaluationId: string,
-  body: CreateEvidenceAssetPayload
-) {
+export function createEvidenceAsset(evaluationId: string, body: CreateEvidenceAssetPayload) {
   return executeMutation<EvidenceAssetSummary>({
     method: 'POST',
     expectedStatuses: [201],
@@ -504,10 +507,32 @@ export function createEvidenceAsset(
   });
 }
 
-export function createScenarioRun(
-  evaluationId: string,
-  body: CreateScenarioRunPayload
-) {
+export async function uploadEvidenceFile(evaluationId: string, body: FormData) {
+  return withApiErrors(async () => {
+    const csrfToken = await fetchCsrfToken();
+    const response = await fetch(`/api/evaluations/${evaluationId}/evidence/upload`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'x-csrf-token': csrfToken,
+        'idempotency-key': createIdempotencyKey()
+      },
+      body
+    });
+
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(
+        typeof payload?.message === 'string' ? payload.message : 'Unable to upload evidence.'
+      );
+    }
+
+    return payload as EvidenceAssetSummary;
+  });
+}
+
+export function createScenarioRun(evaluationId: string, body: CreateScenarioRunPayload) {
   return executeMutation<ScenarioRunSummary>({
     method: 'POST',
     expectedStatuses: [201],
@@ -569,6 +594,84 @@ export function getProgram(programId: string) {
       params: { programId }
     });
     return unwrapContractResponse<ProgramDetail>(response, [200]);
+  });
+}
+
+export function createProgramSubmission(programId: string, body: CreateProgramSubmissionPayload) {
+  return executeMutation<ProgramDetail>({
+    method: 'POST',
+    expectedStatuses: [201],
+    idempotent: true,
+    call: (headers) =>
+      browserClient.programs.createSubmission({
+        params: { programId },
+        body,
+        headers: {
+          'idempotency-key': headers['idempotency-key']!,
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export function updateProgramSubmissionStatus(
+  programId: string,
+  submissionId: string,
+  body: UpdateProgramSubmissionStatusPayload
+) {
+  return executeMutation<ProgramDetail>({
+    method: 'PUT',
+    expectedStatuses: [200],
+    call: (headers) =>
+      browserClient.programs.updateSubmissionStatus({
+        params: { programId, submissionId },
+        body,
+        headers: {
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export function createReviewAssignment(
+  programId: string,
+  submissionId: string,
+  body: CreateReviewAssignmentPayload
+) {
+  return executeMutation<ProgramDetail>({
+    method: 'POST',
+    expectedStatuses: [201],
+    idempotent: true,
+    call: (headers) =>
+      browserClient.programs.createReviewAssignment({
+        params: { programId, submissionId },
+        body,
+        headers: {
+          'idempotency-key': headers['idempotency-key']!,
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export function createReviewComment(
+  programId: string,
+  submissionId: string,
+  body: CreateReviewCommentPayload
+) {
+  return executeMutation<ProgramDetail>({
+    method: 'POST',
+    expectedStatuses: [201],
+    idempotent: true,
+    call: (headers) =>
+      browserClient.programs.createReviewComment({
+        params: { programId, submissionId },
+        body,
+        headers: {
+          'idempotency-key': headers['idempotency-key']!,
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
   });
 }
 

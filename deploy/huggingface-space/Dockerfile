@@ -1,5 +1,13 @@
 FROM node:22-bookworm-slim
 
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    git-lfs \
+    openssl \
+    ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
 USER node
 ENV HOME=/home/node \
     PATH=/home/node/.local/bin:$PATH \

@@ -1,11 +1,8 @@
 FROM node:22-bookworm-slim
 
-RUN useradd -m -u 1000 user
-
-USER user
-ENV HOME=/home/user \
-    PATH=/home/user/.local/bin:$PATH \
-    NODE_ENV=production \
+USER node
+ENV HOME=/home/node \
+    PATH=/home/node/.local/bin:$PATH \
     NEXT_TELEMETRY_DISABLED=1 \
     HF_SPACE_PUBLIC_MODE=true \
     NEXT_PUBLIC_HF_SPACE_PUBLIC_MODE=true \
@@ -15,11 +12,13 @@ ENV HOME=/home/user \
 
 WORKDIR $HOME/app
 
-COPY --chown=user . $HOME/app
+COPY --chown=node:node . $HOME/app
 
-RUN npm ci
+RUN npm ci --include=dev
 RUN npm run build:runtime-packages
 RUN npm run build --workspace=@apps/web
+
+ENV NODE_ENV=production
 
 EXPOSE 7860
 

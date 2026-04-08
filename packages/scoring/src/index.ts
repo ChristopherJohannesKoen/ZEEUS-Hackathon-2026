@@ -39,7 +39,6 @@ import benchmarkBaselines from '../catalog/benchmark-baselines.json';
 import workbookSnapshot from '../catalog/workbook-snapshot.json';
 
 type StageCatalogEntry = (typeof stageCatalog)[number];
-type NaceCatalogEntry = (typeof naceCatalog)[number];
 type TopicCatalogEntry = (typeof topicCatalog)[number];
 type RiskCatalogEntry = (typeof riskCatalog)[number];
 type OpportunityCatalogEntry = (typeof opportunityCatalog)[number];

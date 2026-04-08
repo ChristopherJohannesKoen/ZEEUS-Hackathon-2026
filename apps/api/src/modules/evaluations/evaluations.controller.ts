@@ -25,15 +25,10 @@ import {
   EvaluationRevisionCompareQuerySchema,
   EvaluationRevisionParamsSchema,
   SaveStage1PayloadSchema,
-  SaveStage1TopicsPayloadSchema,
   SaveStage2PayloadSchema,
-  SaveStage2OpportunitiesPayloadSchema,
-  SaveStage2RisksPayloadSchema,
-  Stage1FinancialAnswersPayloadSchema,
   UpdateEvaluationContextPayloadSchema,
   UpdateRecommendationActionPayloadSchema
 } from '@packages/shared';
-import { z } from 'zod';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { SessionGuard } from '../../common/guards/session.guard';
 import type { AuthenticatedRequest } from '../../common/types/authenticated-request';
@@ -106,20 +101,6 @@ export class EvaluationsController {
     );
   }
 
-  @Put(':id/stage-1/financial')
-  @ApiOperation({ summary: 'Save deterministic Stage I financial answers and recompute totals' })
-  saveStage1Financial(
-    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
-    @Param() params: unknown,
-    @Body() body: unknown
-  ) {
-    return this.evaluationsService.saveStage1Financial(
-      currentUser,
-      parseZodSchema(EvaluationIdParamsSchema, params).id,
-      parseZodSchema(Stage1FinancialAnswersPayloadSchema, body)
-    );
-  }
-
   @Put(':id/stage-1')
   @UseInterceptors(IdempotencyInterceptor)
   @ApiHeader({ name: 'Idempotency-Key', required: true })
@@ -136,20 +117,6 @@ export class EvaluationsController {
     );
   }
 
-  @Put(':id/stage-1/topics')
-  @ApiOperation({ summary: 'Save Stage I environmental, social, and governance topic answers' })
-  saveStage1Topics(
-    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
-    @Param() params: unknown,
-    @Body() body: unknown
-  ) {
-    return this.evaluationsService.saveStage1Topics(
-      currentUser,
-      parseZodSchema(EvaluationIdParamsSchema, params).id,
-      parseZodSchema(SaveStage1TopicsPayloadSchema, body)
-    );
-  }
-
   @Put(':id/stage-2')
   @UseInterceptors(IdempotencyInterceptor)
   @ApiHeader({ name: 'Idempotency-Key', required: true })
@@ -163,34 +130,6 @@ export class EvaluationsController {
       currentUser,
       parseZodSchema(EvaluationIdParamsSchema, params).id,
       parseZodSchema(SaveStage2PayloadSchema, body)
-    );
-  }
-
-  @Put(':id/stage-2/risks')
-  @ApiOperation({ summary: 'Save Stage II outside-in risk answers' })
-  saveStage2Risks(
-    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
-    @Param() params: unknown,
-    @Body() body: unknown
-  ) {
-    return this.evaluationsService.saveStage2Risks(
-      currentUser,
-      parseZodSchema(EvaluationIdParamsSchema, params).id,
-      parseZodSchema(SaveStage2RisksPayloadSchema, body)
-    );
-  }
-
-  @Put(':id/stage-2/opportunities')
-  @ApiOperation({ summary: 'Save Stage II opportunity answers' })
-  saveStage2Opportunities(
-    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
-    @Param() params: unknown,
-    @Body() body: unknown
-  ) {
-    return this.evaluationsService.saveStage2Opportunities(
-      currentUser,
-      parseZodSchema(EvaluationIdParamsSchema, params).id,
-      parseZodSchema(SaveStage2OpportunitiesPayloadSchema, body)
     );
   }
 
@@ -458,41 +397,5 @@ export class EvaluationsController {
       parsedParams.id,
       parsedQuery.revisionNumber
     );
-  }
-
-  @Get(':id/export.pdf')
-  @ApiProduces('application/pdf')
-  @ApiOperation({ summary: 'Export a server-generated PDF summary for a single evaluation' })
-  async exportPdf(
-    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
-    @Param() params: unknown,
-    @Res() response: Response
-  ) {
-    const evaluationId = parseZodSchema(EvaluationIdParamsSchema, params).id;
-    response.setHeader('Content-Type', 'application/pdf');
-    response.setHeader(
-      'Content-Disposition',
-      `attachment; filename="evaluation-${evaluationId}.pdf"`
-    );
-    await this.evaluationsService.exportPdf(currentUser, evaluationId, response);
-  }
-
-  @Get(':id/export.csv')
-  @ApiProduces('text/csv')
-  @ApiOperation({
-    summary: 'Export raw answers and computed scores for a single evaluation as CSV'
-  })
-  async exportCsv(
-    @CurrentUser() currentUser: NonNullable<AuthenticatedRequest['currentUser']>,
-    @Param() params: unknown,
-    @Res() response: Response
-  ) {
-    const evaluationId = parseZodSchema(EvaluationIdParamsSchema, params).id;
-    response.setHeader('Content-Type', 'text/csv');
-    response.setHeader(
-      'Content-Disposition',
-      `attachment; filename="evaluation-${evaluationId}.csv"`
-    );
-    await this.evaluationsService.exportCsv(currentUser, evaluationId, response);
   }
 }

@@ -29,6 +29,12 @@ describe('AuthController (e2e)', () => {
       sameSite: 'lax',
       path: '/',
       expires: new Date('2026-04-15T00:00:00.000Z')
+    }),
+    getSsoProviders: vi.fn().mockReturnValue({
+      providers: [],
+      defaultProviderSlug: null,
+      localAuthEnabled: true,
+      breakGlassEnabled: false
     })
   };
 
@@ -82,5 +88,17 @@ describe('AuthController (e2e)', () => {
     expect(setCookieHeader?.[0]).toContain('Path=/');
     expect(setCookieHeader?.[0]).toContain('HttpOnly');
     expect(setCookieHeader?.[0]).toContain('SameSite=Lax');
+  });
+
+  it('returns the runtime auth provider summary', async () => {
+    const response = await request(app.getHttpServer()).get('/auth/sso/providers');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      providers: [],
+      defaultProviderSlug: null,
+      localAuthEnabled: true,
+      breakGlassEnabled: false
+    });
   });
 });

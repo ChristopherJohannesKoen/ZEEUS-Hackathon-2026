@@ -1,17 +1,12 @@
 'use client';
 
 import { Button } from '@packages/ui';
+import { ArtifactActions } from './artifact-actions';
 
 export function PrintReportButton({ evaluationId }: { evaluationId: string }) {
   return (
     <div className="flex flex-wrap gap-3">
-      <a
-        className="btn-secondary"
-        data-testid="report-download-pdf"
-        href={`/api/evaluations/${evaluationId}/export.pdf`}
-      >
-        Download PDF
-      </a>
+      <ArtifactActions evaluationId={evaluationId} />
       <Button
         className="bg-[#00654A] hover:bg-[#0b7a59]"
         data-testid="report-print"

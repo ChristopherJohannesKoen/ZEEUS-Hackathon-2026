@@ -1,4 +1,4 @@
-import { forbidden } from 'next/navigation';
+import { forbidden, notFound } from 'next/navigation';
 import { Badge, Card } from '@packages/ui';
 import { RoleForm } from '../../../../components/role-form';
 import { formatDate, roleTone } from '../../../../lib/display';
@@ -11,6 +11,10 @@ function getSingleValue(value: string | string[] | undefined) {
 }
 
 export default async function AdminUsersPage({ searchParams }: { searchParams: SearchParams }) {
+  if (process.env.ENABLE_INTERNAL_SURFACES !== 'true') {
+    notFound();
+  }
+
   const currentUser = await requireCurrentUser();
 
   if (currentUser.role === 'member') {

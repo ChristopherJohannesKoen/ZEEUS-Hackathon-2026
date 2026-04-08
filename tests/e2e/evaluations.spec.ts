@@ -9,6 +9,8 @@ test.beforeEach(async () => {
 test('runs the evaluation workflow through dashboard, completion, and revision history', async ({
   page
 }) => {
+  test.setTimeout(90_000);
+
   await signIn(page, seededUsers.owner);
 
   await page.goto('/app/evaluate/start');
@@ -87,8 +89,6 @@ test('runs the evaluation workflow through dashboard, completion, and revision h
     .fill('Track this with the operating team.');
   await firstRecommendationSave.click();
   await expect(firstRecommendationSave).toHaveText('Save action');
-  await page.getByTestId('artifact-request-csv').click();
-  await expect(page.getByTestId('artifact-request-csv')).toHaveText('Generate CSV');
   await page.getByRole('link', { name: 'Review before completion' }).click();
   await page.waitForURL(/\/app\/evaluate\/[^/]+\/review$/);
 

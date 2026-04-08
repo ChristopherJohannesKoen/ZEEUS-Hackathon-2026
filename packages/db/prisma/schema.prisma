@@ -336,8 +336,12 @@ model EvaluationNarrative {
   revision        EvaluationRevision?       @relation(fields: [revisionId], references: [id], onDelete: SetNull)
   kind            EvaluationNarrativeKind
   status          EvaluationNarrativeStatus @default(pending)
+  provider        String?
   model           String?
   promptVersion   String?
+  inputTokens     Int?
+  outputTokens    Int?
+  estimatedCostUsd Float?
   content         String?
   requestedAt     DateTime                  @default(now())
   readyAt         DateTime?

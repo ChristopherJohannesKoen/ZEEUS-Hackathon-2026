@@ -5,6 +5,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { CommonInfrastructureModule } from '../common/infrastructure/common-infrastructure.module';
 import { validateEnvironment } from '../common/config/environment.validation';
+import { readBooleanConfig } from '../common/config/boolean-config';
 import { CsrfMiddleware } from '../common/middleware/csrf.middleware';
 import { OriginGuardMiddleware } from '../common/middleware/origin-guard.middleware';
 import { RequestContextMiddleware } from '../common/middleware/request-context.middleware';
@@ -17,6 +18,7 @@ import { AuthController } from './auth/auth.controller';
 import { GovernanceModule } from './governance/governance.module';
 import { HealthModule } from './health/health.module';
 import { HealthController } from './health/health.controller';
+import { CoreMetricsModule } from './observability/core-metrics.module';
 import { ObservabilityModule } from './observability/observability.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { EvaluationsModule } from './evaluations/evaluations.module';
@@ -25,6 +27,8 @@ import { IdentityModule } from './identity/identity.module';
 import { IdentityController, ScimController } from './identity/identity.controller';
 import { UsersModule } from './users/users.module';
 import { UsersController } from './users/users.controller';
+
+const internalSurfacesEnabled = readBooleanConfig(process.env.ENABLE_INTERNAL_SURFACES, false);
 
 @Module({
   imports: [
@@ -40,14 +44,15 @@ import { UsersController } from './users/users.controller';
     ]),
     ScheduleModule.forRoot(),
     CommonInfrastructureModule,
+    CoreMetricsModule,
     PrismaModule,
-    ObservabilityModule,
+    ...(internalSurfacesEnabled ? [ObservabilityModule] : []),
     AuditModule,
-    GovernanceModule,
+    ...(internalSurfacesEnabled ? [GovernanceModule] : []),
     AuthModule,
-    IdentityModule,
+    ...(internalSurfacesEnabled ? [IdentityModule] : []),
     UsersModule,
-    AdminModule,
+    ...(internalSurfacesEnabled ? [AdminModule] : []),
     EvaluationsModule,
     HealthModule
   ],
@@ -67,13 +72,13 @@ export class AppModule implements NestModule {
     consumer
       .apply(RequestContextMiddleware, SessionMiddleware, OriginGuardMiddleware, CsrfMiddleware)
       .forRoutes(
-        AuthController,
-        IdentityController,
-        UsersController,
-        AdminController,
-        EvaluationsController,
-        HealthController,
-        ScimController
+        ...[
+          AuthController,
+          UsersController,
+          EvaluationsController,
+          HealthController,
+          ...(internalSurfacesEnabled ? [IdentityController, AdminController, ScimController] : [])
+        ]
       );
   }
 }

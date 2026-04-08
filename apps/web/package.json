@@ -2,8 +2,10 @@
   "name": "@apps/web",
   "private": true,
   "scripts": {
+    "predev": "node ../../scripts/prepare-web-runtime.mjs --clean-next",
     "dev": "next dev",
-    "prebuild": "node ../../scripts/ensure-next-wasm-fallback.mjs",
+    "dev:e2e": "node ../../scripts/prepare-web-runtime.mjs --skip-runtime-build --clean-next && next dev",
+    "prebuild": "node ../../scripts/prepare-web-runtime.mjs --clean-next",
     "build": "next build",
     "start": "next start",
     "lint": "eslint \"app/**/*.{ts,tsx}\" \"components/**/*.{ts,tsx}\" \"lib/**/*.{ts,tsx}\" \"test/**/*.{ts,tsx}\" --max-warnings=0",

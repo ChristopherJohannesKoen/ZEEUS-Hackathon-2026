@@ -1,6 +1,10 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  ServiceUnavailableException
+} from '@nestjs/common';
 import type { Response } from 'express';
-import { createHash } from 'node:crypto';
 import {
   buildDashboard,
   buildImpactSummary,
@@ -104,8 +108,12 @@ const narrativeSelect = Prisma.validator<Prisma.EvaluationNarrativeSelect>()({
   revisionId: true,
   kind: true,
   status: true,
+  provider: true,
   model: true,
   promptVersion: true,
+  inputTokens: true,
+  outputTokens: true,
+  estimatedCostUsd: true,
   content: true,
   requestedAt: true,
   readyAt: true,
@@ -979,11 +987,7 @@ export class EvaluationsService {
 
     return {
       ...this.serializeRevisionSummary(revision),
-      report: await this.hydrateRevisionReport(
-        revision.id,
-        revision.reportSnapshot,
-        'revision_artifacts'
-      )
+      report: await this.hydrateRevisionReport(revision.id, revision.reportSnapshot)
     };
   }
 
@@ -1026,16 +1030,8 @@ export class EvaluationsService {
     }
 
     const [leftReport, rightReport] = await Promise.all([
-      this.hydrateRevisionReport(
-        leftRevision.id,
-        leftRevision.reportSnapshot,
-        'revision_artifacts'
-      ),
-      this.hydrateRevisionReport(
-        rightRevision.id,
-        rightRevision.reportSnapshot,
-        'revision_artifacts'
-      )
+      this.hydrateRevisionReport(leftRevision.id, leftRevision.reportSnapshot),
+      this.hydrateRevisionReport(rightRevision.id, rightRevision.reportSnapshot)
     ]);
 
     return {
@@ -1120,18 +1116,18 @@ export class EvaluationsService {
       }
     });
 
-    if (this.evaluationJobsService.isEnabled()) {
-      await this.evaluationJobsService.enqueueArtifact(pendingArtifact.id);
-      return this.serializeArtifactSummary(pendingArtifact);
+    if (!this.evaluationJobsService.isEnabled()) {
+      await this.markArtifactFailed(
+        pendingArtifact.id,
+        'Artifact jobs are unavailable because the background worker queue is not configured.'
+      );
+      throw new ServiceUnavailableException(
+        'Artifact generation requires the background worker stack to be available.'
+      );
     }
 
-    await this.processArtifactInline(pendingArtifact.id);
-    const readyArtifact = await this.getOwnedArtifactRecord(
-      evaluationId,
-      pendingArtifact.id,
-      currentUser.id
-    );
-    return this.serializeArtifactSummary(readyArtifact);
+    await this.evaluationJobsService.enqueueArtifact(pendingArtifact.id);
+    return this.serializeArtifactSummary(pendingArtifact);
   }
 
   async listArtifacts(
@@ -1230,18 +1226,18 @@ export class EvaluationsService {
       }
     });
 
-    if (this.evaluationJobsService.isEnabled()) {
-      await this.evaluationJobsService.enqueueNarrative(pendingNarrative.id);
-      return this.serializeNarrativeSummary(pendingNarrative);
+    if (!this.evaluationJobsService.isEnabled()) {
+      await this.markNarrativeFailed(
+        pendingNarrative.id,
+        'Narrative jobs are unavailable because the background worker queue is not configured.'
+      );
+      throw new ServiceUnavailableException(
+        'Narrative generation requires the background worker stack to be available.'
+      );
     }
 
-    await this.processNarrativeInline(pendingNarrative.id);
-    const readyNarrative = await this.getOwnedNarrativeRecord(
-      evaluationId,
-      pendingNarrative.id,
-      currentUser.id
-    );
-    return this.serializeNarrativeSummary(readyNarrative);
+    await this.evaluationJobsService.enqueueNarrative(pendingNarrative.id);
+    return this.serializeNarrativeSummary(pendingNarrative);
   }
 
   async listNarratives(
@@ -1537,22 +1533,6 @@ export class EvaluationsService {
     return this.getCurrentReport(currentUser, evaluationId);
   }
 
-  async exportCsv(currentUser: SessionUser, evaluationId: string, response: Response) {
-    const artifact = await this.createArtifact(currentUser, evaluationId, { kind: 'csv' });
-    if (artifact.status !== 'ready') {
-      await this.processArtifactInline(artifact.id);
-    }
-    await this.downloadArtifact(currentUser, evaluationId, artifact.id, response);
-  }
-
-  async exportPdf(currentUser: SessionUser, evaluationId: string, response: Response) {
-    const artifact = await this.createArtifact(currentUser, evaluationId, { kind: 'pdf' });
-    if (artifact.status !== 'ready') {
-      await this.processArtifactInline(artifact.id);
-    }
-    await this.downloadArtifact(currentUser, evaluationId, artifact.id, response);
-  }
-
   private async persistRevisionSnapshot(
     client: DatabaseClient,
     evaluationId: string,
@@ -1754,9 +1734,7 @@ export class EvaluationsService {
       stage1Topics,
       stage2Risks,
       stage2Opportunities,
-      artifacts: evaluation.artifacts.map((item: EvaluationArtifactRecord) =>
-        this.serializeArtifactSummary(item)
-      )
+      artifacts: []
     };
     const impactSummary = buildImpactSummary(
       initialSummary,
@@ -1810,26 +1788,10 @@ export class EvaluationsService {
       return this.buildOutputsFromState(evaluation).report;
     }
 
-    const report = await this.hydrateRevisionReport(
-      evaluation.currentRevisionId,
-      revision.reportSnapshot
-    );
-    return {
-      ...report,
-      evaluation: {
-        ...report.evaluation,
-        artifacts: evaluation.artifacts.map((item: EvaluationArtifactRecord) =>
-          this.serializeArtifactSummary(item)
-        )
-      }
-    };
+    return this.hydrateRevisionReport(evaluation.currentRevisionId, revision.reportSnapshot);
   }
 
-  private async hydrateRevisionReport(
-    revisionId: string,
-    reportSnapshot: Prisma.JsonValue,
-    artifactScope: 'evaluation_artifacts' | 'revision_artifacts' = 'evaluation_artifacts'
-  ) {
+  private async hydrateRevisionReport(revisionId: string, reportSnapshot: Prisma.JsonValue) {
     const report = ReportResponseSchema.parse(reportSnapshot as unknown);
     const [actions, artifacts] = await Promise.all([
       this.prismaService.evaluationRecommendationAction.findMany({
@@ -1840,14 +1802,9 @@ export class EvaluationsService {
         select: recommendationActionSelect
       }),
       this.prismaService.evaluationArtifact.findMany({
-        where:
-          artifactScope === 'revision_artifacts'
-            ? {
-                revisionId
-              }
-            : {
-                evaluationId: report.evaluation.id
-              },
+        where: {
+          revisionId
+        },
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         select: artifactSelect
       })
@@ -2080,8 +2037,12 @@ export class EvaluationsService {
       revisionNumber: narrative.revision?.revisionNumber ?? null,
       kind: narrative.kind,
       status: narrative.status,
+      provider: narrative.provider,
       model: narrative.model,
       promptVersion: narrative.promptVersion,
+      inputTokens: narrative.inputTokens ?? null,
+      outputTokens: narrative.outputTokens ?? null,
+      estimatedCostUsd: narrative.estimatedCostUsd ?? null,
       content: narrative.content,
       requestedAt: narrative.requestedAt.toISOString(),
       readyAt: narrative.readyAt ? narrative.readyAt.toISOString() : null,
@@ -2180,153 +2141,6 @@ export class EvaluationsService {
     }
 
     return takeaways.slice(0, 4);
-  }
-
-  private async processArtifactInline(artifactId: string) {
-    const artifact = await this.prismaService.evaluationArtifact.findUnique({
-      where: {
-        id: artifactId
-      },
-      select: {
-        ...artifactSelect,
-        evaluation: {
-          select: {
-            id: true
-          }
-        },
-        revision: {
-          select: {
-            id: true,
-            revisionNumber: true,
-            reportSnapshot: true
-          }
-        }
-      }
-    });
-
-    if (!artifact || !artifact.revisionId || !artifact.revision) {
-      throw new NotFoundException('Artifact revision snapshot not found.');
-    }
-
-    await this.markArtifactProcessing(artifactId);
-
-    try {
-      const report = await this.hydrateRevisionReport(
-        artifact.revisionId,
-        artifact.revision.reportSnapshot
-      );
-      const content =
-        artifact.kind === 'csv'
-          ? Buffer.from(this.buildCsvReport(report), 'utf8')
-          : this.buildPdfReport(report);
-      const checksumSha256 = createHash('sha256').update(content).digest('hex');
-      const storageKey = this.evaluationStorageService.buildStorageKey(
-        checksumSha256,
-        artifact.filename
-      );
-      await this.evaluationStorageService.writeObject(storageKey, content, artifact.mimeType);
-      await this.markArtifactReady(artifactId, {
-        storageKey,
-        checksumSha256,
-        byteSize: content.byteLength
-      });
-    } catch (error) {
-      await this.markArtifactFailed(
-        artifactId,
-        error instanceof Error ? error.message : 'Artifact generation failed.'
-      );
-      throw error;
-    }
-  }
-
-  private createNarrativeContent(
-    kind: CreateEvaluationNarrativePayload['kind'],
-    report: ReportResponse
-  ) {
-    const topTopic = report.dashboard.materialAlerts[0];
-    const topRisk = report.dashboard.topRisks[0];
-    const topOpportunity = report.dashboard.topOpportunities[0];
-
-    if (kind === 'executive_summary') {
-      return [
-        `${report.evaluation.name} currently scores ${report.dashboard.financialTotal}/12 on the deterministic financial screen, with overall risk at ${report.dashboard.riskOverall.toFixed(1)} and opportunity at ${report.dashboard.opportunityOverall.toFixed(1)}.`,
-        topTopic
-          ? `${topTopic.title} is the strongest inside-out materiality signal at ${topTopic.score}, which makes it the clearest near-term sustainability priority.`
-          : 'No material topics are above the reporting threshold yet, so the next priority is collecting stronger evidence before the next review.',
-        topOpportunity
-          ? `${topOpportunity.title} is the clearest upside signal, while ${topRisk?.title ?? 'outside-in risks'} should be monitored as the main constraint on execution.`
-          : `${topRisk?.title ?? 'Outside-in risk'} remains the strongest external consideration for the current profile.`
-      ].join('\n\n');
-    }
-
-    if (kind === 'material_topics') {
-      return [
-        `The current materiality profile is driven by ${topTopic?.title ?? 'the saved topic scores'} and the evidence basis attached to each Stage I answer.`,
-        `Topics marked relevant indicate credible sustainability relevance, while high-priority topics indicate the startup is already above the stronger action threshold.`,
-        report.dashboard.sensitivityHints[0]
-          ? `The most important near-threshold hint is: ${report.dashboard.sensitivityHints[0].message}`
-          : 'No near-threshold shifts were detected from the saved assumptions.'
-      ].join('\n\n');
-    }
-
-    if (kind === 'risks_opportunities') {
-      return [
-        topRisk
-          ? `${topRisk.title} is the most material external risk signal and should anchor the short-term mitigation discussion.`
-          : 'No external risks are currently rated above neutral.',
-        topOpportunity
-          ? `${topOpportunity.title} is the strongest opportunity signal and should inform roadmap and partnership decisions.`
-          : 'No external opportunities are currently rated above neutral.',
-        'These explanations are generated from the immutable revision snapshot and do not alter any deterministic scores.'
-      ].join('\n\n');
-    }
-
-    return [
-      'Evidence quality is the main determinant of confidence in this assessment.',
-      `The current confidence band is ${report.dashboard.confidenceBand}, based on the measured, estimated, and assumed evidence basis saved across Stage I and Stage II.`,
-      'Focus next on collecting defensible evidence for the highest-priority topic, the strongest risk, and the strongest opportunity before the next revision.'
-    ].join('\n\n');
-  }
-
-  private async processNarrativeInline(narrativeId: string) {
-    const narrative = await this.prismaService.evaluationNarrative.findUnique({
-      where: {
-        id: narrativeId
-      },
-      select: {
-        ...narrativeSelect,
-        revision: {
-          select: {
-            id: true,
-            reportSnapshot: true
-          }
-        }
-      }
-    });
-
-    if (!narrative || !narrative.revisionId || !narrative.revision) {
-      throw new NotFoundException('Narrative revision snapshot not found.');
-    }
-
-    await this.markNarrativeProcessing(narrativeId);
-
-    try {
-      const report = await this.hydrateRevisionReport(
-        narrative.revisionId,
-        narrative.revision.reportSnapshot
-      );
-      await this.markNarrativeReady(narrativeId, {
-        model: 'template-v1',
-        promptVersion: '2026.04.ready-software.1',
-        content: this.createNarrativeContent(narrative.kind, report)
-      });
-    } catch (error) {
-      await this.markNarrativeFailed(
-        narrativeId,
-        error instanceof Error ? error.message : 'Narrative generation failed.'
-      );
-      throw error;
-    }
   }
 
   async getInternalArtifactJobData(artifactId: string) {
@@ -2526,8 +2340,12 @@ export class EvaluationsService {
   async markNarrativeReady(
     narrativeId: string,
     input: {
+      provider: string;
       model: string;
       promptVersion: string;
+      inputTokens?: number | null;
+      outputTokens?: number | null;
+      estimatedCostUsd?: number | null;
       content: string;
     }
   ) {
@@ -2537,8 +2355,12 @@ export class EvaluationsService {
       },
       data: {
         status: 'ready',
+        provider: input.provider,
         model: input.model,
         promptVersion: input.promptVersion,
+        inputTokens: input.inputTokens ?? null,
+        outputTokens: input.outputTokens ?? null,
+        estimatedCostUsd: input.estimatedCostUsd ?? null,
         content: input.content,
         readyAt: new Date(),
         failedAt: null,
@@ -2556,6 +2378,7 @@ export class EvaluationsService {
         evaluationId: narrative.evaluationId,
         revisionId: narrative.revisionId,
         kind: narrative.kind,
+        provider: input.provider,
         model: input.model
       }
     });
@@ -2631,7 +2454,7 @@ export class EvaluationsService {
       throw new NotFoundException('Render revision not found.');
     }
 
-    return this.hydrateRevisionReport(revision.id, revision.reportSnapshot, 'revision_artifacts');
+    return this.hydrateRevisionReport(revision.id, revision.reportSnapshot);
   }
 
   private buildContextChanges(leftReport: ReportResponse, rightReport: ReportResponse) {
@@ -2852,264 +2675,5 @@ export class EvaluationsService {
       currentStage: evaluation.currentStage,
       innovationApproach: evaluation.innovationApproach
     };
-  }
-
-  private buildCsvReport(report: ReportResponse) {
-    const rows: string[][] = [];
-    const pushSection = (
-      section: string,
-      field: string,
-      value: string | number | boolean | null
-    ) => {
-      rows.push([section, field, value === null ? '' : String(value)]);
-    };
-
-    pushSection('evaluation', 'id', report.evaluation.id);
-    pushSection('evaluation', 'name', report.evaluation.name);
-    pushSection('evaluation', 'country', report.evaluation.country);
-    pushSection('evaluation', 'naceDivision', report.evaluation.naceDivision);
-    pushSection('evaluation', 'offeringType', report.evaluation.offeringType);
-    pushSection('evaluation', 'launched', report.evaluation.launched);
-    pushSection('evaluation', 'currentStage', report.evaluation.currentStage);
-    pushSection('evaluation', 'innovationApproach', report.evaluation.innovationApproach);
-    pushSection('evaluation', 'status', report.evaluation.status);
-    pushSection('evaluation', 'currentStep', report.evaluation.currentStep);
-    pushSection('evaluation', 'confidenceBand', report.dashboard.confidenceBand);
-    pushSection('evaluation', 'financialTotal', report.dashboard.financialTotal);
-    pushSection('evaluation', 'riskOverall', report.dashboard.riskOverall);
-    pushSection('evaluation', 'opportunityOverall', report.dashboard.opportunityOverall);
-    pushSection('evaluation', 'revisionNumber', report.evaluation.currentRevisionNumber);
-    pushSection(
-      'evaluation',
-      'scoringVersion',
-      report.evaluation.scoringVersionInfo.scoringVersion
-    );
-    pushSection(
-      'evaluation',
-      'catalogVersion',
-      report.evaluation.scoringVersionInfo.catalogVersion
-    );
-
-    if (report.evaluation.stage1Financial) {
-      for (const item of report.evaluation.stage1Financial.items) {
-        pushSection('stage1_financial', `${item.id}.level`, item.level);
-        pushSection('stage1_financial', `${item.id}.score`, item.score);
-      }
-    }
-
-    for (const topic of report.evaluation.stage1Topics) {
-      pushSection('stage1_topic', `${topic.topicCode}.applicable`, topic.applicable);
-      pushSection('stage1_topic', `${topic.topicCode}.magnitude`, topic.magnitude);
-      pushSection('stage1_topic', `${topic.topicCode}.scale`, topic.scale);
-      pushSection('stage1_topic', `${topic.topicCode}.irreversibility`, topic.irreversibility);
-      pushSection('stage1_topic', `${topic.topicCode}.likelihood`, topic.likelihood);
-      pushSection('stage1_topic', `${topic.topicCode}.impactScore`, topic.impactScore);
-      pushSection('stage1_topic', `${topic.topicCode}.priorityBand`, topic.priorityBand);
-      pushSection('stage1_topic', `${topic.topicCode}.evidenceBasis`, topic.evidenceBasis);
-      pushSection('stage1_topic', `${topic.topicCode}.evidenceNote`, topic.evidenceNote ?? null);
-    }
-
-    for (const risk of report.evaluation.stage2Risks) {
-      pushSection('stage2_risk', `${risk.riskCode}.applicable`, risk.applicable);
-      pushSection('stage2_risk', `${risk.riskCode}.probability`, risk.probability);
-      pushSection('stage2_risk', `${risk.riskCode}.impact`, risk.impact);
-      pushSection('stage2_risk', `${risk.riskCode}.ratingScore`, risk.ratingScore);
-      pushSection('stage2_risk', `${risk.riskCode}.ratingLabel`, risk.ratingLabel);
-      pushSection('stage2_risk', `${risk.riskCode}.evidenceBasis`, risk.evidenceBasis);
-      pushSection('stage2_risk', `${risk.riskCode}.evidenceNote`, risk.evidenceNote ?? null);
-    }
-
-    for (const opportunity of report.evaluation.stage2Opportunities) {
-      pushSection(
-        'stage2_opportunity',
-        `${opportunity.opportunityCode}.applicable`,
-        opportunity.applicable
-      );
-      pushSection(
-        'stage2_opportunity',
-        `${opportunity.opportunityCode}.likelihood`,
-        opportunity.likelihood
-      );
-      pushSection(
-        'stage2_opportunity',
-        `${opportunity.opportunityCode}.impact`,
-        opportunity.impact
-      );
-      pushSection(
-        'stage2_opportunity',
-        `${opportunity.opportunityCode}.ratingScore`,
-        opportunity.ratingScore
-      );
-      pushSection(
-        'stage2_opportunity',
-        `${opportunity.opportunityCode}.ratingLabel`,
-        opportunity.ratingLabel
-      );
-      pushSection(
-        'stage2_opportunity',
-        `${opportunity.opportunityCode}.evidenceBasis`,
-        opportunity.evidenceBasis
-      );
-      pushSection(
-        'stage2_opportunity',
-        `${opportunity.opportunityCode}.evidenceNote`,
-        opportunity.evidenceNote ?? null
-      );
-    }
-
-    for (const sdg of report.sdgAlignment.items) {
-      pushSection('sdg_alignment', `${sdg.number}`, `${sdg.title} (${sdg.sourceType})`);
-    }
-
-    for (const recommendation of report.dashboard.recommendations) {
-      pushSection('recommendation', `${recommendation.id}.title`, recommendation.title);
-      pushSection('recommendation', `${recommendation.id}.source`, recommendation.source);
-      pushSection('recommendation', `${recommendation.id}.severity`, recommendation.severityBand);
-      pushSection('recommendation', `${recommendation.id}.text`, recommendation.text);
-    }
-
-    return [['section', 'field', 'value'], ...rows]
-      .map((row) => row.map((value) => this.escapeCsvCell(value)).join(','))
-      .join('\n');
-  }
-
-  private buildPdfReport(report: ReportResponse) {
-    const lines = this.buildPdfLines(report);
-    const linesPerPage = 42;
-    const pages: string[][] = [];
-
-    for (let index = 0; index < lines.length; index += linesPerPage) {
-      pages.push(lines.slice(index, index + linesPerPage));
-    }
-
-    return this.createPdfDocument(pages);
-  }
-
-  private buildPdfLines(report: ReportResponse) {
-    const lines = [
-      'ZEEUS Sustainability Assessment Report',
-      '',
-      `Startup: ${report.evaluation.name}`,
-      `Country: ${report.evaluation.country}`,
-      `NACE: ${report.evaluation.naceDivision}`,
-      `Stage: ${report.evaluation.currentStage}`,
-      `Status: ${report.evaluation.status}`,
-      `Revision: ${report.evaluation.currentRevisionNumber}`,
-      `Scoring version: ${report.evaluation.scoringVersionInfo.scoringVersion}`,
-      `Catalog version: ${report.evaluation.scoringVersionInfo.catalogVersion}`,
-      '',
-      'Dashboard',
-      `Financial total: ${report.dashboard.financialTotal}/12`,
-      `Risk overall: ${report.dashboard.riskOverall}`,
-      `Opportunity overall: ${report.dashboard.opportunityOverall}`,
-      `Confidence: ${report.dashboard.confidenceBand}`,
-      '',
-      'Material topics'
-    ];
-
-    for (const topic of report.dashboard.materialAlerts) {
-      lines.push(`- ${topic.topicCode}: ${topic.title} (${topic.priorityBand}, ${topic.score})`);
-    }
-
-    lines.push('', 'Top risks');
-    for (const risk of report.dashboard.topRisks) {
-      lines.push(`- ${risk.title}: ${risk.ratingLabel} (${risk.score})`);
-    }
-
-    lines.push('', 'Top opportunities');
-    for (const opportunity of report.dashboard.topOpportunities) {
-      lines.push(`- ${opportunity.title}: ${opportunity.ratingLabel} (${opportunity.score})`);
-    }
-
-    lines.push('', 'Recommendations');
-    for (const recommendation of report.dashboard.recommendations) {
-      lines.push(`- ${recommendation.title}: ${recommendation.text}`);
-    }
-
-    lines.push('', 'Relevant SDGs');
-    for (const sdg of report.sdgAlignment.items) {
-      lines.push(`- SDG ${sdg.number}: ${sdg.title} (${sdg.sourceType})`);
-    }
-
-    return lines;
-  }
-
-  private createPdfDocument(pages: string[][]) {
-    const catalogId = 1;
-    const pagesId = 2;
-    const fontId = 3;
-    const pageIds: number[] = [];
-    const contentIds: number[] = [];
-    let nextId = 4;
-
-    for (const _page of pages) {
-      pageIds.push(nextId++);
-      contentIds.push(nextId++);
-    }
-
-    const objects = new Map<number, string>();
-    objects.set(catalogId, `<< /Type /Catalog /Pages ${pagesId} 0 R >>`);
-    objects.set(
-      pagesId,
-      `<< /Type /Pages /Count ${pages.length} /Kids [${pageIds.map((id) => `${id} 0 R`).join(' ')}] >>`
-    );
-    objects.set(fontId, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
-
-    pages.forEach((pageLines, index) => {
-      const pageId = pageIds[index]!;
-      const contentId = contentIds[index]!;
-      const content = this.buildPdfPageContent(pageLines);
-      objects.set(
-        contentId,
-        `<< /Length ${Buffer.byteLength(content, 'utf8')} >>\nstream\n${content}\nendstream`
-      );
-      objects.set(
-        pageId,
-        `<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 612 792] /Contents ${contentId} 0 R /Resources << /Font << /F1 ${fontId} 0 R >> >> >>`
-      );
-    });
-
-    let pdf = '%PDF-1.4\n';
-    const offsets = new Map<number, number>();
-
-    for (const id of [...objects.keys()].sort((left, right) => left - right)) {
-      offsets.set(id, Buffer.byteLength(pdf, 'utf8'));
-      pdf += `${id} 0 obj\n${objects.get(id)}\nendobj\n`;
-    }
-
-    const xrefOffset = Buffer.byteLength(pdf, 'utf8');
-    pdf += `xref\n0 ${objects.size + 1}\n`;
-    pdf += '0000000000 65535 f \n';
-
-    for (let id = 1; id <= objects.size; id += 1) {
-      const offset = offsets.get(id) ?? 0;
-      pdf += `${offset.toString().padStart(10, '0')} 00000 n \n`;
-    }
-
-    pdf += `trailer\n<< /Size ${objects.size + 1} /Root ${catalogId} 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
-    return Buffer.from(pdf, 'utf8');
-  }
-
-  private buildPdfPageContent(lines: string[]) {
-    const commands = ['BT', '/F1 12 Tf', '14 TL', '50 760 Td'];
-
-    lines.forEach((line, index) => {
-      if (index > 0) {
-        commands.push('T*');
-      }
-
-      commands.push(`(${this.escapePdfText(line)}) Tj`);
-    });
-
-    commands.push('ET');
-    return commands.join('\n');
-  }
-
-  private escapePdfText(value: string) {
-    return value.replaceAll('\\', '\\\\').replaceAll('(', '\\(').replaceAll(')', '\\)');
-  }
-
-  private escapeCsvCell(value: string) {
-    return `"${value.replaceAll('"', '""')}"`;
   }
 }

@@ -57,6 +57,11 @@ export class EvaluationJobsService implements OnModuleDestroy {
       },
       {
         jobId,
+        attempts: 4,
+        backoff: {
+          type: 'exponential',
+          delay: 5000
+        },
         removeOnComplete: 200,
         removeOnFail: 500
       }

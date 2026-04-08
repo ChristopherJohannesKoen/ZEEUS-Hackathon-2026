@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { Badge, cn } from '@packages/ui';
 import type { SessionUser } from '@packages/shared';
 import { usePathname } from 'next/navigation';
-import { canSeeAdminNav } from '../lib/authorization';
 import { LogoutButton } from './logout-button';
 import { ZeeusLogo } from './zeeus-logo';
 
@@ -38,8 +37,7 @@ export function AppShell({
   const navigationItems = [
     { href: '/app', label: 'Overview' },
     { href: '/app/evaluations', label: 'Evaluations' },
-    { href: '/app/settings', label: 'Settings' },
-    ...(canSeeAdminNav(currentUser.role) ? [{ href: '/app/admin/users', label: 'Admin' }] : [])
+    { href: '/app/settings', label: 'Settings' }
   ];
 
   return (

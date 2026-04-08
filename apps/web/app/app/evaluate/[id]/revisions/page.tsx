@@ -10,7 +10,11 @@ import {
   formatDate,
   formatEnumLabel
 } from '../../../../../lib/display';
-import { getEvaluation, getEvaluationRevisions } from '../../../../../lib/server-api';
+import {
+  getEvaluation,
+  getEvaluationArtifacts,
+  getEvaluationRevisions
+} from '../../../../../lib/server-api';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,9 +24,10 @@ export default async function EvaluationRevisionsPage({ params }: { params: Para
   const { id } = await params;
 
   try {
-    const [evaluation, revisions] = await Promise.all([
+    const [evaluation, revisions, artifacts] = await Promise.all([
       getEvaluation(id),
-      getEvaluationRevisions(id)
+      getEvaluationRevisions(id),
+      getEvaluationArtifacts(id)
     ]);
 
     return (
@@ -126,12 +131,12 @@ export default async function EvaluationRevisionsPage({ params }: { params: Para
           <Card className="border-surface-border">
             <h2 className="text-2xl font-black text-slate-950">Generated artifacts</h2>
             <div className="mt-6 grid gap-4">
-              {evaluation.artifacts.length === 0 ? (
+              {artifacts.items.length === 0 ? (
                 <div className="rounded-[28px] bg-[#f7f9f4] p-5 text-sm leading-7 text-slate-600">
                   No report artifacts have been generated yet.
                 </div>
               ) : (
-                evaluation.artifacts.map((artifact: EvaluationArtifactSummary) => (
+                artifacts.items.map((artifact: EvaluationArtifactSummary) => (
                   <div className="rounded-[28px] bg-[#f7f9f4] p-5" key={artifact.id}>
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge tone="slate">{artifact.kind}</Badge>

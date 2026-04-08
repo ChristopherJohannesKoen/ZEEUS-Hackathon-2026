@@ -32,8 +32,12 @@ const markFailureBodySchema = z.object({
 });
 
 const markNarrativeReadyBodySchema = z.object({
+  provider: z.string().min(1),
   model: z.string().min(1),
   promptVersion: z.string().min(1),
+  inputTokens: z.number().int().nonnegative().optional().nullable(),
+  outputTokens: z.number().int().nonnegative().optional().nullable(),
+  estimatedCostUsd: z.number().nonnegative().optional().nullable(),
   content: z.string().min(1)
 });
 

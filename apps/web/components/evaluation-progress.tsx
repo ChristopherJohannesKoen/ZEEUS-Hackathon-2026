@@ -68,12 +68,12 @@ export function EvaluationProgress({
                     !isActive && !isComplete && 'bg-surface-border text-slate-500'
                   )}
                 >
-                  {isComplete ? '✓' : index + 1}
+                  {isComplete ? 'OK' : index + 1}
                 </span>
                 {step.shortLabel}
               </Link>
               {index < stepDefinitions.length - 1 ? (
-                <span className="px-1 text-slate-300">›</span>
+                <span className="px-1 text-slate-300">{'>'}</span>
               ) : null}
             </div>
           );

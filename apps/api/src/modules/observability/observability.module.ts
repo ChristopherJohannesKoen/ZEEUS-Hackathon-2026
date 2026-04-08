@@ -1,11 +1,10 @@
-import { Global, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
+import { CoreMetricsModule } from './core-metrics.module';
 import { MetricsController } from './metrics.controller';
-import { MetricsService } from './metrics.service';
 
-@Global()
 @Module({
+  imports: [CoreMetricsModule],
   controllers: [MetricsController],
-  providers: [MetricsService],
-  exports: [MetricsService]
+  exports: [CoreMetricsModule]
 })
 export class ObservabilityModule {}

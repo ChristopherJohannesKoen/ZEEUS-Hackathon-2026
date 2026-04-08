@@ -324,3 +324,4 @@ export const ScimGroupListResponseSchema = ScimListResponseSchema(ScimGroupSchem
 export type ScimGroupListResponse = z.infer<typeof ScimGroupListResponseSchema>;
 
 export * from './evaluations';
+export * from './report-artifacts';

@@ -34,20 +34,12 @@ import {
   ResetPasswordPayloadSchema,
   RevokeSessionResponseSchema,
   SaveStage1PayloadSchema,
-  SaveStage1TopicsPayloadSchema,
   SaveStage2PayloadSchema,
-  SaveStage2OpportunitiesPayloadSchema,
-  SaveStage2RisksPayloadSchema,
   SessionIdParamsSchema,
   SessionListResponseSchema,
   SdgAlignmentResponseSchema,
   SsoProvidersResponseSchema,
   SignupPayloadSchema,
-  Stage1FinancialAnswerSchema,
-  Stage1FinancialAnswersPayloadSchema,
-  Stage1TopicAnswerSchema,
-  Stage2OpportunityAnswerSchema,
-  Stage2RiskAnswerSchema,
   StageSdgSummarySchema,
   StepUpPayloadSchema,
   StepUpResponseSchema,
@@ -300,16 +292,6 @@ export const apiContract = c.router(
             200: StageSdgSummarySchema
           }
         },
-        saveStage1Financial: {
-          method: 'PUT',
-          path: '/:id/stage-1/financial',
-          pathParams: EvaluationIdParamsSchema,
-          body: Stage1FinancialAnswersPayloadSchema,
-          headers: csrfHeaderSchema,
-          responses: {
-            200: Stage1FinancialAnswerSchema
-          }
-        },
         saveStage1: {
           method: 'PUT',
           path: '/:id/stage-1',
@@ -320,18 +302,6 @@ export const apiContract = c.router(
             200: EvaluationDetailSchema
           }
         },
-        saveStage1Topics: {
-          method: 'PUT',
-          path: '/:id/stage-1/topics',
-          pathParams: EvaluationIdParamsSchema,
-          body: SaveStage1TopicsPayloadSchema,
-          headers: csrfHeaderSchema,
-          responses: {
-            200: z.object({
-              items: z.array(Stage1TopicAnswerSchema)
-            })
-          }
-        },
         saveStage2: {
           method: 'PUT',
           path: '/:id/stage-2',
@@ -340,30 +310,6 @@ export const apiContract = c.router(
           headers: csrfHeaderSchema.merge(idempotencyHeaderSchema),
           responses: {
             200: EvaluationDetailSchema
-          }
-        },
-        saveStage2Risks: {
-          method: 'PUT',
-          path: '/:id/stage-2/risks',
-          pathParams: EvaluationIdParamsSchema,
-          body: SaveStage2RisksPayloadSchema,
-          headers: csrfHeaderSchema,
-          responses: {
-            200: z.object({
-              items: z.array(Stage2RiskAnswerSchema)
-            })
-          }
-        },
-        saveStage2Opportunities: {
-          method: 'PUT',
-          path: '/:id/stage-2/opportunities',
-          pathParams: EvaluationIdParamsSchema,
-          body: SaveStage2OpportunitiesPayloadSchema,
-          headers: csrfHeaderSchema,
-          responses: {
-            200: z.object({
-              items: z.array(Stage2OpportunityAnswerSchema)
-            })
           }
         },
         getImpactSummary: {
@@ -535,28 +481,6 @@ export const apiContract = c.router(
           query: EvaluationBenchmarkQuerySchema,
           responses: {
             200: EvaluationBenchmarkSummarySchema
-          }
-        },
-        exportPdf: {
-          method: 'GET',
-          path: '/:id/export.pdf',
-          pathParams: EvaluationIdParamsSchema,
-          responses: {
-            200: c.otherResponse({
-              contentType: 'application/pdf',
-              body: z.string()
-            })
-          }
-        },
-        exportCsv: {
-          method: 'GET',
-          path: '/:id/export.csv',
-          pathParams: EvaluationIdParamsSchema,
-          responses: {
-            200: c.otherResponse({
-              contentType: 'text/csv',
-              body: z.string()
-            })
           }
         }
       },

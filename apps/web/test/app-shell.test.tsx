@@ -33,7 +33,7 @@ describe('AppShell', () => {
     expect(screen.queryByRole('link', { name: 'Admin' })).toBeNull();
   });
 
-  it('shows the admin navigation link for admins', () => {
+  it('keeps the shell focused on assessment routes even for admins', () => {
     render(
       <AppShell
         currentUser={{
@@ -47,7 +47,7 @@ describe('AppShell', () => {
       </AppShell>
     );
 
-    expect(screen.getByRole('link', { name: 'Admin' })).toBeTruthy();
+    expect(screen.queryByRole('link', { name: 'Admin' })).toBeNull();
   });
 
   it('passes automated axe checks for the dashboard shell', async () => {

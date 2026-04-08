@@ -7,6 +7,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { chromium, type Browser } from 'playwright';
 import {
+  serializeReportAsCsv,
   ReportResponseSchema,
   type EvaluationNarrativeKind,
   type ReportResponse
@@ -22,6 +23,14 @@ const webInternalOrigin = (process.env.WEB_INTERNAL_ORIGIN ?? 'http://localhost:
 const internalServiceToken = process.env.INTERNAL_SERVICE_TOKEN ?? '';
 const redisUrl = process.env.REDIS_URL ?? 'redis://localhost:6379';
 const artifactsRoot = path.resolve(process.env.ARTIFACTS_DIR ?? '.artifacts-worker');
+const aiProvider = (process.env.AI_PROVIDER ?? 'openai').trim().toLowerCase();
+const openAiApiKey = process.env.OPENAI_API_KEY?.trim() ?? '';
+const openAiBaseUrl = (process.env.OPENAI_BASE_URL ?? 'https://api.openai.com/v1').replace(
+  /\/$/,
+  ''
+);
+const openAiModel = process.env.OPENAI_MODEL?.trim() || 'gpt-5.4-mini';
+const narrativePromptVersion = '2026.04.ready-software.3';
 
 const artifactJobSchema = z.object({
   id: z.string(),
@@ -47,6 +56,16 @@ const narrativeJobSchema = z.object({
     'evidence_guidance'
   ]),
   report: ReportResponseSchema
+});
+
+const openAiResponseSchema = z.object({
+  output_text: z.string().optional(),
+  usage: z
+    .object({
+      input_tokens: z.number().int().nonnegative().optional(),
+      output_tokens: z.number().int().nonnegative().optional()
+    })
+    .optional()
 });
 
 class ArtifactStorage {
@@ -134,160 +153,124 @@ async function getBrowser() {
   return browserPromise;
 }
 
-function escapeCsvCell(value: string) {
-  return `"${value.replaceAll('"', '""')}"`;
-}
-
-function buildCsvReport(report: ReportResponse) {
-  const rows: string[][] = [];
-  const pushSection = (section: string, field: string, value: unknown) => {
-    rows.push([section, field, value == null ? '' : String(value)]);
-  };
-
-  pushSection('evaluation', 'id', report.evaluation.id);
-  pushSection('evaluation', 'name', report.evaluation.name);
-  pushSection('evaluation', 'country', report.evaluation.country);
-  pushSection('evaluation', 'naceDivision', report.evaluation.naceDivision);
-  pushSection('evaluation', 'offeringType', report.evaluation.offeringType);
-  pushSection('evaluation', 'launched', report.evaluation.launched);
-  pushSection('evaluation', 'currentStage', report.evaluation.currentStage);
-  pushSection('evaluation', 'innovationApproach', report.evaluation.innovationApproach);
-  pushSection('dashboard', 'financialTotal', report.dashboard.financialTotal);
-  pushSection('dashboard', 'riskOverall', report.dashboard.riskOverall);
-  pushSection('dashboard', 'opportunityOverall', report.dashboard.opportunityOverall);
-  pushSection('dashboard', 'confidenceBand', report.dashboard.confidenceBand);
-
-  if (report.evaluation.stage1Financial) {
-    const financial = report.evaluation.stage1Financial;
-    pushSection('stage1_financial', 'roiLevel', financial.roiLevel);
-    pushSection('stage1_financial', 'sensitivityLevel', financial.sensitivityLevel);
-    pushSection('stage1_financial', 'uspLevel', financial.uspLevel);
-    pushSection('stage1_financial', 'marketGrowthLevel', financial.marketGrowthLevel);
-    pushSection('stage1_financial', 'totalScore', financial.totalScore);
-
-    for (const item of financial.items) {
-      pushSection('stage1_financial', `${item.id}.level`, item.level);
-      pushSection('stage1_financial', `${item.id}.score`, item.score);
-    }
-  }
-
-  for (const topic of report.evaluation.stage1Topics) {
-    pushSection('stage1_topic', `${topic.topicCode}.applicable`, topic.applicable);
-    pushSection('stage1_topic', `${topic.topicCode}.magnitude`, topic.magnitude);
-    pushSection('stage1_topic', `${topic.topicCode}.scale`, topic.scale);
-    pushSection('stage1_topic', `${topic.topicCode}.irreversibility`, topic.irreversibility);
-    pushSection('stage1_topic', `${topic.topicCode}.likelihood`, topic.likelihood);
-    pushSection('stage1_topic', `${topic.topicCode}.impactScore`, topic.impactScore);
-    pushSection('stage1_topic', `${topic.topicCode}.priorityBand`, topic.priorityBand);
-    pushSection('stage1_topic', `${topic.topicCode}.evidenceBasis`, topic.evidenceBasis);
-    pushSection('stage1_topic', `${topic.topicCode}.evidenceNote`, topic.evidenceNote ?? null);
-  }
-
-  for (const risk of report.evaluation.stage2Risks) {
-    pushSection('stage2_risk', `${risk.riskCode}.applicable`, risk.applicable);
-    pushSection('stage2_risk', `${risk.riskCode}.probability`, risk.probability);
-    pushSection('stage2_risk', `${risk.riskCode}.impact`, risk.impact);
-    pushSection('stage2_risk', `${risk.riskCode}.ratingScore`, risk.ratingScore);
-    pushSection('stage2_risk', `${risk.riskCode}.ratingLabel`, risk.ratingLabel);
-    pushSection('stage2_risk', `${risk.riskCode}.evidenceBasis`, risk.evidenceBasis);
-    pushSection('stage2_risk', `${risk.riskCode}.evidenceNote`, risk.evidenceNote ?? null);
-  }
-
-  for (const opportunity of report.evaluation.stage2Opportunities) {
-    pushSection(
-      'stage2_opportunity',
-      `${opportunity.opportunityCode}.applicable`,
-      opportunity.applicable
-    );
-    pushSection(
-      'stage2_opportunity',
-      `${opportunity.opportunityCode}.likelihood`,
-      opportunity.likelihood
-    );
-    pushSection('stage2_opportunity', `${opportunity.opportunityCode}.impact`, opportunity.impact);
-    pushSection(
-      'stage2_opportunity',
-      `${opportunity.opportunityCode}.ratingScore`,
-      opportunity.ratingScore
-    );
-    pushSection(
-      'stage2_opportunity',
-      `${opportunity.opportunityCode}.ratingLabel`,
-      opportunity.ratingLabel
-    );
-    pushSection(
-      'stage2_opportunity',
-      `${opportunity.opportunityCode}.evidenceBasis`,
-      opportunity.evidenceBasis
-    );
-    pushSection(
-      'stage2_opportunity',
-      `${opportunity.opportunityCode}.evidenceNote`,
-      opportunity.evidenceNote ?? null
-    );
-  }
-
-  for (const recommendation of report.dashboard.recommendations) {
-    pushSection('recommendation', `${recommendation.id}.title`, recommendation.title);
-    pushSection('recommendation', `${recommendation.id}.source`, recommendation.source);
-    pushSection('recommendation', `${recommendation.id}.severity`, recommendation.severityBand);
-    pushSection('recommendation', `${recommendation.id}.text`, recommendation.text);
-    pushSection(
-      'recommendation',
-      `${recommendation.id}.actionStatus`,
-      recommendation.action?.status ?? null
-    );
-  }
-
-  return [['section', 'field', 'value'], ...rows]
-    .map((row) => row.map((value) => escapeCsvCell(value)).join(','))
-    .join('\n');
-}
-
-function buildNarrativeContent(kind: EvaluationNarrativeKind, report: ReportResponse) {
+function buildNarrativeInstructions(kind: EvaluationNarrativeKind, report: ReportResponse) {
   const topTopic = report.dashboard.materialAlerts[0];
   const topRisk = report.dashboard.topRisks[0];
   const topOpportunity = report.dashboard.topOpportunities[0];
 
   if (kind === 'executive_summary') {
     return [
-      `${report.evaluation.name} currently scores ${report.dashboard.financialTotal}/12 on the deterministic financial screen, with overall risk at ${report.dashboard.riskOverall.toFixed(1)} and opportunity at ${report.dashboard.opportunityOverall.toFixed(1)}.`,
+      'Write an executive summary for the startup assessment.',
+      'Use 3 short paragraphs.',
+      'Explain the financial, risk, and opportunity totals in plain language.',
       topTopic
-        ? `${topTopic.title} is the strongest inside-out materiality signal at ${topTopic.score}, which makes it the clearest near-term sustainability priority.`
-        : 'No material topics are above the reporting threshold yet, so the next priority is collecting stronger evidence before the next review.',
+        ? `Call out ${topTopic.title} as the strongest inside-out materiality signal.`
+        : 'State clearly that no material topics crossed the threshold yet.',
       topOpportunity
-        ? `${topOpportunity.title} is the clearest upside signal, while ${topRisk?.title ?? 'outside-in risks'} should be monitored as the main constraint on execution.`
-        : `${topRisk?.title ?? 'Outside-in risk'} remains the strongest external consideration for the current profile.`
-    ].join('\n\n');
+        ? `Mention ${topOpportunity.title} as the strongest opportunity signal.`
+        : 'State clearly that no opportunity is above neutral yet.',
+      topRisk
+        ? `Mention ${topRisk.title} as the strongest external risk signal.`
+        : 'State clearly that no risk is above neutral yet.',
+      'Stay factual and advisory. Do not invent data or change any deterministic conclusion.'
+    ].join('\n');
   }
 
   if (kind === 'material_topics') {
     return [
-      `The current materiality profile is driven by ${topTopic?.title ?? 'the saved topic scores'} and the evidence basis attached to each Stage I answer.`,
-      'Topics marked relevant indicate credible sustainability relevance, while high-priority topics indicate the startup is already above the stronger action threshold.',
+      'Explain the Stage I materiality profile.',
+      `Use ${topTopic?.title ?? 'the saved topic scores'} as the anchor example.`,
+      'Clarify the difference between relevant and high-priority topics.',
       report.dashboard.sensitivityHints[0]
-        ? `The most important near-threshold hint is: ${report.dashboard.sensitivityHints[0].message}`
-        : 'No near-threshold shifts were detected from the saved assumptions.'
-    ].join('\n\n');
+        ? `Include this near-threshold sensitivity hint: ${report.dashboard.sensitivityHints[0].message}`
+        : 'State that no near-threshold shifts were detected from the saved assumptions.',
+      'Suggest what evidence would most improve confidence next.'
+    ].join('\n');
   }
 
   if (kind === 'risks_opportunities') {
     return [
+      'Explain the most material outside-in risks and opportunities.',
       topRisk
-        ? `${topRisk.title} is the most material external risk signal and should anchor the short-term mitigation discussion.`
-        : 'No external risks are currently rated above neutral.',
+        ? `Anchor the risk explanation on ${topRisk.title}.`
+        : 'State that no external risk is above neutral.',
       topOpportunity
-        ? `${topOpportunity.title} is the strongest opportunity signal and should inform roadmap and partnership decisions.`
-        : 'No external opportunities are currently rated above neutral.',
-      'These explanations are generated from the immutable revision snapshot and do not alter any deterministic scores.'
-    ].join('\n\n');
+        ? `Anchor the opportunity explanation on ${topOpportunity.title}.`
+        : 'State that no external opportunity is above neutral.',
+      'Use concise language and finish with next-step guidance.'
+    ].join('\n');
   }
 
   return [
-    'Evidence quality is the main determinant of confidence in this assessment.',
-    `The current confidence band is ${report.dashboard.confidenceBand}, based on the measured, estimated, and assumed evidence basis saved across Stage I and Stage II.`,
-    'Focus next on collecting defensible evidence for the highest-priority topic, the strongest risk, and the strongest opportunity before the next revision.'
-  ].join('\n\n');
+    'Explain what evidence should be collected next.',
+    `The current confidence band is ${report.dashboard.confidenceBand}.`,
+    'Differentiate measured, estimated, and assumed evidence.',
+    'Recommend the next evidence package for the highest-priority topic, strongest risk, and strongest opportunity.',
+    'Keep it practical and non-technical.'
+  ].join('\n');
+}
+
+function buildNarrativePrompt(kind: EvaluationNarrativeKind, report: ReportResponse) {
+  return [
+    'You are writing a sustainability startup assessment narrative for ZEEUS.',
+    'The deterministic report data below is authoritative. You must not alter, reinterpret, or override any scores, thresholds, SDG mappings, or recommendations.',
+    'Use only the provided report data.',
+    'Do not mention AI, probabilities, or hidden calculations.',
+    'Keep the tone concise, professional, and startup-friendly.',
+    '',
+    'Task instructions:',
+    buildNarrativeInstructions(kind, report),
+    '',
+    'Deterministic report payload:',
+    JSON.stringify(report)
+  ].join('\n');
+}
+
+async function generateOpenAiNarrative(kind: EvaluationNarrativeKind, report: ReportResponse) {
+  if (!openAiApiKey) {
+    throw new Error('OPENAI_API_KEY is required for AI narrative generation.');
+  }
+
+  const response = await fetch(`${openAiBaseUrl}/responses`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${openAiApiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: openAiModel,
+      input: buildNarrativePrompt(kind, report)
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`OpenAI narrative request failed with status ${response.status}.`);
+  }
+
+  const parsed = openAiResponseSchema.parse(await response.json());
+  const content = parsed.output_text?.trim();
+
+  if (!content) {
+    throw new Error('OpenAI narrative response did not include output text.');
+  }
+
+  return {
+    provider: 'openai',
+    model: openAiModel,
+    promptVersion: narrativePromptVersion,
+    inputTokens: parsed.usage?.input_tokens ?? null,
+    outputTokens: parsed.usage?.output_tokens ?? null,
+    estimatedCostUsd: null,
+    content
+  };
+}
+
+async function generateNarrative(kind: EvaluationNarrativeKind, report: ReportResponse) {
+  if (aiProvider !== 'openai') {
+    throw new Error(`Unsupported AI provider: ${aiProvider}`);
+  }
+
+  return generateOpenAiNarrative(kind, report);
 }
 
 async function renderPdf(evaluationId: string, revisionNumber: number) {
@@ -353,7 +336,7 @@ async function processArtifact(entityId: string) {
   try {
     const content =
       job.kind === 'csv'
-        ? Buffer.from(buildCsvReport(job.report), 'utf8')
+        ? Buffer.from(serializeReportAsCsv(job.report), 'utf8')
         : await renderPdf(job.evaluationId, job.revisionNumber);
 
     await completeArtifact(job.id, content, job.filename, job.mimeType);
@@ -378,15 +361,20 @@ async function processNarrative(entityId: string) {
   await internalApiRequest(`/narratives/${entityId}/processing`, { method: 'POST' });
 
   try {
+    const narrative = await generateNarrative(job.kind, job.report);
     await internalApiRequest(`/narratives/${entityId}/ready`, {
       method: 'POST',
       headers: {
         'content-type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'template-v1',
-        promptVersion: '2026.04.ready-software.2',
-        content: buildNarrativeContent(job.kind, job.report)
+        provider: narrative.provider,
+        model: narrative.model,
+        promptVersion: narrative.promptVersion,
+        inputTokens: narrative.inputTokens,
+        outputTokens: narrative.outputTokens,
+        estimatedCostUsd: narrative.estimatedCostUsd,
+        content: narrative.content
       })
     });
   } catch (error) {

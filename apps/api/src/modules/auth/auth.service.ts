@@ -9,6 +9,7 @@ import { Prisma, type User } from '@prisma/client';
 import argon2 from 'argon2';
 import { createHash, randomBytes } from 'node:crypto';
 import type {
+  SsoProvidersResponse,
   SessionAuthMethod,
   SessionAuthReason,
   SessionUser,
@@ -174,6 +175,15 @@ export class AuthService {
       },
       token,
       expiresAt
+    };
+  }
+
+  getSsoProviders(): SsoProvidersResponse {
+    return {
+      providers: [],
+      defaultProviderSlug: null,
+      localAuthEnabled: !this.isEnterpriseIdentityEnforced(),
+      breakGlassEnabled: this.isBreakGlassEnabled()
     };
   }
 

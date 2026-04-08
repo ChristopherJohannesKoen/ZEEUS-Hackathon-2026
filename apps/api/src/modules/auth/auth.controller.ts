@@ -121,6 +121,14 @@ export class AuthController {
     return { user: currentUser };
   }
 
+  @Get('sso/providers')
+  @ApiOperation({
+    summary: 'List authentication entrypoints for the current runtime configuration'
+  })
+  ssoProviders() {
+    return this.authService.getSsoProviders();
+  }
+
   @Get('sessions')
   @UseGuards(SessionGuard)
   @ApiCookieAuth()

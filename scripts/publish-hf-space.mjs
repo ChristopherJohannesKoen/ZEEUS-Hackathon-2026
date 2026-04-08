@@ -50,8 +50,7 @@ function shouldCopy(relativePath) {
 function run(command, args) {
   const result = spawnSync(command, args, {
     cwd: repoRoot,
-    stdio: 'inherit',
-    shell: process.platform === 'win32'
+    stdio: 'inherit'
   });
 
   if (result.status !== 0) {

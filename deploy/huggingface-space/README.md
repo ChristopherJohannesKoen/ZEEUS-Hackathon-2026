@@ -8,7 +8,7 @@ app_port: 7860
 fullWidth: true
 header: mini
 pinned: false
-short_description: Public website preview for the ZEEUS sustainability startup assessment platform.
+short_description: Public website preview for the ZEEUS platform.
 tags:
   - sustainability
   - nextjs

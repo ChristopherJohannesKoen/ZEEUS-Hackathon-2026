@@ -4,7 +4,7 @@
 
 This repository ships the ZEEUS hackathon assessment app as a monorepo with:
 
-- `apps/web`: Next.js assessment UI
+- `apps/web`: Next.js public site, founder workspace, and partner console
 - `apps/api`: NestJS API
 - `apps/worker`: BullMQ worker for queued artifacts and narratives
 - `packages/scoring`: deterministic scoring engine
@@ -16,16 +16,18 @@ This repository ships the ZEEUS hackathon assessment app as a monorepo with:
 The primary product flow is:
 
 1. Landing page
-2. Login or signup
-3. Saved evaluations workspace
-4. Startup context and SDG pre-screen
-5. Stage I assessment
-6. Stage II risks and opportunities
-7. Impact summary
-8. SDG alignment
-9. Dashboard
-10. Review before completion
-11. Report, revisions, compare, persisted export artifacts, narratives, and benchmarks
+2. Public methodology, FAQ, resources, case-study, partner, and contact pages
+3. Login or signup
+4. Saved evaluations workspace
+5. Organization and partner-program views
+6. Startup context and SDG pre-screen
+7. Stage I assessment
+8. Stage II risks and opportunities
+9. Impact summary
+10. SDG alignment and goal-target exploration
+11. Dashboard, evidence vault, and scenario lab
+12. Review before completion
+13. Report, revisions, compare, persisted export artifacts, narratives, and benchmarks
 
 ## First Boot
 
@@ -105,9 +107,12 @@ Then verify:
 - `http://localhost:3000`
 - `http://localhost:4000/api/health`
 - `http://localhost:4000/api/docs`
+- open `/how-it-works`, `/methodology`, `/faq`, `/resources`, and `/partners`
 - create an evaluation, complete it through the review step, generate CSV and PDF artifacts, and confirm they remain downloadable from revision history after restarting `api` and `worker`
 - request at least one AI narrative and confirm it transitions to `ready`
 - open the benchmarks view and confirm it renders seeded baseline comparisons
+- add at least one evidence item and one scenario run
+- open the partner program console and confirm seeded reviewer activity renders
 
 ## Troubleshooting
 

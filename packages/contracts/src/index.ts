@@ -4,11 +4,18 @@ import {
   AuthPayloadSchema,
   AuthResponseSchema,
   BreakGlassLoginPayloadSchema,
+  CreateEvidenceAssetPayloadSchema,
   CreateEvaluationArtifactPayloadSchema,
   CreateEvaluationNarrativePayloadSchema,
   CreateEvaluationPayloadSchema,
+  CreateScenarioRunPayloadSchema,
+  EvidenceAssetListResponseSchema,
+  EvidenceAssetSummarySchema,
   CsrfResponseSchema,
   DashboardResponseSchema,
+  OrganizationDetailSchema,
+  OrganizationListResponseSchema,
+  OrganizationParamsSchema,
   EvaluationArtifactListResponseSchema,
   EvaluationArtifactParamsSchema,
   EvaluationArtifactSummarySchema,
@@ -30,14 +37,22 @@ import {
   HealthResponseSchema,
   ImpactSummaryResponseSchema,
   OkResponseSchema,
+  ProgramDetailSchema,
+  ProgramListResponseSchema,
+  ProgramParamsSchema,
+  PublicSiteContentSchema,
   ReportResponseSchema,
   ResetPasswordPayloadSchema,
   RevokeSessionResponseSchema,
   SaveStage1PayloadSchema,
   SaveStage2PayloadSchema,
+  ScenarioRunListResponseSchema,
+  ScenarioRunSummarySchema,
   SessionIdParamsSchema,
   SessionListResponseSchema,
   SdgAlignmentResponseSchema,
+  SdgGoalDetailSchema,
+  SdgGoalParamsSchema,
   SsoProvidersResponseSchema,
   SignupPayloadSchema,
   StageSdgSummarySchema,
@@ -482,10 +497,112 @@ export const apiContract = c.router(
           responses: {
             200: EvaluationBenchmarkSummarySchema
           }
+        },
+        listEvidence: {
+          method: 'GET',
+          path: '/:id/evidence',
+          pathParams: EvaluationIdParamsSchema,
+          responses: {
+            200: EvidenceAssetListResponseSchema
+          }
+        },
+        createEvidence: {
+          method: 'POST',
+          path: '/:id/evidence',
+          pathParams: EvaluationIdParamsSchema,
+          body: CreateEvidenceAssetPayloadSchema,
+          headers: csrfHeaderSchema.merge(idempotencyHeaderSchema),
+          responses: {
+            201: EvidenceAssetSummarySchema
+          }
+        },
+        listScenarios: {
+          method: 'GET',
+          path: '/:id/scenarios',
+          pathParams: EvaluationIdParamsSchema,
+          responses: {
+            200: ScenarioRunListResponseSchema
+          }
+        },
+        createScenario: {
+          method: 'POST',
+          path: '/:id/scenarios',
+          pathParams: EvaluationIdParamsSchema,
+          body: CreateScenarioRunPayloadSchema,
+          headers: csrfHeaderSchema.merge(idempotencyHeaderSchema),
+          responses: {
+            201: ScenarioRunSummarySchema
+          }
         }
       },
       {
         pathPrefix: '/evaluations'
+      }
+    ),
+    content: c.router(
+      {
+        site: {
+          method: 'GET',
+          path: '/site',
+          responses: {
+            200: PublicSiteContentSchema
+          }
+        },
+        sdgGoal: {
+          method: 'GET',
+          path: '/sdgs/:goalNumber',
+          pathParams: SdgGoalParamsSchema,
+          responses: {
+            200: SdgGoalDetailSchema
+          }
+        }
+      },
+      {
+        pathPrefix: '/content'
+      }
+    ),
+    organizations: c.router(
+      {
+        list: {
+          method: 'GET',
+          path: '/',
+          responses: {
+            200: OrganizationListResponseSchema
+          }
+        },
+        get: {
+          method: 'GET',
+          path: '/:organizationId',
+          pathParams: OrganizationParamsSchema,
+          responses: {
+            200: OrganizationDetailSchema
+          }
+        }
+      },
+      {
+        pathPrefix: '/organizations'
+      }
+    ),
+    programs: c.router(
+      {
+        list: {
+          method: 'GET',
+          path: '/',
+          responses: {
+            200: ProgramListResponseSchema
+          }
+        },
+        get: {
+          method: 'GET',
+          path: '/:programId',
+          pathParams: ProgramParamsSchema,
+          responses: {
+            200: ProgramDetailSchema
+          }
+        }
+      },
+      {
+        pathPrefix: '/programs'
       }
     )
   },

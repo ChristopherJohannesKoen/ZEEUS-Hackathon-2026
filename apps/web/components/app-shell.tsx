@@ -37,6 +37,8 @@ export function AppShell({
   const navigationItems = [
     { href: '/app', label: 'Overview' },
     { href: '/app/evaluations', label: 'Evaluations' },
+    { href: '/app/organization', label: 'Organization' },
+    { href: '/app/programs', label: 'Programs' },
     { href: '/app/settings', label: 'Settings' }
   ];
 
@@ -140,6 +142,18 @@ export function AppShell({
               <p className="px-3 text-[10px] font-bold uppercase tracking-[0.28em] text-slate-400">
                 Resources
               </p>
+              <Link
+                className="block rounded-2xl px-4 py-3 text-sm font-medium text-slate-600 transition hover:bg-surface-muted hover:text-slate-950"
+                href="/resources"
+              >
+                Resource center
+              </Link>
+              <Link
+                className="block rounded-2xl px-4 py-3 text-sm font-medium text-slate-600 transition hover:bg-surface-muted hover:text-slate-950"
+                href="/partners"
+              >
+                Partner programs
+              </Link>
               <a
                 className="block rounded-2xl px-4 py-3 text-sm font-medium text-slate-600 transition hover:bg-surface-muted hover:text-slate-950"
                 href="https://sdgs.un.org/goals"

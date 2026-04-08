@@ -2,6 +2,7 @@ import { apiContract } from '@packages/contracts';
 import type {
   AuthResponse,
   DashboardResponse,
+  EvidenceAssetListResponse,
   EvaluationArtifactListResponse,
   EvaluationArtifactSummary,
   EvaluationBenchmarkSummary,
@@ -12,9 +13,16 @@ import type {
   EvaluationRevisionDetail,
   EvaluationRevisionListResponse,
   ImpactSummaryResponse,
+  OrganizationDetail,
+  OrganizationListResponse,
+  ProgramDetail,
+  ProgramListResponse,
+  PublicSiteContent,
   ReportResponse,
+  ScenarioRunListResponse,
   SessionListResponse,
   SdgAlignmentResponse,
+  SdgGoalDetail,
   StageSdgSummary,
   SsoProvidersResponse,
   UserListQuery,
@@ -251,6 +259,68 @@ export function getEvaluationBenchmarks(evaluationId: string, revisionNumber?: n
       serverClient.evaluations.getBenchmarks({
         params: { id: evaluationId },
         query: revisionNumber ? { revisionNumber } : {}
+      }),
+    [200]
+  );
+}
+
+export function getEvaluationEvidence(evaluationId: string) {
+  return protectedServerRequest<EvidenceAssetListResponse>(
+    () =>
+      serverClient.evaluations.listEvidence({
+        params: { id: evaluationId }
+      }),
+    [200]
+  );
+}
+
+export function getEvaluationScenarios(evaluationId: string) {
+  return protectedServerRequest<ScenarioRunListResponse>(
+    () =>
+      serverClient.evaluations.listScenarios({
+        params: { id: evaluationId }
+      }),
+    [200]
+  );
+}
+
+export function getOrganizations() {
+  return protectedServerRequest<OrganizationListResponse>(() => serverClient.organizations.list(), [200]);
+}
+
+export function getOrganization(organizationId: string) {
+  return protectedServerRequest<OrganizationDetail>(
+    () =>
+      serverClient.organizations.get({
+        params: { organizationId }
+      }),
+    [200]
+  );
+}
+
+export function getPrograms() {
+  return protectedServerRequest<ProgramListResponse>(() => serverClient.programs.list(), [200]);
+}
+
+export function getProgram(programId: string) {
+  return protectedServerRequest<ProgramDetail>(
+    () =>
+      serverClient.programs.get({
+        params: { programId }
+      }),
+    [200]
+  );
+}
+
+export function getPublicSiteContent() {
+  return executeServerRequest<PublicSiteContent>(() => serverClient.content.site(), [200]);
+}
+
+export function getSdgGoal(goalNumber: number) {
+  return executeServerRequest<SdgGoalDetail>(
+    () =>
+      serverClient.content.sdgGoal({
+        params: { goalNumber }
       }),
     [200]
   );

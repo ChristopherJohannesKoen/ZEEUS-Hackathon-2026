@@ -96,7 +96,7 @@ export default async function EvaluationSummaryPage({ params }: { params: Params
                     target="_blank"
                   >
                     <Badge tone={sdgTone(sdg.sourceType)}>
-                      SDG {sdg.number} · {sdg.sourceType}
+                      SDG {sdg.number} / {sdg.sourceType}
                     </Badge>
                   </a>
                 ))}

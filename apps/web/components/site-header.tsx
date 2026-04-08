@@ -4,6 +4,13 @@ import type { SessionUser } from '@packages/shared';
 import { ZeeusLogo } from './zeeus-logo';
 
 export function SiteHeader({ currentUser }: { currentUser?: SessionUser }) {
+  const publicLinks = [
+    { href: '/how-it-works', label: 'How it works' },
+    { href: '/methodology', label: 'Methodology' },
+    { href: '/faq', label: 'FAQ' },
+    { href: '/partners', label: 'Partners' }
+  ];
+
   return (
     <header className="sticky top-0 z-30 border-b border-surface-border/80 bg-white/90 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
@@ -11,6 +18,17 @@ export function SiteHeader({ currentUser }: { currentUser?: SessionUser }) {
           <ZeeusLogo />
         </Link>
         <nav className="flex items-center gap-4">
+          <div className="hidden items-center gap-4 lg:flex">
+            {publicLinks.map((item) => (
+              <Link
+                className="text-sm font-medium text-slate-600 transition hover:text-brand-dark"
+                href={item.href}
+                key={item.href}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
           <Link
             href="/app"
             className="hidden text-sm font-medium text-slate-600 transition hover:text-brand-dark md:inline-flex"

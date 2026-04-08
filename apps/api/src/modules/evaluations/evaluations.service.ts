@@ -325,9 +325,20 @@ export class EvaluationsService {
     payload: CreateEvaluationPayload
   ): Promise<EvaluationDetail> {
     const result = await this.prismaService.$transaction(async (transaction) => {
+      const primaryMembership = await transaction.organizationMember.findFirst({
+        where: {
+          userId: currentUser.id
+        },
+        orderBy: [{ joinedAt: 'asc' }],
+        select: {
+          organizationId: true
+        }
+      });
+
       const created = await transaction.evaluation.create({
         data: {
           userId: currentUser.id,
+          organizationId: primaryMembership?.organizationId ?? null,
           ...payload,
           status: 'draft',
           currentStep: 'summary'

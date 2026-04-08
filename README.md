@@ -4,8 +4,10 @@ This repository is the working submission codebase for the ZEEUS hackathon.
 It turns the Excel-based Sustainability by Design workflow into a reproducible
 web application with:
 
+- a public website for methodology, FAQ, resources, and partner onboarding
 - deterministic scoring
 - saved evaluations in PostgreSQL
+- organization, program, evidence, and scenario scaffolding
 - immutable revision history and comparison
 - dashboard, review, benchmark, and report views
 - persisted CSV and PDF export artifacts backed by object storage
@@ -17,16 +19,18 @@ web application with:
 The implemented product flow is:
 
 1. Public landing page
-2. Authenticated evaluation workspace
-3. Startup context intake
-4. Initial SDG pre-screen
-5. Stage I holistic startup assessment
-6. Stage II risks and opportunities
-7. Impact summary
-8. SDG alignment
-9. Results dashboard
-10. Pre-completion review
-11. Full report, revision history, compare view, and export artifacts
+2. Public methodology, FAQ, SDG/ESRS, case-study, resources, partner, and contact pages
+3. Authenticated evaluation workspace
+4. Organization and partner-program workspace views
+5. Startup context intake
+6. Initial SDG pre-screen
+7. Stage I holistic startup assessment
+8. Stage II risks and opportunities
+9. Impact summary
+10. SDG alignment plus goal/target explorer
+11. Results dashboard, evidence vault, and scenario lab
+12. Pre-completion review
+13. Full report, revision history, compare view, benchmark view, and export artifacts
 
 The scoring path stays deterministic. AI is not used to decide materiality,
 risk ratings, opportunity ratings, or final scores.
@@ -173,6 +177,9 @@ Health checks:
 - generate a CSV or PDF artifact from the dashboard or review screen and confirm it remains downloadable from revision history after restarting `api` and `worker`
 - request an AI narrative from the dashboard and confirm it transitions from `pending` to `ready`
 - verify the benchmark view loads for the active revision
+- verify the public methodology, FAQ, resources, and partner pages load
+- verify the evidence vault and scenario lab work for a saved evaluation
+- verify the partner program console loads seeded submission and review data
 
 ## Docs
 
@@ -185,7 +192,8 @@ Health checks:
 
 ## Notes
 
-- The evaluation flow is the primary product slice.
+- The evaluation flow remains the deterministic core product slice.
+- The platform now includes public content, organization scaffolding, partner programs, evidence vault items, and advisory scenario runs.
 - Enterprise identity, admin, and observability modules remain available in the
   codebase, but they are not the critical-path hackathon scope.
 - Completed revisions are audit-stable. Reports, compare views, artifacts, AI

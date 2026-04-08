@@ -5,9 +5,12 @@ import type {
   AuthPayload,
   AuthResponse,
   BreakGlassLoginPayload,
+  CreateEvidenceAssetPayload,
   CreateEvaluationArtifactPayload,
   CreateEvaluationNarrativePayload,
   CreateEvaluationPayload,
+  CreateScenarioRunPayload,
+  EvidenceAssetSummary,
   EvaluationArtifactSummary,
   EvaluationBenchmarkSummary,
   EvaluationDetail,
@@ -16,12 +19,19 @@ import type {
   ForgotPasswordPayload,
   ForgotPasswordResponse,
   OkResponse,
+  OrganizationDetail,
+  OrganizationListResponse,
+  ProgramDetail,
+  ProgramListResponse,
+  PublicSiteContent,
   SaveStage1Payload,
   SaveStage2Payload,
   ResetPasswordPayload,
   RevokeSessionResponse,
   Role,
   DashboardResponse,
+  ScenarioRunSummary,
+  SdgGoalDetail,
   StepUpResponse,
   UpdateEvaluationContextPayload,
   UpdateRecommendationActionPayload,
@@ -471,6 +481,94 @@ export function getEvaluationBenchmarks(evaluationId: string, revisionNumber?: n
       query: revisionNumber ? { revisionNumber } : {}
     });
     return unwrapContractResponse<EvaluationBenchmarkSummary>(response, [200]);
+  });
+}
+
+export function createEvidenceAsset(
+  evaluationId: string,
+  body: CreateEvidenceAssetPayload
+) {
+  return executeMutation<EvidenceAssetSummary>({
+    method: 'POST',
+    expectedStatuses: [201],
+    idempotent: true,
+    call: (headers) =>
+      browserClient.evaluations.createEvidence({
+        params: { id: evaluationId },
+        body,
+        headers: {
+          'idempotency-key': headers['idempotency-key']!,
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export function createScenarioRun(
+  evaluationId: string,
+  body: CreateScenarioRunPayload
+) {
+  return executeMutation<ScenarioRunSummary>({
+    method: 'POST',
+    expectedStatuses: [201],
+    idempotent: true,
+    call: (headers) =>
+      browserClient.evaluations.createScenario({
+        params: { id: evaluationId },
+        body,
+        headers: {
+          'idempotency-key': headers['idempotency-key']!,
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export function getSiteContent() {
+  return withApiErrors(async () => {
+    const response = await browserClient.content.site();
+    return unwrapContractResponse<PublicSiteContent>(response, [200]);
+  });
+}
+
+export function getSdgGoal(goalNumber: number) {
+  return withApiErrors(async () => {
+    const response = await browserClient.content.sdgGoal({
+      params: { goalNumber }
+    });
+    return unwrapContractResponse<SdgGoalDetail>(response, [200]);
+  });
+}
+
+export function getOrganizations() {
+  return withApiErrors(async () => {
+    const response = await browserClient.organizations.list();
+    return unwrapContractResponse<OrganizationListResponse>(response, [200]);
+  });
+}
+
+export function getOrganization(organizationId: string) {
+  return withApiErrors(async () => {
+    const response = await browserClient.organizations.get({
+      params: { organizationId }
+    });
+    return unwrapContractResponse<OrganizationDetail>(response, [200]);
+  });
+}
+
+export function getPrograms() {
+  return withApiErrors(async () => {
+    const response = await browserClient.programs.list();
+    return unwrapContractResponse<ProgramListResponse>(response, [200]);
+  });
+}
+
+export function getProgram(programId: string) {
+  return withApiErrors(async () => {
+    const response = await browserClient.programs.get({
+      params: { programId }
+    });
+    return unwrapContractResponse<ProgramDetail>(response, [200]);
   });
 }
 

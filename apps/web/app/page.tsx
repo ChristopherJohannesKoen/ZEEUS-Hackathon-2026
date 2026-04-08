@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Badge } from '@packages/ui';
 import { SiteHeader } from '../components/site-header';
 import { ZeeusLogo } from '../components/zeeus-logo';
-import { getCurrentUser } from '../lib/server-api';
+import { getCurrentUser, getPublicSiteContent } from '../lib/server-api';
 
 const workflowSteps = [
   {
@@ -50,7 +50,7 @@ const principles = [
 ];
 
 export default async function Page() {
-  const currentUser = await getCurrentUser();
+  const [currentUser, content] = await Promise.all([getCurrentUser(), getPublicSiteContent()]);
   const primaryHref = currentUser ? '/app/evaluate/start' : '/signup';
   const secondaryHref = currentUser ? '/app/evaluations' : '/login';
 
@@ -159,6 +159,111 @@ export default async function Page() {
                 <p className="text-sm leading-7 text-slate-600">{principle.description}</p>
               </div>
             ))}
+          </div>
+        </section>
+
+        <section className="border-t border-surface-border bg-surface py-20">
+          <div className="mx-auto max-w-6xl px-6">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#58724d]">
+                  Learn the method
+                </p>
+                <h2 className="mt-3 text-4xl font-black text-slate-950">
+                  Public guidance, not hidden implementation notes
+                </h2>
+              </div>
+              <Link className="btn-secondary" href="/methodology">
+                Open methodology
+              </Link>
+            </div>
+            <div className="mt-10 grid gap-4 md:grid-cols-3">
+              {content.articles.slice(0, 3).map((article) => (
+                <Link
+                  className="card-surface p-6 transition hover:-translate-y-1 hover:shadow-card-hover"
+                  href={
+                    article.slug === 'how-it-works'
+                      ? '/how-it-works'
+                      : article.slug === 'methodology'
+                        ? '/methodology'
+                        : article.slug === 'sdg-esrs-explainer'
+                          ? '/sdg-esrs'
+                          : '/partners'
+                  }
+                  key={article.id}
+                >
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#58724d]">
+                    {article.category.replaceAll('_', ' ')}
+                  </p>
+                  <h3 className="mt-4 text-xl font-bold text-slate-950">{article.title}</h3>
+                  <p className="mt-3 text-sm leading-7 text-slate-600">{article.summary}</p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="border-t border-surface-border bg-white py-20">
+          <div className="mx-auto max-w-6xl px-6">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#58724d]">
+                  Example journeys
+                </p>
+                <h2 className="mt-3 text-4xl font-black text-slate-950">
+                  Founder workflows backed by evidence and scenarios
+                </h2>
+              </div>
+              <Link className="btn-secondary" href="/case-studies">
+                View case studies
+              </Link>
+            </div>
+            <div className="mt-10 grid gap-4 md:grid-cols-2">
+              {content.caseStudies.map((study) => (
+                <div className="card-surface p-6" key={study.id}>
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#58724d]">
+                    {study.startupName}
+                  </p>
+                  <h3 className="mt-4 text-2xl font-black text-slate-950">{study.title}</h3>
+                  <p className="mt-3 text-sm leading-7 text-slate-600">{study.summary}</p>
+                  <p className="mt-4 text-xs uppercase tracking-[0.22em] text-slate-500">
+                    {study.stage} / {study.naceDivision}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="border-t border-surface-border bg-surface py-20">
+          <div className="mx-auto max-w-6xl px-6">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#58724d]">
+                  Dual audience
+                </p>
+                <h2 className="mt-3 text-4xl font-black text-slate-950">
+                  Founder workspace plus partner review console
+                </h2>
+              </div>
+              <Link className="btn-secondary" href="/partners">
+                Explore partner programs
+              </Link>
+            </div>
+            <div className="mt-10 grid gap-4 md:grid-cols-2">
+              {content.partnerPrograms.map((program) => (
+                <div className="card-surface p-6" key={program.id}>
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#58724d]">
+                    {program.cohortLabel}
+                  </p>
+                  <h3 className="mt-4 text-2xl font-black text-slate-950">{program.name}</h3>
+                  <p className="mt-3 text-sm leading-7 text-slate-600">{program.summary}</p>
+                  <p className="mt-4 text-xs uppercase tracking-[0.22em] text-slate-500">
+                    {program.submissionCount} submissions / {program.reviewerCount} reviewers
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 

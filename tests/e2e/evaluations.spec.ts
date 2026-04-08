@@ -73,9 +73,22 @@ test('runs the evaluation workflow through dashboard, completion, and revision h
   await expect(page.getByRole('heading', { name: 'Merged stage and business SDGs' })).toBeVisible();
   await page.getByRole('link', { name: 'Continue to dashboard' }).click();
   await page.waitForURL(/\/app\/evaluate\/[^/]+\/dashboard$/);
+  const evaluationId = page.url().match(/\/app\/evaluate\/([^/]+)\/dashboard$/)?.[1];
+
+  if (!evaluationId) {
+    throw new Error('Failed to resolve evaluation id from dashboard URL.');
+  }
 
   await expect(page.getByRole('heading', { name: 'EcoGrid Pilot' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Review before completion' })).toBeVisible();
+  await page.getByRole('link', { name: 'Open evidence vault' }).click();
+  await expect(page).toHaveURL(new RegExp(`/app/evaluate/${evaluationId}/evidence$`));
+  await page.getByRole('link', { name: 'Open scenario lab' }).click();
+  await expect(page).toHaveURL(new RegExp(`/app/evaluate/${evaluationId}/scenarios$`));
+  await page.goto('/app/programs');
+  await expect(page.getByRole('heading', { name: 'Programs and cohort workflows' })).toBeVisible();
+  await page.goto(`/app/evaluate/${evaluationId}/dashboard`);
+
   const firstRecommendationSave = page
     .locator('[data-testid^="recommendation-action-save-"]')
     .first();

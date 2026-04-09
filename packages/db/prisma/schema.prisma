@@ -135,7 +135,11 @@ model Evaluation {
   organizationId       String?
   organization         Organization?           @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   name                 String
-  country              String
+  country              String?
+  businessCategoryMain String?
+  businessCategorySubcategory String?
+  extendedNaceCode     String?
+  extendedNaceLabel    String?
   naceDivision         String
   offeringType         OfferingType
   launched             Boolean
@@ -145,7 +149,7 @@ model Evaluation {
   currentStep          EvaluationStep          @default(start)
   currentRevisionId    String?
   currentRevisionNumber Int                    @default(0)
-  scoringVersion       String                  @default("2026.04.ready-software.1")
+  scoringVersion       String                  @default("2026.04.ready-software.2")
   catalogVersion       String                  @default("workbook-catalog")
   completedAt          DateTime?
   archivedAt           DateTime?
@@ -605,6 +609,107 @@ model ResourceAsset {
   @@index([status, locale, category, sortOrder])
 }
 
+model MediaAsset {
+  id           String        @id @default(cuid())
+  slug         String        @unique
+  title        String
+  altText      String
+  caption      String?
+  attribution  String?
+  rights       String?
+  mimeType     String
+  fileName     String
+  byteSize     Int
+  width        Int?
+  height       Int?
+  focalPointX  Float?
+  focalPointY  Float?
+  storageKey   String?
+  publicUrl    String?
+  locale       String        @default("en")
+  status       ContentStatus @default(draft)
+  heroPages    SitePage[]    @relation("SitePageHeroMedia")
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([status, locale, createdAt])
+}
+
+model SitePage {
+  id                  String        @id @default(cuid())
+  slug                String
+  locale              String        @default("en")
+  title               String
+  summary             String
+  pageType            String
+  status              ContentStatus @default(draft)
+  heroEyebrow         String?
+  heroTitle           String?
+  heroBody            String?
+  heroPrimaryCtaLabel String?
+  heroPrimaryCtaHref  String?
+  heroSecondaryCtaLabel String?
+  heroSecondaryCtaHref String?
+  heroMediaAssetId    String?
+  heroMediaAsset      MediaAsset?   @relation("SitePageHeroMedia", fields: [heroMediaAssetId], references: [id], onDelete: SetNull)
+  navigationLabel     String?
+  navigationGroup     String?
+  showInPrimaryNav    Boolean       @default(false)
+  showInFooter        Boolean       @default(false)
+  canonicalUrl        String?
+  seoTitle            String?
+  seoDescription      String?
+  sections            Json?
+  sortOrder           Int           @default(0)
+  previewTokens       SitePagePreviewToken[]
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  @@unique([slug, locale])
+  @@index([status, locale, pageType, sortOrder])
+  @@index([showInPrimaryNav, locale, sortOrder])
+  @@index([showInFooter, locale, sortOrder])
+}
+
+model ContentRevision {
+  id             String   @id @default(cuid())
+  entityType     String
+  entityId       String
+  locale         String?
+  changeSummary  String?
+  snapshot       Json
+  createdByUserId String?
+  createdAt      DateTime @default(now())
+
+  @@index([entityType, entityId, createdAt])
+}
+
+model SitePagePreviewToken {
+  id              String   @id @default(cuid())
+  sitePageId      String
+  sitePage        SitePage @relation(fields: [sitePageId], references: [id], onDelete: Cascade)
+  tokenHash       String   @unique
+  expiresAt       DateTime
+  createdByUserId String?
+  createdAt       DateTime @default(now())
+
+  @@index([sitePageId, expiresAt])
+}
+
+model SiteSetting {
+  id          String   @id @default(cuid())
+  key         String
+  locale      String   @default("en")
+  title       String?
+  description String?
+  value       Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([key, locale])
+  @@index([locale, key])
+}
+
 model SdgTarget {
   id          String   @id @default(cuid())
   goalNumber  Int
@@ -662,10 +767,16 @@ model PartnerInterestLead {
   email            String
   websiteUrl       String?
   message          String
+  status           PartnerLeadStatus @default(new)
+  assigneeName     String?
+  assigneeEmail    String?
+  notes            String?
   sourcePage       String        @default("partners")
+  resolvedAt       DateTime?
   createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
-  @@index([createdAt])
+  @@index([status, createdAt])
   @@index([organizationId, createdAt])
   @@index([programId, createdAt])
 }
@@ -1050,6 +1161,14 @@ enum EvaluationArtifactStatus {
 enum ContentStatus {
   draft
   published
+  archived
+}
+
+enum PartnerLeadStatus {
+  new
+  reviewing
+  contacted
+  qualified
   archived
 }
 

@@ -1,18 +1,17 @@
 ---
-title: ZEEUS Hackathon 2026
+title: ZEEUS Sustainability Platform
 emoji: 🚀
-colorFrom: blue
-colorTo: purple
+colorFrom: green
+colorTo: teal
 sdk: docker
 app_port: 3000
 pinned: false
 ---
 
-## ZEEUS Hackathon Assessment Platform
+## ZEEUS Sustainability Platform
 
-This repository is the working submission codebase for the ZEEUS hackathon.
-It turns the Excel-based Sustainability by Design workflow into a reproducible
-web application with:
+This repository contains the working ZEEUS Sustainability by Design platform.
+It turns the Excel-based workflow into a reproducible web application with:
 
 - a public website for methodology, FAQ, resources, and partner onboarding
 - deterministic scoring
@@ -122,22 +121,22 @@ The Compose stack starts:
 ## Hugging Face Spaces
 
 The repo also includes a Hugging Face Spaces deployment profile that runs the
-current product slice as a single-container full-stack demo:
+current product slice as a single-container full-stack staging deployment:
 
 - public marketing and methodology pages
 - signup, login, and saved founder workspaces
 - impact summary, SDG alignment, dashboard, evidence, scenarios, and reports
 - async CSV/PDF exports and narrative jobs
 - seeded organization, partner-program, submission, and reviewer workflows
-- iframe-safe headers remain enabled for the Space host without forcing preview mode
+- iframe-safe headers remain enabled for the Space host without forking the public product surface
 
 The Space starts local PostgreSQL and Redis inside the container. Artifact files
 persist to the local filesystem and automatically use `/data` when persistent
 Space storage is available. If `OPENAI_API_KEY` is not configured, narrative
-requests fall back to the built-in deterministic explainer so the demo remains
+requests fall back to the built-in deterministic explainer so the staging deployment remains
 functional.
 
-Seeded demo accounts:
+Seeded local accounts:
 
 - Owner: `owner@example.com` / `ChangeMe123!`
 - Admin: `admin@example.com` / `ChangeMe123!`
@@ -204,7 +203,7 @@ Default runtime values:
 
 ## Validation
 
-Recommended verification before a handoff or submission:
+Recommended verification before a handoff or release:
 
 ```powershell
 npm run typecheck
@@ -240,7 +239,7 @@ Health checks:
 - The evaluation flow remains the deterministic core product slice.
 - The platform now includes public content, organization scaffolding, partner programs, evidence vault items, and advisory scenario runs.
 - Enterprise identity, admin, and observability modules remain available in the
-  codebase, but they are not the critical-path hackathon scope.
+  codebase, but they are not yet the critical-path public release scope.
 - Completed revisions are audit-stable. Reports, compare views, artifacts, AI
   narratives, and benchmarks all read from immutable revision snapshots.
 - The running application lives under `apps/` and shared packages under

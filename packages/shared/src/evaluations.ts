@@ -204,15 +204,77 @@ export const OpportunityRatingLabelSchema = z.enum([
 ]);
 export type OpportunityRatingLabel = z.infer<typeof OpportunityRatingLabelSchema>;
 
-export const EvaluationContextPayloadSchema = z.object({
-  name: z.string().trim().min(2).max(120),
-  country: z.string().trim().min(2).max(120),
-  naceDivision: z.string().trim().min(2).max(200),
-  offeringType: OfferingTypeSchema,
-  launched: z.boolean(),
-  currentStage: StartupStageSchema,
-  innovationApproach: InnovationApproachSchema
+const NullableShortTextSchema = (maxLength: number) =>
+  z.union([z.string().trim().max(maxLength), z.null(), z.undefined()]).transform((value) => {
+    if (typeof value !== 'string') {
+      return null;
+    }
+
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  });
+
+export const ScoreInterpretationBandSchema = z.object({
+  key: PriorityBandSchema,
+  scoreRangeLabel: z.string(),
+  title: z.string(),
+  interpretation: z.string()
 });
+export type ScoreInterpretationBand = z.infer<typeof ScoreInterpretationBandSchema>;
+
+export const ScoreInterpretationGuideSchema = z.object({
+  title: z.string(),
+  subtitle: z.string().nullable().default(null),
+  bands: z.array(ScoreInterpretationBandSchema)
+});
+export type ScoreInterpretationGuide = z.infer<typeof ScoreInterpretationGuideSchema>;
+
+export const InitialSummaryExplanationBlockSchema = z.object({
+  title: z.string(),
+  body: z.string()
+});
+export type InitialSummaryExplanationBlock = z.infer<typeof InitialSummaryExplanationBlockSchema>;
+
+export const MatrixLegendEntrySchema = z.object({
+  label: z.string(),
+  score: z.number().min(0).max(4),
+  whatItMeans: z.string(),
+  esrsAngle: z.string(),
+  businessSignal: z.string(),
+  actionWindow: z.string()
+});
+export type MatrixLegendEntry = z.infer<typeof MatrixLegendEntrySchema>;
+
+export const MatrixLegendSchema = z.object({
+  title: z.string(),
+  subtitle: z.string().nullable().default(null),
+  entries: z.array(MatrixLegendEntrySchema)
+});
+export type MatrixLegend = z.infer<typeof MatrixLegendSchema>;
+
+export const EvaluationContextPayloadSchema = z
+  .object({
+    name: z.string().trim().min(2).max(120),
+    country: NullableShortTextSchema(120),
+    businessCategoryMain: NullableShortTextSchema(200),
+    businessCategorySubcategory: NullableShortTextSchema(200),
+    extendedNaceCode: NullableShortTextSchema(40),
+    extendedNaceLabel: NullableShortTextSchema(240),
+    naceDivision: NullableShortTextSchema(200),
+    offeringType: OfferingTypeSchema,
+    launched: z.boolean(),
+    currentStage: StartupStageSchema,
+    innovationApproach: InnovationApproachSchema
+  })
+  .superRefine((value, ctx) => {
+    if (!value.businessCategoryMain && !value.naceDivision) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['businessCategoryMain'],
+        message: 'Business category is required.'
+      });
+    }
+  });
 export type EvaluationContextPayload = z.infer<typeof EvaluationContextPayloadSchema>;
 
 export const EvaluationIdParamsSchema = z.object({
@@ -303,12 +365,20 @@ export type SdgReference = z.infer<typeof SdgReferenceSchema>;
 
 export const StageSdgSummarySchema = z.object({
   currentStage: StartupStageSchema,
+  stageLabel: z.string(),
+  businessCategoryMain: z.string().nullable().default(null),
+  businessCategorySubcategory: z.string().nullable().default(null),
+  extendedNaceCode: z.string().nullable().default(null),
+  extendedNaceLabel: z.string().nullable().default(null),
+  naceDivision: z.string().nullable().default(null),
+  screeningContextLabel: z.string(),
   phaseGoal: z.string(),
   phaseConsideration: z.string().nullable(),
   whatToConsider: z.string(),
   stageSdgs: z.array(SdgReferenceSchema),
   businessSdgs: z.array(SdgReferenceSchema),
-  mergedSdgs: z.array(SdgReferenceSchema)
+  mergedSdgs: z.array(SdgReferenceSchema),
+  explanationBlocks: z.array(InitialSummaryExplanationBlockSchema).default([])
 });
 export type StageSdgSummary = z.infer<typeof StageSdgSummarySchema>;
 
@@ -332,7 +402,9 @@ export const Stage1TopicAnswerSchema = Stage1TopicAnswerInputSchema.extend({
   question: z.string(),
   impactScore: z.number().min(0).max(4),
   priorityBand: PriorityBandSchema,
-  sdgNumbers: z.array(z.number().int().min(1).max(17))
+  sdgNumbers: z.array(z.number().int().min(1).max(17)),
+  guidance: z.string().nullable().default(null),
+  interpretation: z.string().nullable().default(null)
 });
 export type Stage1TopicAnswer = z.infer<typeof Stage1TopicAnswerSchema>;
 
@@ -342,7 +414,9 @@ export const Stage2RiskAnswerSchema = Stage2RiskAnswerInputSchema.extend({
   question: z.string(),
   ratingLabel: RiskRatingLabelSchema,
   ratingScore: z.number().min(0).max(4),
-  sdgNumbers: z.array(z.number().int().min(1).max(17))
+  sdgNumbers: z.array(z.number().int().min(1).max(17)),
+  guidance: z.string().nullable().default(null),
+  interpretation: z.string().nullable().default(null)
 });
 export type Stage2RiskAnswer = z.infer<typeof Stage2RiskAnswerSchema>;
 
@@ -352,7 +426,9 @@ export const Stage2OpportunityAnswerSchema = Stage2OpportunityAnswerInputSchema.
   question: z.string(),
   ratingLabel: OpportunityRatingLabelSchema,
   ratingScore: z.number().min(0).max(4),
-  sdgNumbers: z.array(z.number().int().min(1).max(17))
+  sdgNumbers: z.array(z.number().int().min(1).max(17)),
+  guidance: z.string().nullable().default(null),
+  interpretation: z.string().nullable().default(null)
 });
 export type Stage2OpportunityAnswer = z.infer<typeof Stage2OpportunityAnswerSchema>;
 
@@ -457,6 +533,10 @@ export const EvaluationListItemSchema = z.object({
   id: z.string(),
   name: z.string(),
   country: z.string(),
+  businessCategoryMain: z.string().nullable().default(null),
+  businessCategorySubcategory: z.string().nullable().default(null),
+  extendedNaceCode: z.string().nullable().default(null),
+  extendedNaceLabel: z.string().nullable().default(null),
   naceDivision: z.string(),
   currentStage: StartupStageSchema,
   status: EvaluationStatusSchema,
@@ -499,7 +579,8 @@ export const MaterialTopicSummarySchema = z.object({
   score: z.number().min(0).max(4),
   priorityBand: PriorityBandSchema,
   recommendation: z.string().nullable(),
-  sdgNumbers: z.array(z.number().int().min(1).max(17))
+  sdgNumbers: z.array(z.number().int().min(1).max(17)),
+  interpretation: z.string().nullable().default(null)
 });
 export type MaterialTopicSummary = z.infer<typeof MaterialTopicSummarySchema>;
 
@@ -508,6 +589,7 @@ export const RecommendationSchema = z.object({
   title: z.string(),
   text: z.string(),
   evidenceToCollect: z.string().nullable().default(null),
+  rationale: z.string().nullable().default(null),
   source: z.enum(['financial', 'stage1', 'risk', 'opportunity']),
   severityBand: z.string(),
   action: EvaluationRecommendationActionStateSchema.nullable().default(null)
@@ -518,7 +600,8 @@ export const ImpactSummaryResponseSchema = z.object({
   relevantTopics: z.array(MaterialTopicSummarySchema),
   highPriorityTopics: z.array(MaterialTopicSummarySchema),
   whatToConsiderNext: z.array(z.string()),
-  relevantSdgs: z.array(SdgReferenceSchema)
+  relevantSdgs: z.array(SdgReferenceSchema),
+  scoreInterpretation: ScoreInterpretationGuideSchema
 });
 export type ImpactSummaryResponse = z.infer<typeof ImpactSummaryResponseSchema>;
 
@@ -557,7 +640,10 @@ export const DashboardResponseSchema = z.object({
   topOpportunities: z.array(DashboardRiskCardSchema),
   recommendations: z.array(RecommendationSchema),
   confidenceBand: ConfidenceBandSchema,
-  sensitivityHints: z.array(SensitivityHintSchema)
+  sensitivityHints: z.array(SensitivityHintSchema),
+  scoreInterpretation: ScoreInterpretationGuideSchema,
+  riskMatrixLegend: MatrixLegendSchema,
+  opportunityMatrixLegend: MatrixLegendSchema
 });
 export type DashboardResponse = z.infer<typeof DashboardResponseSchema>;
 
@@ -754,11 +840,17 @@ export const EvaluationBenchmarkSummarySchema = z.object({
   revisionNumber: z.number().int().min(1),
   referenceProfile: z.object({
     stage: StartupStageSchema,
+    stageLabel: z.string(),
+    businessCategoryMain: z.string().nullable().default(null),
+    businessCategorySubcategory: z.string().nullable().default(null),
+    extendedNaceCode: z.string().nullable().default(null),
+    extendedNaceLabel: z.string().nullable().default(null),
     naceDivision: z.string(),
     label: z.string()
   }),
   metrics: z.array(EvaluationBenchmarkMetricSchema),
   topicShifts: z.array(EvaluationBenchmarkTopicShiftSchema),
+  scoreInterpretation: ScoreInterpretationGuideSchema,
   takeaways: z.array(z.string())
 });
 export type EvaluationBenchmarkSummary = z.infer<typeof EvaluationBenchmarkSummarySchema>;

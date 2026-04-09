@@ -1,4 +1,5 @@
-import { cp, mkdir, readdir, rm } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, readdir } from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
@@ -6,7 +7,6 @@ import { spawnSync } from 'node:child_process';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '..');
-const stageDir = path.join(repoRoot, '.hf-space-build');
 const overlayDir = path.join(repoRoot, 'deploy', 'huggingface-space');
 
 const repoId = process.argv[2] ?? process.env.HF_SPACE_REPO_ID;
@@ -20,6 +20,7 @@ if (!repoId) {
 const ignoredTopLevel = new Set([
   '.git',
   '.github',
+  '.artifacts',
   '.hf-space-build',
   '.turbo',
   'coverage',
@@ -58,12 +59,15 @@ function run(command, args) {
   }
 }
 
-await rm(stageDir, { recursive: true, force: true });
-await mkdir(stageDir, { recursive: true });
+const stageDir = await mkdtemp(path.join(os.tmpdir(), 'zeeus-hf-space-'));
 
 const topLevelEntries = await readdir(repoRoot, { withFileTypes: true });
 for (const entry of topLevelEntries) {
   if (ignoredTopLevel.has(entry.name)) {
+    continue;
+  }
+
+  if (entry.isFile() && /^tmp-.*\.log$/i.test(entry.name)) {
     continue;
   }
 
@@ -75,6 +79,16 @@ for (const entry of topLevelEntries) {
     filter: (source) => shouldCopy(path.relative(repoRoot, source))
   });
 }
+
+await mkdir(path.join(stageDir, 'references'), { recursive: true });
+await cp(
+  path.join(repoRoot, 'references', 'Hackathon_User Guidlines'),
+  path.join(stageDir, 'references', 'Hackathon_User Guidlines'),
+  {
+    recursive: true,
+    filter: (source) => shouldCopy(path.relative(repoRoot, source))
+  }
+);
 
 await cp(path.join(overlayDir, 'README.md'), path.join(stageDir, 'README.md'));
 await cp(path.join(overlayDir, 'Dockerfile'), path.join(stageDir, 'Dockerfile'));

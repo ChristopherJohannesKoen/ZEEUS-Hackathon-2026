@@ -1,5 +1,7 @@
 {
   "workbookPath": "D:\\Documents\\ZEEUS Hackathon 2026\\code\\ZEEUS-Hackathon-2026\\references\\Hackathon_User Guidlines\\5) Tool & Example\\5) Tool & Example\\5) Startup Evaluation Tool Final_V10_+Matrix 2025-03-20.xlsm",
+  "workbookSha256": "c5d96f8e632ccbd7bd8d51e5efbd0cca1ae0c6a16cab0cfb2920e777dfdc6e1c",
+  "generatedAt": "2026-04-07T08:17:13.060853+00:00",
   "sheetNames": [
     "Introduction",
     "Primary Data input",
@@ -38,7 +40,20 @@
   ],
   "helperSheets": {
     "SSEF (Matrix)+UN SDG": [
-      [null, null, null, null, null, "Product", "Service", null, null, null, null, null],
+      [
+        null,
+        null,
+        null,
+        null,
+        null,
+        "Product",
+        "Service",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
       [
         null,
         null,

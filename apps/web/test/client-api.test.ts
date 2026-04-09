@@ -22,7 +22,7 @@ function evaluationResponse(overrides: Record<string, unknown> = {}) {
     confidenceBand: 'low',
     currentRevisionNumber: 1,
     scoringVersionInfo: {
-      scoringVersion: '2026.04.ready-software.1',
+      scoringVersion: '2026.04.ready-software.2',
       catalogVersion: 'workbook-catalog'
     },
     lastScoredAt: '2026-01-01T00:00:00.000Z',

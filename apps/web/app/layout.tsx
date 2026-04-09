@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
-import { Montserrat } from 'next/font/google';
+import { Urbanist } from 'next/font/google';
 import { connection } from 'next/server';
 import { resolveSiteOrigin } from '../lib/runtime-mode';
 import './globals.css';
 
-const brandFont = Montserrat({
+const brandFont = Urbanist({
   subsets: ['latin'],
   variable: '--font-brand',
   weight: ['400', '500', '600', '700', '800']

@@ -6,6 +6,8 @@ import type {
   AuthResponse,
   BreakGlassLoginPayload,
   CaseStudy,
+  ContentEntityType,
+  ContentRevisionListResponse,
   CreateEvidenceAssetPayload,
   CreateProgramSubmissionPayload,
   CreateEvaluationArtifactPayload,
@@ -25,9 +27,11 @@ import type {
   ForgotPasswordPayload,
   ForgotPasswordResponse,
   KnowledgeArticle,
+  MediaAsset,
   OkResponse,
   OrganizationDetail,
   OrganizationListResponse,
+  PartnerLeadSummary,
   ProgramDetail,
   ProgramListResponse,
   PublicSiteContent,
@@ -40,8 +44,13 @@ import type {
   DashboardResponse,
   ScenarioRunSummary,
   SdgGoalDetail,
+  SitePage,
+  SitePagePreviewToken,
+  SiteSetting,
   StepUpResponse,
   SubmitPartnerInterestPayload,
+  UpdateMediaAssetPayload,
+  UpdatePartnerLeadPayload,
   UpdateEvaluationContextPayload,
   UpdateProgramSubmissionStatusPayload,
   UpdateRecommendationActionPayload,
@@ -50,6 +59,8 @@ import type {
   UpsertFaqEntryPayload,
   UpsertKnowledgeArticlePayload,
   UpsertResourceAssetPayload,
+  UpsertSitePagePayload,
+  UpsertSiteSettingPayload,
   UserSummary
 } from '@packages/shared';
 import { ApiErrorSchema } from '@packages/shared';
@@ -611,6 +622,169 @@ export function getEditorialOverview() {
   return withApiErrors(async () => {
     const response = await browserClient.content.getEditorialOverview();
     return unwrapContractResponse<EditorialOverview>(response, [200]);
+  });
+}
+
+export function createSitePage(body: UpsertSitePagePayload) {
+  return executeMutation<SitePage>({
+    method: 'POST',
+    expectedStatuses: [201],
+    idempotent: true,
+    call: (headers) =>
+      browserClient.content.createSitePage({
+        body,
+        headers: {
+          'idempotency-key': headers['idempotency-key']!,
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export function updateSitePage(contentId: string, body: UpsertSitePagePayload) {
+  return executeMutation<SitePage>({
+    method: 'PUT',
+    expectedStatuses: [200],
+    call: (headers) =>
+      browserClient.content.updateSitePage({
+        params: { contentId },
+        body,
+        headers: {
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export function getContentRevisions(entityType: ContentEntityType, entityId: string) {
+  return withApiErrors(async () => {
+    const response = await browserClient.content.listContentRevisions({
+      params: {
+        entityType,
+        entityId
+      }
+    });
+    return unwrapContractResponse<ContentRevisionListResponse>(response, [200]);
+  });
+}
+
+export function restoreSitePageRevision(contentId: string, revisionId: string) {
+  return executeMutation<SitePage>({
+    method: 'POST',
+    expectedStatuses: [200],
+    idempotent: true,
+    call: (headers) =>
+      browserClient.content.restoreSitePageRevision({
+        params: { contentId, revisionId },
+        body: {},
+        headers: {
+          'idempotency-key': headers['idempotency-key']!,
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export function createSitePagePreviewToken(contentId: string) {
+  return executeMutation<SitePagePreviewToken>({
+    method: 'POST',
+    expectedStatuses: [201],
+    idempotent: true,
+    call: (headers) =>
+      browserClient.content.createSitePagePreviewToken({
+        params: { contentId },
+        body: {},
+        headers: {
+          'idempotency-key': headers['idempotency-key']!,
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export function createSiteSetting(body: UpsertSiteSettingPayload) {
+  return executeMutation<SiteSetting>({
+    method: 'POST',
+    expectedStatuses: [201],
+    idempotent: true,
+    call: (headers) =>
+      browserClient.content.createSiteSetting({
+        body,
+        headers: {
+          'idempotency-key': headers['idempotency-key']!,
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export function updateSiteSetting(contentId: string, body: UpsertSiteSettingPayload) {
+  return executeMutation<SiteSetting>({
+    method: 'PUT',
+    expectedStatuses: [200],
+    call: (headers) =>
+      browserClient.content.updateSiteSetting({
+        params: { contentId },
+        body,
+        headers: {
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export async function uploadSiteMediaAsset(body: FormData) {
+  return withApiErrors(async () => {
+    const csrfToken = await fetchCsrfToken();
+    const response = await fetch('/api/content/admin/media', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'x-csrf-token': csrfToken,
+        'idempotency-key': createIdempotencyKey()
+      },
+      body
+    });
+
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(
+        typeof payload?.message === 'string' ? payload.message : 'Unable to upload media asset.'
+      );
+    }
+
+    return payload as MediaAsset;
+  });
+}
+
+export function updateSiteMediaAsset(mediaId: string, body: UpdateMediaAssetPayload) {
+  return executeMutation<MediaAsset>({
+    method: 'PUT',
+    expectedStatuses: [200],
+    call: (headers) =>
+      browserClient.content.updateMediaAsset({
+        params: { mediaId },
+        body,
+        headers: {
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export function updatePartnerLead(leadId: string, body: UpdatePartnerLeadPayload) {
+  return executeMutation<PartnerLeadSummary>({
+    method: 'PUT',
+    expectedStatuses: [200],
+    call: (headers) =>
+      browserClient.content.updatePartnerLead({
+        params: { leadId },
+        body,
+        headers: {
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
   });
 }
 

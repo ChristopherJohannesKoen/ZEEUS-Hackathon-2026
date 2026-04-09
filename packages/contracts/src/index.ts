@@ -8,7 +8,18 @@ import { programsContract } from './routers/programs';
 import { usersContract } from './routers/users';
 import { commonResponses } from './shared';
 
-const apiRouters = {
+export type ApiContract = {
+  health: typeof healthContract;
+  auth: typeof authContract;
+  users: typeof usersContract;
+  admin: typeof adminContract;
+  evaluations: typeof evaluationsContract;
+  content: typeof contentContract;
+  organizations: typeof organizationsContract;
+  programs: typeof programsContract;
+};
+
+const apiRouters: ApiContract = {
   health: healthContract,
   auth: authContract,
   users: usersContract,
@@ -19,7 +30,5 @@ const apiRouters = {
   programs: programsContract
 };
 void commonResponses;
-
-export type ApiContract = typeof apiRouters;
 
 export const apiContract: ApiContract = apiRouters;

@@ -50,6 +50,14 @@ export function ReportDocument({
               <p className="mt-3 text-sm text-white/80">
                 {report.evaluation.country} / {report.evaluation.naceDivision}
               </p>
+              {report.evaluation.businessCategoryMain ? (
+                <p className="mt-2 text-sm text-white/80">
+                  {report.evaluation.businessCategoryMain}
+                  {report.evaluation.businessCategorySubcategory
+                    ? ` / ${report.evaluation.businessCategorySubcategory}`
+                    : ''}
+                </p>
+              ) : null}
               {report.programBranding ? (
                 <div className="mt-4 flex flex-wrap gap-2 text-xs uppercase tracking-[0.2em] text-white/70">
                   <span>{report.programBranding.primaryLabel}</span>
@@ -98,6 +106,9 @@ export function ReportDocument({
             Stage: {report.evaluation.currentStage.replaceAll('_', ' ')}
           </div>
           <div className="rounded-2xl bg-[#f7f9f4] p-4">
+            Business: {report.evaluation.businessCategoryMain ?? report.evaluation.naceDivision}
+          </div>
+          <div className="rounded-2xl bg-[#f7f9f4] p-4">
             Offering: {report.evaluation.offeringType}
           </div>
           <div className="rounded-2xl bg-[#f7f9f4] p-4">
@@ -107,6 +118,12 @@ export function ReportDocument({
             Innovation: {report.evaluation.innovationApproach}
           </div>
         </div>
+        {report.evaluation.extendedNaceLabel ? (
+          <div className="mt-4 rounded-2xl bg-[#f7f9f4] p-4 text-sm leading-7 text-slate-600">
+            Extended NACE: {report.evaluation.extendedNaceCode} /{' '}
+            {report.evaluation.extendedNaceLabel}
+          </div>
+        ) : null}
       </Card>
 
       <Card className="border-surface-border">
@@ -121,6 +138,24 @@ export function ReportDocument({
                 </Badge>
               </div>
               <p className="mt-2 text-sm text-slate-600">Impact score: {topic.impactScore}</p>
+              {topic.interpretation ? (
+                <p className="mt-2 text-sm text-slate-600">{topic.interpretation}</p>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card className="border-surface-border">
+        <h2 className="text-xl font-bold text-slate-950">Workbook interpretation guide</h2>
+        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+          {report.dashboard.scoreInterpretation.bands.map((band) => (
+            <div className="rounded-[28px] bg-[#f7f9f4] p-4" key={band.key}>
+              <p className="text-xs uppercase tracking-[0.2em] text-[#5d7355]">
+                {band.scoreRangeLabel}
+              </p>
+              <p className="mt-2 font-bold text-slate-950">{band.title}</p>
+              <p className="mt-2 text-sm leading-7 text-slate-600">{band.interpretation}</p>
             </div>
           ))}
         </div>
@@ -169,6 +204,11 @@ export function ReportDocument({
                 </p>
                 <p className="mt-2 font-bold text-slate-950">{recommendation.title}</p>
                 <p className="mt-2 text-sm leading-7 text-slate-600">{recommendation.text}</p>
+                {recommendation.rationale ? (
+                  <p className="mt-2 text-xs leading-6 text-slate-500">
+                    {recommendation.rationale}
+                  </p>
+                ) : null}
                 {recommendation.action ? (
                   <p className="mt-3 text-xs uppercase tracking-[0.2em] text-slate-500">
                     Action: {recommendation.action.status.replaceAll('_', ' ')}

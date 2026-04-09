@@ -4,8 +4,14 @@ import {
   Injectable,
   NotFoundException
 } from '@nestjs/common';
-import { createHash } from 'node:crypto';
+import { getReferenceMetadata } from '@packages/scoring';
+import { createHash, randomUUID } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 import type {
+  ContentEntityType,
+  ContentRevisionListResponse,
+  ContentRevisionSummary,
   ContentStatus,
   CreateEvidenceAssetPayload,
   CreateProgramSubmissionPayload,
@@ -17,10 +23,13 @@ import type {
   EditorialOverview,
   FaqEntry,
   KnowledgeArticle,
+  MediaAsset,
   OrganizationDetail,
   OrganizationListResponse,
+  PartnerLeadSummary,
   ProgramDetail,
   ProgramListResponse,
+  ReportResponse,
   PublicSiteContent,
   PublicResourceAsset,
   PriorityBand,
@@ -33,19 +42,45 @@ import type {
   ScenarioRunSummary,
   SdgGoalDetail,
   SessionUser,
+  SitePage,
+  SitePagePreviewToken,
+  SiteSetting,
+  SiteSettings,
   TopicCode,
+  UpdateMediaAssetPayload,
+  UpdatePartnerLeadPayload,
   UpdateProgramSubmissionStatusPayload,
   UpsertCaseStudyPayload,
   UpsertFaqEntryPayload,
   UpsertKnowledgeArticlePayload,
-  UpsertResourceAssetPayload
+  UpsertResourceAssetPayload,
+  UpsertSitePagePayload,
+  UpsertSiteSettingPayload
 } from '@packages/shared';
-import { ReportResponseSchema } from '@packages/shared';
+import {
+  ContentEntityTypeSchema,
+  ReportResponseSchema,
+  SitePageSchema,
+  UploadMediaAssetPayloadSchema
+} from '@packages/shared';
 import { Prisma } from '@prisma/client';
 import { buildScenarioProjection } from './scenario-projections';
 import { AuditService } from '../audit/audit.service';
 import { EvaluationStorageService } from '../evaluations/evaluation-storage.service';
 import { PrismaService } from '../prisma/prisma.service';
+
+const referenceResourceFallbacks: Record<string, string> = {
+  'zeeus-introduction': 'references/Hackathon_User Guidlines/1) Introduction_ZEEUS.pdf',
+  'zeeus-user-manual': 'references/Hackathon_User Guidlines/2) Usermanual_ZEEUS.pdf',
+  'zeeus-faq': 'references/Hackathon_User Guidlines/3) FAQ_ZEEUS.pdf',
+  'zeeus-score-interpretation':
+    'references/Hackathon_User Guidlines/4) Score Interpretation_ZEEUS.pdf',
+  'zeeus-tool-example-pack': 'references/Hackathon_User Guidlines/5) Tool & Example.zip',
+  'zeeus-guidelines-kit':
+    'references/Hackathon_User Guidlines/6) GUIDELINES KIT- ZEEUS.pdf',
+  'zeeus-tool-introduction-transcript':
+    'references/Hackathon_User Guidlines/Tool_Introduction_Video.txt'
+};
 
 @Injectable()
 export class PlatformService {
@@ -55,33 +90,67 @@ export class PlatformService {
     private readonly evaluationStorageService: EvaluationStorageService
   ) {}
 
-  async getSiteContent(): Promise<PublicSiteContent> {
-    const [articles, faqEntries, caseStudies, resources, programs] = await Promise.all([
+  async getSiteContent(locale?: string): Promise<PublicSiteContent> {
+    const resolvedLocale = this.resolveLocale(locale);
+    const preferredLocales = this.getPreferredLocales(resolvedLocale);
+    const [
+      sitePagesRaw,
+      siteSettingsRaw,
+      mediaAssetsRaw,
+      articlesRaw,
+      faqEntriesRaw,
+      caseStudiesRaw,
+      resourcesRaw,
+      programs
+    ] = await Promise.all([
+      this.prismaService.sitePage.findMany({
+        where: {
+          status: 'published',
+          locale: { in: preferredLocales }
+        },
+        include: {
+          heroMediaAsset: true
+        },
+        orderBy: [{ sortOrder: 'asc' }, { updatedAt: 'desc' }]
+      }),
+      this.prismaService.siteSetting.findMany({
+        where: {
+          locale: { in: preferredLocales }
+        },
+        orderBy: [{ key: 'asc' }, { updatedAt: 'desc' }]
+      }),
+      this.prismaService.mediaAsset.findMany({
+        where: {
+          status: 'published',
+          locale: { in: preferredLocales }
+        },
+        orderBy: [{ createdAt: 'asc' }]
+      }),
       this.prismaService.knowledgeArticle.findMany({
         where: {
           status: 'published',
-          locale: 'en'
+          locale: { in: preferredLocales }
         },
         orderBy: [{ sortOrder: 'asc' }, { updatedAt: 'desc' }]
       }),
       this.prismaService.faqEntry.findMany({
         where: {
           status: 'published',
-          locale: 'en'
+          locale: { in: preferredLocales }
         },
         orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }]
       }),
       this.prismaService.caseStudy.findMany({
         where: {
           status: 'published',
-          locale: 'en'
+          locale: { in: preferredLocales }
         },
         orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }]
       }),
       this.prismaService.resourceAsset.findMany({
         where: {
           status: 'published',
-          locale: 'en'
+          locale: { in: preferredLocales }
         },
         orderBy: [{ sortOrder: 'asc' }, { updatedAt: 'desc' }]
       }),
@@ -106,7 +175,49 @@ export class PlatformService {
       })
     ]);
 
+    const sitePages = this.pickPreferredLocale(
+      sitePagesRaw as any[],
+      (item) => item.slug,
+      resolvedLocale
+    ) as typeof sitePagesRaw;
+    const siteSettings = this.pickPreferredLocale(
+      siteSettingsRaw as any[],
+      (item) => item.key,
+      resolvedLocale
+    ) as typeof siteSettingsRaw;
+    const mediaAssets = this.pickPreferredLocale(
+      mediaAssetsRaw as any[],
+      (item) => item.slug,
+      resolvedLocale
+    ) as typeof mediaAssetsRaw;
+    const articles = this.pickPreferredLocale(
+      articlesRaw as any[],
+      (item) => item.slug,
+      resolvedLocale
+    ) as typeof articlesRaw;
+    const faqEntries = this.pickPreferredLocale(
+      faqEntriesRaw as any[],
+      (item) => `${item.category}:${item.sortOrder}`,
+      resolvedLocale
+    ) as typeof faqEntriesRaw;
+    const caseStudies = this.pickPreferredLocale(
+      caseStudiesRaw as any[],
+      (item) => item.slug,
+      resolvedLocale
+    ) as typeof caseStudiesRaw;
+    const resources = this.pickPreferredLocale(
+      resourcesRaw as any[],
+      (item) => item.slug,
+      resolvedLocale
+    ) as typeof resourcesRaw;
+
     return {
+      referenceMetadata: this.buildReferenceMetadata(),
+      sitePages: sitePages.map((page: (typeof sitePages)[number]) => this.serializeSitePage(page)),
+      settings: this.serializeSiteSettings(siteSettings),
+      mediaAssets: mediaAssets.map((asset: (typeof mediaAssets)[number]) =>
+        this.serializeMediaAsset(asset)
+      ),
       articles: articles.map((article: (typeof articles)[number]) => ({
         id: article.id,
         slug: article.slug,
@@ -144,7 +255,8 @@ export class PlatformService {
         naceDivision: study.naceDivision,
         status: study.status as ContentStatus,
         locale: study.locale,
-        heroImageUrl: study.heroImageUrl
+        heroImageUrl: study.heroImageUrl,
+        updatedAt: study.updatedAt.toISOString()
       })),
       resources: resources.map((resource: (typeof resources)[number]) =>
         this.serializePublicResource(resource)
@@ -155,24 +267,31 @@ export class PlatformService {
     };
   }
 
-  async getSdgGoal(goalNumber: number): Promise<SdgGoalDetail> {
-    const targets = await this.prismaService.sdgTarget.findMany({
-      where: {
-        goalNumber,
-        status: 'published',
-        locale: 'en'
-      },
-      orderBy: [{ sortOrder: 'asc' }, { targetCode: 'asc' }]
-    });
+  async getSdgGoal(goalNumber: number, locale?: string): Promise<SdgGoalDetail> {
+    const resolvedLocale = this.resolveLocale(locale);
+    const targets = this.pickPreferredLocale(
+      await this.prismaService.sdgTarget.findMany({
+        where: {
+          goalNumber,
+          status: 'published',
+          locale: { in: this.getPreferredLocales(resolvedLocale) }
+        },
+        orderBy: [{ sortOrder: 'asc' }, { targetCode: 'asc' }]
+      }),
+      (item) => item.targetCode,
+      resolvedLocale
+    ) as Awaited<ReturnType<typeof this.prismaService.sdgTarget.findMany>>;
 
     if (targets.length === 0) {
       throw new NotFoundException('SDG goal not found.');
     }
 
+    const firstTarget = targets[0]!;
+
     return {
       goalNumber,
-      goalTitle: targets[0].goalTitle,
-      summary: targets[0].goalSummary,
+      goalTitle: firstTarget.goalTitle,
+      summary: firstTarget.goalSummary,
       officialUrl: `https://sdgs.un.org/goals/goal${goalNumber}`,
       targets: targets.map((target: (typeof targets)[number]) => ({
         id: target.id,
@@ -189,7 +308,28 @@ export class PlatformService {
   async getEditorialOverview(currentUser: SessionUser): Promise<EditorialOverview> {
     this.assertEditorialAccess(currentUser);
 
-    const [articles, faqEntries, caseStudies, resources, partnerInterestCount] = await Promise.all([
+    const [
+      sitePages,
+      siteSettings,
+      mediaAssets,
+      articles,
+      faqEntries,
+      caseStudies,
+      resources,
+      partnerLeads
+    ] = await Promise.all([
+      this.prismaService.sitePage.findMany({
+        include: {
+          heroMediaAsset: true
+        },
+        orderBy: [{ locale: 'asc' }, { sortOrder: 'asc' }, { updatedAt: 'desc' }]
+      }),
+      this.prismaService.siteSetting.findMany({
+        orderBy: [{ locale: 'asc' }, { key: 'asc' }, { updatedAt: 'desc' }]
+      }),
+      this.prismaService.mediaAsset.findMany({
+        orderBy: [{ locale: 'asc' }, { createdAt: 'asc' }]
+      }),
       this.prismaService.knowledgeArticle.findMany({
         orderBy: [{ sortOrder: 'asc' }, { updatedAt: 'desc' }]
       }),
@@ -202,10 +342,20 @@ export class PlatformService {
       this.prismaService.resourceAsset.findMany({
         orderBy: [{ sortOrder: 'asc' }, { updatedAt: 'desc' }]
       }),
-      this.prismaService.partnerInterestLead.count()
+      this.prismaService.partnerInterestLead.findMany({
+        orderBy: [{ createdAt: 'desc' }]
+      })
     ]);
 
     return {
+      referenceMetadata: this.buildReferenceMetadata(),
+      sitePages: sitePages.map((page: (typeof sitePages)[number]) => this.serializeSitePage(page)),
+      siteSettings: siteSettings.map((setting: (typeof siteSettings)[number]) =>
+        this.serializeSiteSetting(setting)
+      ),
+      mediaAssets: mediaAssets.map((asset: (typeof mediaAssets)[number]) =>
+        this.serializeMediaAsset(asset)
+      ),
       articles: articles.map((article: (typeof articles)[number]) => ({
         id: article.id,
         slug: article.slug,
@@ -249,8 +399,546 @@ export class PlatformService {
       resources: resources.map((resource: (typeof resources)[number]) =>
         this.serializeResource(resource)
       ),
-      partnerInterestCount
+      partnerLeads: partnerLeads.map((lead: (typeof partnerLeads)[number]) =>
+        this.serializePartnerLead(lead)
+      ),
+      partnerInterestCount: partnerLeads.length
     };
+  }
+
+  async createSitePage(
+    currentUser: SessionUser,
+    payload: UpsertSitePagePayload
+  ): Promise<SitePage> {
+    this.assertEditorialAccess(currentUser);
+    const page = await this.prismaService.sitePage.create({
+      data: this.buildSitePageData(payload),
+      include: {
+        heroMediaAsset: true
+      }
+    });
+    const serialized = this.serializeSitePage(page);
+
+    await this.recordContentRevision('site_page', page.id, serialized, currentUser.id, 'Created');
+
+    await this.auditService.log({
+      actorId: currentUser.id,
+      action: 'content.site_page_upserted',
+      targetType: 'site_page',
+      targetId: page.id,
+      metadata: {
+        slug: page.slug,
+        locale: page.locale,
+        status: page.status
+      }
+    });
+
+    return serialized;
+  }
+
+  async updateSitePage(
+    currentUser: SessionUser,
+    contentId: string,
+    payload: UpsertSitePagePayload
+  ): Promise<SitePage> {
+    this.assertEditorialAccess(currentUser);
+    const page = await this.prismaService.sitePage.update({
+      where: { id: contentId },
+      data: this.buildSitePageData(payload),
+      include: {
+        heroMediaAsset: true
+      }
+    });
+    const serialized = this.serializeSitePage(page);
+
+    await this.recordContentRevision('site_page', page.id, serialized, currentUser.id, 'Updated');
+
+    await this.auditService.log({
+      actorId: currentUser.id,
+      action: 'content.site_page_upserted',
+      targetType: 'site_page',
+      targetId: page.id,
+      metadata: {
+        slug: page.slug,
+        locale: page.locale,
+        status: page.status
+      }
+    });
+
+    return serialized;
+  }
+
+  async listContentRevisions(
+    currentUser: SessionUser,
+    entityType: ContentEntityType,
+    entityId: string
+  ): Promise<ContentRevisionListResponse> {
+    this.assertEditorialAccess(currentUser);
+    const revisions = await this.prismaService.contentRevision.findMany({
+      where: {
+        entityType,
+        entityId
+      },
+      orderBy: [{ createdAt: 'desc' }]
+    });
+
+    return {
+      items: revisions.map((revision: Parameters<typeof this.serializeContentRevision>[0]) =>
+        this.serializeContentRevision(revision)
+      )
+    };
+  }
+
+  async restoreSitePageRevision(
+    currentUser: SessionUser,
+    contentId: string,
+    revisionId: string
+  ): Promise<SitePage> {
+    this.assertEditorialAccess(currentUser);
+    const revision = await this.prismaService.contentRevision.findFirst({
+      where: {
+        id: revisionId,
+        entityType: 'site_page',
+        entityId: contentId
+      }
+    });
+
+    if (!revision) {
+      throw new NotFoundException('Content revision not found.');
+    }
+
+    const snapshot = SitePageSchema.parse(revision.snapshot);
+    const page = await this.prismaService.sitePage.update({
+      where: { id: contentId },
+      data: this.buildSitePageData({
+        slug: snapshot.slug,
+        locale: snapshot.locale,
+        title: snapshot.title,
+        summary: snapshot.summary,
+        pageType: snapshot.pageType,
+        status: snapshot.status,
+        heroEyebrow: snapshot.heroEyebrow,
+        heroTitle: snapshot.heroTitle,
+        heroBody: snapshot.heroBody,
+        heroPrimaryCtaLabel: snapshot.heroPrimaryCtaLabel,
+        heroPrimaryCtaHref: snapshot.heroPrimaryCtaHref,
+        heroSecondaryCtaLabel: snapshot.heroSecondaryCtaLabel,
+        heroSecondaryCtaHref: snapshot.heroSecondaryCtaHref,
+        heroMediaAssetId: snapshot.heroMediaAssetId,
+        navigationLabel: snapshot.navigationLabel,
+        navigationGroup: snapshot.navigationGroup,
+        showInPrimaryNav: snapshot.showInPrimaryNav,
+        showInFooter: snapshot.showInFooter,
+        canonicalUrl: snapshot.canonicalUrl,
+        seoTitle: snapshot.seoTitle,
+        seoDescription: snapshot.seoDescription,
+        sections: snapshot.sections,
+        sortOrder: snapshot.sortOrder
+      }),
+      include: {
+        heroMediaAsset: true
+      }
+    });
+    const serialized = this.serializeSitePage(page);
+
+    await this.recordContentRevision(
+      'site_page',
+      page.id,
+      serialized,
+      currentUser.id,
+      `Restored from revision ${revision.createdAt.toISOString()}`
+    );
+
+    await this.auditService.log({
+      actorId: currentUser.id,
+      action: 'content.site_page_upserted',
+      targetType: 'site_page',
+      targetId: page.id,
+      metadata: {
+        restoredRevisionId: revision.id,
+        slug: page.slug,
+        locale: page.locale
+      }
+    });
+
+    return serialized;
+  }
+
+  async createSitePagePreviewToken(
+    currentUser: SessionUser,
+    contentId: string
+  ): Promise<SitePagePreviewToken> {
+    this.assertEditorialAccess(currentUser);
+    const page = await this.prismaService.sitePage.findUnique({
+      where: { id: contentId }
+    });
+
+    if (!page) {
+      throw new NotFoundException('Site page not found.');
+    }
+
+    const token = `${randomUUID().replaceAll('-', '')}${randomUUID().replaceAll('-', '')}`;
+    const tokenHash = createHash('sha256').update(token).digest('hex');
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24);
+
+    await this.prismaService.sitePagePreviewToken.create({
+      data: {
+        sitePageId: page.id,
+        tokenHash,
+        expiresAt,
+        createdByUserId: currentUser.id
+      }
+    });
+
+    await this.auditService.log({
+      actorId: currentUser.id,
+      action: 'content.site_page_upserted',
+      targetType: 'site_page_preview_token',
+      targetId: page.id,
+      metadata: {
+        slug: page.slug,
+        locale: page.locale,
+        expiresAt: expiresAt.toISOString()
+      }
+    });
+
+    return {
+      sitePageId: page.id,
+      slug: page.slug,
+      token,
+      previewUrl: `/preview/${token}`,
+      expiresAt: expiresAt.toISOString()
+    };
+  }
+
+  async getPreviewSitePage(token: string): Promise<SitePage> {
+    const tokenHash = createHash('sha256').update(token).digest('hex');
+    const preview = await this.prismaService.sitePagePreviewToken.findFirst({
+      where: {
+        tokenHash,
+        expiresAt: {
+          gt: new Date()
+        }
+      },
+      include: {
+        sitePage: {
+          include: {
+            heroMediaAsset: true
+          }
+        }
+      }
+    });
+
+    if (!preview) {
+      throw new NotFoundException('Preview token is invalid or expired.');
+    }
+
+    return this.serializeSitePage(preview.sitePage);
+  }
+
+  async createSiteSetting(
+    currentUser: SessionUser,
+    payload: UpsertSiteSettingPayload
+  ): Promise<SiteSetting> {
+    this.assertEditorialAccess(currentUser);
+    const setting = await this.prismaService.siteSetting.create({
+      data: {
+        key: payload.key,
+        locale: payload.locale,
+        title: payload.title ?? null,
+        description: payload.description ?? null,
+        value: (payload.value ?? null) as Prisma.InputJsonValue
+      }
+    });
+    const serialized = this.serializeSiteSetting(setting);
+
+    await this.recordContentRevision(
+      'site_setting',
+      setting.id,
+      serialized,
+      currentUser.id,
+      'Created'
+    );
+
+    await this.auditService.log({
+      actorId: currentUser.id,
+      action: 'content.site_setting_upserted',
+      targetType: 'site_setting',
+      targetId: setting.id,
+      metadata: {
+        key: setting.key,
+        locale: setting.locale
+      }
+    });
+
+    return serialized;
+  }
+
+  async updateSiteSetting(
+    currentUser: SessionUser,
+    contentId: string,
+    payload: UpsertSiteSettingPayload
+  ): Promise<SiteSetting> {
+    this.assertEditorialAccess(currentUser);
+    const setting = await this.prismaService.siteSetting.update({
+      where: { id: contentId },
+      data: {
+        key: payload.key,
+        locale: payload.locale,
+        title: payload.title ?? null,
+        description: payload.description ?? null,
+        value: (payload.value ?? null) as Prisma.InputJsonValue
+      }
+    });
+    const serialized = this.serializeSiteSetting(setting);
+
+    await this.recordContentRevision(
+      'site_setting',
+      setting.id,
+      serialized,
+      currentUser.id,
+      'Updated'
+    );
+
+    await this.auditService.log({
+      actorId: currentUser.id,
+      action: 'content.site_setting_upserted',
+      targetType: 'site_setting',
+      targetId: setting.id,
+      metadata: {
+        key: setting.key,
+        locale: setting.locale
+      }
+    });
+
+    return serialized;
+  }
+
+  async uploadMediaAsset(
+    currentUser: SessionUser,
+    payload: Record<string, string | undefined>,
+    file: {
+      buffer: Buffer;
+      originalname: string;
+      mimetype: string;
+      size: number;
+    }
+  ): Promise<MediaAsset> {
+    this.assertEditorialAccess(currentUser);
+
+    if (!file?.buffer?.byteLength) {
+      throw new BadRequestException('Media upload is missing a file.');
+    }
+
+    const parsed = UploadMediaAssetPayloadSchema.parse({
+      slug: payload.slug,
+      title: payload.title,
+      altText: payload.altText,
+      caption: payload.caption ?? null,
+      attribution: payload.attribution ?? null,
+      rights: payload.rights ?? null,
+      locale: payload.locale ?? 'en',
+      status: payload.status ?? 'draft'
+    });
+
+    const checksumSha256 = createHash('sha256').update(file.buffer).digest('hex');
+    const fileName = file.originalname || `${parsed.slug}.bin`;
+    const mimeType = file.mimetype || 'application/octet-stream';
+    const storageKey = this.evaluationStorageService.buildStorageKey(
+      checksumSha256,
+      fileName,
+      'content-media'
+    );
+
+    await this.evaluationStorageService.writeObject(storageKey, file.buffer, mimeType);
+
+    const asset = await this.prismaService.mediaAsset.create({
+      data: {
+        slug: parsed.slug,
+        title: parsed.title,
+        altText: parsed.altText,
+        caption: parsed.caption ?? null,
+        attribution: parsed.attribution ?? null,
+        rights: parsed.rights ?? null,
+        mimeType,
+        fileName,
+        byteSize: file.size,
+        storageKey,
+        publicUrl: null,
+        locale: parsed.locale,
+        status: parsed.status
+      }
+    });
+
+    const updatedAsset = await this.prismaService.mediaAsset.update({
+      where: { id: asset.id },
+      data: {
+        publicUrl: `/api/content/media/${asset.id}/file`
+      }
+    });
+
+    await this.auditService.log({
+      actorId: currentUser.id,
+      action: 'content.media_asset_uploaded',
+      targetType: 'media_asset',
+      targetId: asset.id,
+      metadata: {
+        slug: asset.slug,
+        locale: asset.locale
+      }
+    });
+
+    const serialized = this.serializeMediaAsset(updatedAsset);
+    await this.recordContentRevision(
+      'media_asset',
+      updatedAsset.id,
+      serialized,
+      currentUser.id,
+      'Uploaded binary'
+    );
+
+    return serialized;
+  }
+
+  async updateMediaAsset(
+    currentUser: SessionUser,
+    mediaId: string,
+    payload: UpdateMediaAssetPayload
+  ): Promise<MediaAsset> {
+    this.assertEditorialAccess(currentUser);
+    const asset = await this.prismaService.mediaAsset.update({
+      where: { id: mediaId },
+      data: {
+        title: payload.title,
+        altText: payload.altText,
+        caption: payload.caption ?? null,
+        attribution: payload.attribution ?? null,
+        rights: payload.rights ?? null,
+        locale: payload.locale,
+        status: payload.status,
+        focalPointX: payload.focalPointX ?? null,
+        focalPointY: payload.focalPointY ?? null
+      }
+    });
+    const serialized = this.serializeMediaAsset(asset);
+    await this.recordContentRevision(
+      'media_asset',
+      asset.id,
+      serialized,
+      currentUser.id,
+      'Updated metadata'
+    );
+
+    return serialized;
+  }
+
+  async getMediaAssetFile(mediaId: string) {
+    const asset = await this.prismaService.mediaAsset.findFirst({
+      where: {
+        id: mediaId,
+        status: 'published'
+      }
+    });
+
+    if (!asset) {
+      throw new NotFoundException('Media asset not found.');
+    }
+
+    if (asset.publicUrl && !asset.storageKey) {
+      return {
+        type: 'redirect' as const,
+        location: asset.publicUrl
+      };
+    }
+
+    if (!asset.storageKey) {
+      throw new BadRequestException('This media asset does not have a file.');
+    }
+
+    return {
+      type: 'binary' as const,
+      fileName: asset.fileName,
+      mimeType: asset.mimeType,
+      content: await this.evaluationStorageService.readObject(asset.storageKey)
+    };
+  }
+
+  async updatePartnerLead(
+    currentUser: SessionUser,
+    leadId: string,
+    payload: UpdatePartnerLeadPayload
+  ): Promise<PartnerLeadSummary> {
+    this.assertEditorialAccess(currentUser);
+    const lead = await this.prismaService.partnerInterestLead.update({
+      where: { id: leadId },
+      data: {
+        status: payload.status,
+        assigneeName: payload.assigneeName ?? null,
+        assigneeEmail: payload.assigneeEmail ?? null,
+        notes: payload.notes ?? null,
+        resolvedAt:
+          payload.status === 'qualified' || payload.status === 'archived' ? new Date() : null
+      }
+    });
+
+    await this.auditService.log({
+      actorId: currentUser.id,
+      action: 'partner.lead_updated',
+      targetType: 'partner_interest_lead',
+      targetId: lead.id,
+      metadata: {
+        status: lead.status
+      }
+    });
+
+    return this.serializePartnerLead(lead);
+  }
+
+  async exportPartnerLeadsCsv(currentUser: SessionUser) {
+    this.assertEditorialAccess(currentUser);
+
+    const leads = await this.prismaService.partnerInterestLead.findMany({
+      orderBy: [{ createdAt: 'desc' }]
+    });
+
+    const dataRows: string[][] = leads.map((lead: (typeof leads)[number]) => [
+      lead.createdAt.toISOString(),
+      lead.updatedAt.toISOString(),
+      lead.resolvedAt?.toISOString() ?? '',
+      lead.status,
+      lead.organizationName,
+      lead.name,
+      lead.email,
+      lead.websiteUrl ?? '',
+      lead.sourcePage,
+      lead.assigneeName ?? '',
+      lead.assigneeEmail ?? '',
+      lead.message,
+      lead.notes ?? ''
+    ]);
+
+    const rows: string[][] = [
+      [
+        'createdAt',
+        'updatedAt',
+        'resolvedAt',
+        'status',
+        'organizationName',
+        'name',
+        'email',
+        'websiteUrl',
+        'sourcePage',
+        'assigneeName',
+        'assigneeEmail',
+        'message',
+        'notes'
+      ],
+      ...dataRows
+    ];
+
+    return rows
+      .map((row: string[]) => row.map((value: string) => this.toCsvCell(value)).join(','))
+      .join('\n');
   }
 
   async createKnowledgeArticle(
@@ -270,19 +958,7 @@ export class PlatformService {
         heroImageUrl: payload.heroImageUrl ?? null
       }
     });
-
-    await this.auditService.log({
-      actorId: currentUser.id,
-      action: 'evaluation.context_updated',
-      targetType: 'knowledge_article',
-      targetId: article.id,
-      metadata: {
-        slug: article.slug,
-        status: article.status
-      }
-    });
-
-    return {
+    const serialized = {
       id: article.id,
       slug: article.slug,
       title: article.title,
@@ -298,7 +974,28 @@ export class PlatformService {
       locale: article.locale,
       heroImageUrl: article.heroImageUrl,
       updatedAt: article.updatedAt.toISOString()
-    };
+    } satisfies KnowledgeArticle;
+
+    await this.recordContentRevision(
+      'knowledge_article',
+      article.id,
+      serialized,
+      currentUser.id,
+      'Created'
+    );
+
+    await this.auditService.log({
+      actorId: currentUser.id,
+      action: 'evaluation.context_updated',
+      targetType: 'knowledge_article',
+      targetId: article.id,
+      metadata: {
+        slug: article.slug,
+        status: article.status
+      }
+    });
+
+    return serialized;
   }
 
   async updateKnowledgeArticle(
@@ -320,8 +1017,7 @@ export class PlatformService {
         heroImageUrl: payload.heroImageUrl ?? null
       }
     });
-
-    return {
+    const serialized = {
       id: article.id,
       slug: article.slug,
       title: article.title,
@@ -337,7 +1033,17 @@ export class PlatformService {
       locale: article.locale,
       heroImageUrl: article.heroImageUrl,
       updatedAt: article.updatedAt.toISOString()
-    };
+    } satisfies KnowledgeArticle;
+
+    await this.recordContentRevision(
+      'knowledge_article',
+      article.id,
+      serialized,
+      currentUser.id,
+      'Updated'
+    );
+
+    return serialized;
   }
 
   async createFaqEntry(
@@ -355,8 +1061,7 @@ export class PlatformService {
         sortOrder: payload.sortOrder
       }
     });
-
-    return {
+    const serialized = {
       id: entry.id,
       question: entry.question,
       answer: entry.answer,
@@ -364,7 +1069,11 @@ export class PlatformService {
       status: entry.status as ContentStatus,
       locale: entry.locale,
       sortOrder: entry.sortOrder
-    };
+    } satisfies FaqEntry;
+
+    await this.recordContentRevision('faq_entry', entry.id, serialized, currentUser.id, 'Created');
+
+    return serialized;
   }
 
   async updateFaqEntry(
@@ -384,8 +1093,7 @@ export class PlatformService {
         sortOrder: payload.sortOrder
       }
     });
-
-    return {
+    const serialized = {
       id: entry.id,
       question: entry.question,
       answer: entry.answer,
@@ -393,7 +1101,11 @@ export class PlatformService {
       status: entry.status as ContentStatus,
       locale: entry.locale,
       sortOrder: entry.sortOrder
-    };
+    } satisfies FaqEntry;
+
+    await this.recordContentRevision('faq_entry', entry.id, serialized, currentUser.id, 'Updated');
+
+    return serialized;
   }
 
   async createCaseStudy(
@@ -416,8 +1128,7 @@ export class PlatformService {
         sortOrder: payload.sortOrder
       }
     });
-
-    return {
+    const serialized = {
       id: study.id,
       slug: study.slug,
       title: study.title,
@@ -430,7 +1141,17 @@ export class PlatformService {
       locale: study.locale,
       heroImageUrl: study.heroImageUrl,
       updatedAt: study.updatedAt.toISOString()
-    };
+    } satisfies PublicSiteContent['caseStudies'][number];
+
+    await this.recordContentRevision(
+      'case_study',
+      study.id,
+      serialized,
+      currentUser.id,
+      'Created'
+    );
+
+    return serialized;
   }
 
   async updateCaseStudy(
@@ -455,8 +1176,7 @@ export class PlatformService {
         sortOrder: payload.sortOrder
       }
     });
-
-    return {
+    const serialized = {
       id: study.id,
       slug: study.slug,
       title: study.title,
@@ -469,7 +1189,17 @@ export class PlatformService {
       locale: study.locale,
       heroImageUrl: study.heroImageUrl,
       updatedAt: study.updatedAt.toISOString()
-    };
+    } satisfies PublicSiteContent['caseStudies'][number];
+
+    await this.recordContentRevision(
+      'case_study',
+      study.id,
+      serialized,
+      currentUser.id,
+      'Updated'
+    );
+
+    return serialized;
   }
 
   async createResourceAsset(
@@ -490,8 +1220,16 @@ export class PlatformService {
         sortOrder: payload.sortOrder
       }
     });
+    const serialized = this.serializeResource(resource);
+    await this.recordContentRevision(
+      'resource_asset',
+      resource.id,
+      serialized,
+      currentUser.id,
+      'Created'
+    );
 
-    return this.serializeResource(resource);
+    return serialized;
   }
 
   async updateResourceAsset(
@@ -514,8 +1252,16 @@ export class PlatformService {
         sortOrder: payload.sortOrder
       }
     });
+    const serialized = this.serializeResource(resource);
+    await this.recordContentRevision(
+      'resource_asset',
+      resource.id,
+      serialized,
+      currentUser.id,
+      'Updated'
+    );
 
-    return this.serializeResource(resource);
+    return serialized;
   }
 
   async uploadResourceBinary(
@@ -566,16 +1312,23 @@ export class PlatformService {
         byteSize: file.size
       }
     });
+    const serialized = this.serializeResource(resource);
+    await this.recordContentRevision(
+      'resource_asset',
+      resource.id,
+      serialized,
+      currentUser.id,
+      'Uploaded binary'
+    );
 
-    return this.serializeResource(resource);
+    return serialized;
   }
 
   async downloadResource(resourceId: string) {
     const resource = await this.prismaService.resourceAsset.findFirst({
       where: {
         id: resourceId,
-        status: 'published',
-        locale: 'en'
+        status: 'published'
       }
     });
 
@@ -590,16 +1343,36 @@ export class PlatformService {
       };
     }
 
+    const fallbackAsset = await this.readSeededReferenceResource(resource);
+
     if (!resource.storageKey || !resource.fileName || !resource.mimeType) {
-      throw new BadRequestException('This resource does not have a binary asset.');
+      if (!fallbackAsset) {
+        throw new BadRequestException('This resource does not have a binary asset.');
+      }
+
+      return {
+        type: 'binary' as const,
+        ...fallbackAsset
+      };
     }
 
-    return {
-      type: 'binary' as const,
-      fileName: resource.fileName,
-      mimeType: resource.mimeType,
-      content: await this.evaluationStorageService.readObject(resource.storageKey)
-    };
+    try {
+      return {
+        type: 'binary' as const,
+        fileName: resource.fileName,
+        mimeType: resource.mimeType,
+        content: await this.evaluationStorageService.readObject(resource.storageKey)
+      };
+    } catch (error) {
+      if (!fallbackAsset) {
+        throw error;
+      }
+
+      return {
+        type: 'binary' as const,
+        ...fallbackAsset
+      };
+    }
   }
 
   async submitPartnerInterest(payload: SubmitPartnerInterestPayload) {
@@ -609,13 +1382,14 @@ export class PlatformService {
         organizationName: payload.organizationName,
         email: payload.email,
         websiteUrl: payload.websiteUrl ?? null,
-        message: payload.message
+        message: payload.message,
+        status: 'new'
       }
     });
 
     await this.auditService.log({
       actorId: null,
-      action: 'evaluation.context_updated',
+      action: 'partner.lead_created',
       targetType: 'partner_interest_lead',
       targetId: lead.id,
       metadata: {
@@ -829,7 +1603,18 @@ export class PlatformService {
               select: {
                 id: true,
                 name: true,
-                status: true
+                status: true,
+                country: true,
+                businessCategoryMain: true,
+                businessCategorySubcategory: true,
+                extendedNaceCode: true,
+                extendedNaceLabel: true,
+                naceDivision: true,
+                currentStage: true,
+                financialTotal: true,
+                riskOverall: true,
+                opportunityOverall: true,
+                confidenceBand: true
               }
             },
             reviewAssignments: {
@@ -896,24 +1681,86 @@ export class PlatformService {
         id: true,
         name: true,
         status: true,
+        country: true,
+        businessCategoryMain: true,
+        businessCategorySubcategory: true,
+        extendedNaceCode: true,
+        extendedNaceLabel: true,
+        naceDivision: true,
+        currentStage: true,
+        financialTotal: true,
+        riskOverall: true,
+        opportunityOverall: true,
+        confidenceBand: true,
+        currentRevisionId: true,
         currentRevisionNumber: true,
         updatedAt: true
       },
       orderBy: [{ updatedAt: 'desc' }]
     });
 
-    return {
-      ...baseSummary,
-      description: program.description,
-      publicBlurb: program.publicBlurb,
-      members: program.members.map((item: (typeof program.members)[number]) => ({
-        userId: item.user.id,
-        name: item.user.name,
-        email: item.user.email,
-        role: item.role as 'manager' | 'reviewer' | 'member',
-        joinedAt: item.joinedAt.toISOString()
-      })),
-      submissions: program.submissions.map((submission: (typeof program.submissions)[number]) => ({
+    const revisionIds = Array.from(
+      new Set(
+        [
+          ...program.submissions.map(
+            (submission: (typeof program.submissions)[number]) => submission.revisionId
+          ),
+          ...availableEvaluations
+            .map(
+              (evaluation: (typeof availableEvaluations)[number]) => evaluation.currentRevisionId
+            )
+            .filter((value: string | null): value is string => Boolean(value))
+        ].filter((value: string | null | undefined): value is string => Boolean(value))
+      )
+    );
+
+    const revisionSnapshots = revisionIds.length
+      ? await this.prismaService.evaluationRevision.findMany({
+          where: {
+            id: {
+              in: revisionIds
+            }
+          },
+          select: {
+            id: true,
+            reportSnapshot: true
+          }
+        })
+      : [];
+
+    const reportsByRevisionId = new Map<string, ReportResponse | null>(
+      revisionSnapshots.map((revision: (typeof revisionSnapshots)[number]) => [
+        revision.id,
+        this.parseReportSnapshot(revision.reportSnapshot)
+      ])
+    );
+
+    const reviewAssignments = program.submissions.flatMap((submission: (typeof program.submissions)[number]) =>
+      submission.reviewAssignments.map((assignment: (typeof submission.reviewAssignments)[number]) =>
+        this.serializeReviewAssignment(submission.id, assignment)
+      )
+    );
+    const reviewComments = program.submissions.flatMap((submission: (typeof program.submissions)[number]) =>
+      submission.reviewComments.map((comment: (typeof submission.reviewComments)[number]) => ({
+        id: comment.id,
+        submissionId: submission.id,
+        authorUserId: comment.author.id,
+        authorName: comment.author.name,
+        body: comment.body,
+        createdAt: comment.createdAt.toISOString()
+      }))
+    );
+    const submissionSummaries = program.submissions.map((submission: (typeof program.submissions)[number]) => {
+      const submissionReport = reportsByRevisionId.get(submission.revisionId) ?? null;
+      const openAssignmentCount = submission.reviewAssignments.filter(
+        (assignment: (typeof submission.reviewAssignments)[number]) => assignment.status !== 'approved'
+      ).length;
+      const overdueAssignmentCount = submission.reviewAssignments.filter(
+        (assignment: (typeof submission.reviewAssignments)[number]) =>
+          this.isAssignmentOverdue(assignment.dueAt, assignment.status)
+      ).length;
+
+      return {
         id: submission.id,
         evaluationId: submission.evaluation.id,
         evaluationName: submission.evaluation.name,
@@ -927,47 +1774,52 @@ export class PlatformService {
           | 'approved'
           | 'archived',
         evaluationStatus: submission.evaluation.status,
+        context: this.buildProgramEvaluationContext(submissionReport?.evaluation ?? submission.evaluation),
+        deterministicSummary: this.buildProgramDeterministicSummary(submissionReport, submission.evaluation),
+        scoreInterpretation: submissionReport?.dashboard.scoreInterpretation ?? null,
+        topMaterialTopics: this.buildProgramMaterialTopicPreview(submissionReport),
+        recommendationsPreview: this.buildProgramRecommendationPreview(submissionReport),
+        reviewChecklist: this.buildProgramReviewChecklist(submissionReport, submission),
+        openAssignmentCount,
+        overdueAssignmentCount,
+        latestDecisionRationale: this.getLatestDecisionRationale(submission.reviewComments),
+        reportSnapshotHref: `/app/evaluate/${submission.evaluation.id}/revisions/${submission.revisionNumber}`,
         submittedAt: submission.submittedAt ? submission.submittedAt.toISOString() : null,
         lastReviewedAt: submission.lastReviewedAt ? submission.lastReviewedAt.toISOString() : null
+      };
+    });
+    const reviewerWorkloads = this.buildReviewerWorkloads(reviewAssignments);
+    const cohortSummary = this.buildProgramCohortSummary(submissionSummaries);
+
+    return {
+      ...baseSummary,
+      description: program.description,
+      publicBlurb: program.publicBlurb,
+      members: program.members.map((item: (typeof program.members)[number]) => ({
+        userId: item.user.id,
+        name: item.user.name,
+        email: item.user.email,
+        role: item.role as 'manager' | 'reviewer' | 'member',
+        joinedAt: item.joinedAt.toISOString()
       })),
-      reviewAssignments: program.submissions.flatMap(
-        (submission: (typeof program.submissions)[number]) =>
-          submission.reviewAssignments.map(
-            (assignment: (typeof submission.reviewAssignments)[number]) => ({
-              id: assignment.id,
-              submissionId: submission.id,
-              reviewerUserId: assignment.reviewer.id,
-              reviewerName: assignment.reviewer.name,
-              status: assignment.status as
-                | 'pending'
-                | 'in_review'
-                | 'changes_requested'
-                | 'approved',
-              dueAt: assignment.dueAt ? assignment.dueAt.toISOString() : null,
-              decidedAt: assignment.decidedAt ? assignment.decidedAt.toISOString() : null
-            })
-          )
-      ),
-      reviewComments: program.submissions.flatMap(
-        (submission: (typeof program.submissions)[number]) =>
-          submission.reviewComments.map((comment: (typeof submission.reviewComments)[number]) => ({
-            id: comment.id,
-            submissionId: submission.id,
-            authorUserId: comment.author.id,
-            authorName: comment.author.name,
-            body: comment.body,
-            createdAt: comment.createdAt.toISOString()
-          }))
-      ),
-      availableEvaluations: availableEvaluations.map(
-        (evaluation: (typeof availableEvaluations)[number]) => ({
+      submissions: submissionSummaries,
+      reviewAssignments,
+      reviewComments,
+      availableEvaluations: availableEvaluations.map((evaluation: (typeof availableEvaluations)[number]) => {
+        const evaluationReport = reportsByRevisionId.get(evaluation.currentRevisionId ?? '') ?? null;
+
+        return {
           evaluationId: evaluation.id,
           name: evaluation.name,
           status: evaluation.status,
+          context: this.buildProgramEvaluationContext(evaluationReport?.evaluation ?? evaluation),
+          deterministicSummary: this.buildProgramDeterministicSummary(evaluationReport, evaluation),
           currentRevisionNumber: evaluation.currentRevisionNumber,
           updatedAt: evaluation.updatedAt.toISOString()
-        })
-      )
+        };
+      }),
+      cohortSummary,
+      reviewerWorkloads
     };
   }
 
@@ -1223,19 +2075,31 @@ export class PlatformService {
 
     await this.assertProgramSubmission(programId, submissionId);
 
-    await this.prismaService.programSubmission.update({
-      where: {
-        id: submissionId
-      },
-      data: {
-        status: payload.status,
-        submittedAt: payload.status === 'submitted' ? new Date() : undefined,
-        lastReviewedAt:
-          payload.status === 'in_review' ||
-          payload.status === 'changes_requested' ||
-          payload.status === 'approved'
-            ? new Date()
-            : undefined
+    await this.prismaService.$transaction(async (transaction) => {
+      await transaction.programSubmission.update({
+        where: {
+          id: submissionId
+        },
+        data: {
+          status: payload.status,
+          submittedAt: payload.status === 'submitted' ? new Date() : undefined,
+          lastReviewedAt:
+            payload.status === 'in_review' ||
+            payload.status === 'changes_requested' ||
+            payload.status === 'approved'
+              ? new Date()
+              : undefined
+        }
+      });
+
+      if (payload.rationale?.trim()) {
+        await transaction.reviewComment.create({
+          data: {
+            submissionId,
+            authorUserId: currentUser.id,
+            body: `Decision rationale: ${payload.rationale.trim()}`
+          }
+        });
       }
     });
 
@@ -1246,7 +2110,8 @@ export class PlatformService {
       targetId: submissionId,
       metadata: {
         programId,
-        submissionStatus: payload.status
+        submissionStatus: payload.status,
+        hasRationale: Boolean(payload.rationale?.trim())
       }
     });
 
@@ -1480,6 +2345,73 @@ export class PlatformService {
     }
   }
 
+  private resolveLocale(locale?: string) {
+    const value = locale?.trim().toLowerCase();
+    return value && value.length >= 2 ? value : 'en';
+  }
+
+  private getPreferredLocales(locale: string) {
+    return locale === 'en' ? ['en'] : [locale, 'en'];
+  }
+
+  private pickPreferredLocale<T extends { id: string; locale: string }>(
+    items: T[],
+    getKey: (item: any) => string,
+    locale: string
+  ): T[] {
+    const preferred = new Map<string, string>();
+    const fallback = new Map<string, string>();
+
+    for (const item of items) {
+      const key = getKey(item);
+      if (item.locale === locale) {
+        preferred.set(key, item.id);
+        continue;
+      }
+
+      if (!fallback.has(key)) {
+        fallback.set(key, item.id);
+      }
+    }
+
+    return items.filter((item) => {
+      const key = getKey(item);
+      if (item.locale === locale) {
+        return preferred.get(key) === item.id;
+      }
+
+      return !preferred.has(key) && fallback.get(key) === item.id;
+    });
+  }
+
+  private buildSitePageData(payload: UpsertSitePagePayload): Prisma.SitePageUncheckedCreateInput {
+    return {
+      slug: payload.slug,
+      locale: payload.locale,
+      title: payload.title,
+      summary: payload.summary,
+      pageType: payload.pageType,
+      status: payload.status,
+      heroEyebrow: payload.heroEyebrow ?? null,
+      heroTitle: payload.heroTitle ?? null,
+      heroBody: payload.heroBody ?? null,
+      heroPrimaryCtaLabel: payload.heroPrimaryCtaLabel ?? null,
+      heroPrimaryCtaHref: payload.heroPrimaryCtaHref ?? null,
+      heroSecondaryCtaLabel: payload.heroSecondaryCtaLabel ?? null,
+      heroSecondaryCtaHref: payload.heroSecondaryCtaHref ?? null,
+      heroMediaAssetId: payload.heroMediaAssetId ?? null,
+      navigationLabel: payload.navigationLabel ?? null,
+      navigationGroup: payload.navigationGroup ?? null,
+      showInPrimaryNav: payload.showInPrimaryNav,
+      showInFooter: payload.showInFooter,
+      canonicalUrl: payload.canonicalUrl ?? null,
+      seoTitle: payload.seoTitle ?? null,
+      seoDescription: payload.seoDescription ?? null,
+      sections: payload.sections as Prisma.InputJsonValue,
+      sortOrder: payload.sortOrder
+    };
+  }
+
   private async getScenarioBaseReport(revisionId: string | null, evaluationId: string) {
     if (revisionId) {
       const revision = await this.prismaService.evaluationRevision.findUnique({
@@ -1630,6 +2562,637 @@ export class PlatformService {
     };
   }
 
+  private buildReferenceMetadata() {
+    return getReferenceMetadata();
+  }
+
+  private serializeReviewAssignment(
+    submissionId: string,
+    assignment: {
+      id: string;
+      reviewer: { id: string; name: string };
+      status: string;
+      dueAt: Date | null;
+      decidedAt: Date | null;
+    }
+  ): ProgramDetail['reviewAssignments'][number] {
+    return {
+      id: assignment.id,
+      submissionId,
+      reviewerUserId: assignment.reviewer.id,
+      reviewerName: assignment.reviewer.name,
+      status: assignment.status as 'pending' | 'in_review' | 'changes_requested' | 'approved',
+      dueAt: assignment.dueAt ? assignment.dueAt.toISOString() : null,
+      decidedAt: assignment.decidedAt ? assignment.decidedAt.toISOString() : null,
+      isOverdue: this.isAssignmentOverdue(assignment.dueAt, assignment.status)
+    };
+  }
+
+  private isAssignmentOverdue(dueAt: Date | null, status: string) {
+    if (!dueAt) {
+      return false;
+    }
+
+    return status !== 'approved' && dueAt.getTime() < Date.now();
+  }
+
+  private buildProgramReviewChecklist(
+    report: ReportResponse | null,
+    submission: {
+      reviewAssignments: Array<{ status: string; dueAt: Date | null }>;
+      reviewComments: Array<{ body: string }>;
+    }
+  ): ProgramDetail['submissions'][number]['reviewChecklist'] {
+    const readyArtifacts =
+      report?.evaluation.artifacts.filter((artifact) => artifact.status === 'ready').length ?? 0;
+    const commentCount = submission.reviewComments.length;
+    const assignmentCount = submission.reviewAssignments.length;
+    const overdueCount = submission.reviewAssignments.filter((assignment) =>
+      this.isAssignmentOverdue(assignment.dueAt, assignment.status)
+    ).length;
+    const materialTopics = report?.dashboard.materialAlerts.length ?? 0;
+    const recommendations = report?.dashboard.recommendations.length ?? 0;
+
+    return [
+      {
+        key: 'report_snapshot',
+        label: 'Immutable report snapshot available',
+        completed: Boolean(report),
+        detail: report
+          ? 'Reviewer and founder views are reading the same saved revision payload.'
+          : 'The revision snapshot could not be resolved yet.'
+      },
+      {
+        key: 'score_interpretation',
+        label: 'Workbook score bands available',
+        completed: Boolean(report?.dashboard.scoreInterpretation.bands.length),
+        detail: report?.dashboard.scoreInterpretation.subtitle ?? null
+      },
+      {
+        key: 'material_topics',
+        label: 'Material topics highlighted',
+        completed: materialTopics > 0,
+        detail:
+          materialTopics > 0
+            ? `${materialTopics} material topics surfaced in the saved dashboard.`
+            : 'No material topics surfaced for this revision yet.'
+      },
+      {
+        key: 'recommendations',
+        label: 'Recommendations ready for action',
+        completed: recommendations > 0,
+        detail:
+          recommendations > 0
+            ? `${recommendations} recommendation items are available to review.`
+            : 'No recommendations were generated for this revision.'
+      },
+      {
+        key: 'review_thread',
+        label: 'Review workflow active',
+        completed: assignmentCount > 0 || commentCount > 0,
+        detail:
+          assignmentCount > 0 || commentCount > 0
+            ? `${assignmentCount} assignments and ${commentCount} review comments recorded.`
+            : 'No reviewer assignment or comment has been recorded yet.'
+      },
+      {
+        key: 'evidence_exports',
+        label: 'Evidence or export artifacts available',
+        completed: readyArtifacts > 0,
+        detail:
+          readyArtifacts > 0
+            ? `${readyArtifacts} ready artifact(s) are attached to the saved evaluation state.`
+            : overdueCount > 0
+              ? `${overdueCount} assignment(s) are overdue and no ready export artifact is attached.`
+              : 'No ready artifact is attached to this revision yet.'
+      }
+    ];
+  }
+
+  private getLatestDecisionRationale(
+    comments: Array<{ body: string; createdAt: Date }>
+  ): string | null {
+    const rationaleComment = [...comments]
+      .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime())
+      .find((comment) => comment.body.startsWith('Decision rationale:'));
+
+    if (!rationaleComment) {
+      return null;
+    }
+
+    return rationaleComment.body.replace(/^Decision rationale:\s*/i, '').trim() || null;
+  }
+
+  private buildReviewerWorkloads(
+    assignments: ProgramDetail['reviewAssignments']
+  ): ProgramDetail['reviewerWorkloads'] {
+    const workloads = new Map<string, ProgramDetail['reviewerWorkloads'][number]>();
+
+    for (const assignment of assignments) {
+      const existing = workloads.get(assignment.reviewerUserId) ?? {
+        reviewerUserId: assignment.reviewerUserId,
+        reviewerName: assignment.reviewerName,
+        pendingCount: 0,
+        inReviewCount: 0,
+        changesRequestedCount: 0,
+        approvedCount: 0,
+        overdueCount: 0
+      };
+
+      if (assignment.status === 'pending') {
+        existing.pendingCount += 1;
+      } else if (assignment.status === 'in_review') {
+        existing.inReviewCount += 1;
+      } else if (assignment.status === 'changes_requested') {
+        existing.changesRequestedCount += 1;
+      } else if (assignment.status === 'approved') {
+        existing.approvedCount += 1;
+      }
+
+      if (assignment.isOverdue) {
+        existing.overdueCount += 1;
+      }
+
+      workloads.set(assignment.reviewerUserId, existing);
+    }
+
+    return [...workloads.values()].sort((left, right) => {
+      const leftActive = left.pendingCount + left.inReviewCount + left.changesRequestedCount;
+      const rightActive = right.pendingCount + right.inReviewCount + right.changesRequestedCount;
+
+      if (rightActive !== leftActive) {
+        return rightActive - leftActive;
+      }
+
+      return left.reviewerName.localeCompare(right.reviewerName);
+    });
+  }
+
+  private buildProgramCohortSummary(
+    submissions: ProgramDetail['submissions']
+  ): ProgramDetail['cohortSummary'] {
+    const statusOrder: ProgramDetail['cohortSummary']['submissionFunnel'][number]['status'][] = [
+      'draft',
+      'submitted',
+      'in_review',
+      'changes_requested',
+      'approved',
+      'archived'
+    ];
+    const confidenceOrder: NonNullable<
+      ProgramDetail['submissions'][number]['deterministicSummary']['confidenceBand']
+    >[] = ['high', 'moderate', 'low'];
+    const metricSubmissions = submissions.filter(
+      (submission) =>
+        submission.deterministicSummary.financialTotal !== null &&
+        submission.deterministicSummary.riskOverall !== null &&
+        submission.deterministicSummary.opportunityOverall !== null
+    );
+    const topicAggregate = new Map<
+      TopicCode,
+      {
+        topicCode: TopicCode;
+        title: string;
+        appearances: number;
+        highPriorityCount: number;
+        relevantCount: number;
+        totalScore: number;
+      }
+    >();
+    const recommendationAggregate = new Map<
+      string,
+      { title: string; source: string; severityBand: string; appearances: number }
+    >();
+
+    for (const submission of submissions) {
+      for (const topic of submission.topMaterialTopics) {
+        const current = topicAggregate.get(topic.topicCode) ?? {
+          topicCode: topic.topicCode,
+          title: topic.title,
+          appearances: 0,
+          highPriorityCount: 0,
+          relevantCount: 0,
+          totalScore: 0
+        };
+        current.appearances += 1;
+        current.totalScore += topic.score;
+        if (topic.priorityBand === 'high_priority') {
+          current.highPriorityCount += 1;
+        }
+        if (topic.priorityBand === 'relevant') {
+          current.relevantCount += 1;
+        }
+        topicAggregate.set(topic.topicCode, current);
+      }
+
+      for (const recommendation of submission.recommendationsPreview) {
+        const key = `${recommendation.title}|${recommendation.source}|${recommendation.severityBand}`;
+        const current = recommendationAggregate.get(key) ?? {
+          title: recommendation.title,
+          source: recommendation.source,
+          severityBand: recommendation.severityBand,
+          appearances: 0
+        };
+        current.appearances += 1;
+        recommendationAggregate.set(key, current);
+      }
+    }
+
+    return {
+      submissionFunnel: statusOrder.map((status) => ({
+        status,
+        count: submissions.filter((submission) => submission.submissionStatus === status).length
+      })),
+      confidenceDistribution: confidenceOrder.map((band) => ({
+        band,
+        count: submissions.filter(
+          (submission) => submission.deterministicSummary.confidenceBand === band
+        ).length
+      })),
+      averageFinancialTotal: metricSubmissions.length
+        ? Number(
+            (
+              metricSubmissions.reduce(
+                (sum, submission) => sum + (submission.deterministicSummary.financialTotal ?? 0),
+                0
+              ) / metricSubmissions.length
+            ).toFixed(2)
+          )
+        : null,
+      averageRiskOverall: metricSubmissions.length
+        ? Number(
+            (
+              metricSubmissions.reduce(
+                (sum, submission) => sum + (submission.deterministicSummary.riskOverall ?? 0),
+                0
+              ) / metricSubmissions.length
+            ).toFixed(2)
+          )
+        : null,
+      averageOpportunityOverall: metricSubmissions.length
+        ? Number(
+            (
+              metricSubmissions.reduce(
+                (sum, submission) =>
+                  sum + (submission.deterministicSummary.opportunityOverall ?? 0),
+                0
+              ) / metricSubmissions.length
+            ).toFixed(2)
+          )
+        : null,
+      recurringTopics: [...topicAggregate.values()]
+        .sort((left, right) => right.appearances - left.appearances || right.totalScore - left.totalScore)
+        .slice(0, 6)
+        .map((topic) => ({
+          topicCode: topic.topicCode,
+          title: topic.title,
+          appearances: topic.appearances,
+          highPriorityCount: topic.highPriorityCount,
+          relevantCount: topic.relevantCount,
+          averageScore: Number((topic.totalScore / topic.appearances).toFixed(2))
+        })),
+      recommendationPatterns: [...recommendationAggregate.values()]
+        .sort((left, right) => right.appearances - left.appearances || left.title.localeCompare(right.title))
+        .slice(0, 6)
+        .map((pattern) => ({
+          title: pattern.title,
+          source: pattern.source,
+          severityBand: pattern.severityBand,
+          appearances: pattern.appearances
+        }))
+    };
+  }
+
+  private serializeSitePage(page: {
+    id: string;
+    slug: string;
+    locale: string;
+    title: string;
+    summary: string;
+    pageType: string;
+    status: string;
+    heroEyebrow: string | null;
+    heroTitle: string | null;
+    heroBody: string | null;
+    heroPrimaryCtaLabel: string | null;
+    heroPrimaryCtaHref: string | null;
+    heroSecondaryCtaLabel: string | null;
+    heroSecondaryCtaHref: string | null;
+    heroMediaAssetId: string | null;
+    heroMediaAsset?: {
+      id: string;
+      slug: string;
+      title: string;
+      altText: string;
+      caption: string | null;
+      attribution: string | null;
+      rights: string | null;
+      mimeType: string;
+      fileName: string;
+      byteSize: number;
+      width: number | null;
+      height: number | null;
+      focalPointX: number | null;
+      focalPointY: number | null;
+      storageKey: string | null;
+      publicUrl: string | null;
+      locale: string;
+      status: string;
+      updatedAt: Date;
+    } | null;
+    navigationLabel: string | null;
+    navigationGroup: string | null;
+    showInPrimaryNav: boolean;
+    showInFooter: boolean;
+    canonicalUrl: string | null;
+    seoTitle: string | null;
+    seoDescription: string | null;
+    sections: Prisma.JsonValue | null;
+    sortOrder: number;
+    updatedAt: Date;
+  }): SitePage {
+    return {
+      id: page.id,
+      slug: page.slug,
+      locale: page.locale,
+      title: page.title,
+      summary: page.summary,
+      pageType: page.pageType as SitePage['pageType'],
+      status: page.status as ContentStatus,
+      heroEyebrow: page.heroEyebrow,
+      heroTitle: page.heroTitle,
+      heroBody: page.heroBody,
+      heroPrimaryCtaLabel: page.heroPrimaryCtaLabel,
+      heroPrimaryCtaHref: page.heroPrimaryCtaHref,
+      heroSecondaryCtaLabel: page.heroSecondaryCtaLabel,
+      heroSecondaryCtaHref: page.heroSecondaryCtaHref,
+      heroMediaAssetId: page.heroMediaAssetId,
+      heroMediaAsset: page.heroMediaAsset ? this.serializeMediaAsset(page.heroMediaAsset) : null,
+      navigationLabel: page.navigationLabel,
+      navigationGroup: page.navigationGroup,
+      showInPrimaryNav: page.showInPrimaryNav,
+      showInFooter: page.showInFooter,
+      canonicalUrl: page.canonicalUrl,
+      seoTitle: page.seoTitle,
+      seoDescription: page.seoDescription,
+      sections: Array.isArray(page.sections) ? (page.sections as SitePage['sections']) : [],
+      sortOrder: page.sortOrder,
+      updatedAt: page.updatedAt.toISOString()
+    };
+  }
+
+  private serializeSiteSetting(setting: {
+    id: string;
+    key: string;
+    locale: string;
+    title: string | null;
+    description: string | null;
+    value: Prisma.JsonValue;
+    updatedAt: Date;
+  }): SiteSetting {
+    return {
+      id: setting.id,
+      key: setting.key,
+      locale: setting.locale,
+      title: setting.title,
+      description: setting.description,
+      value: setting.value,
+      updatedAt: setting.updatedAt.toISOString()
+    };
+  }
+
+  private serializeContentRevision(revision: {
+    id: string;
+    entityType: string;
+    entityId: string;
+    locale: string | null;
+    changeSummary: string | null;
+    snapshot: Prisma.JsonValue;
+    createdByUserId: string | null;
+    createdAt: Date;
+  }): ContentRevisionSummary {
+    return {
+      id: revision.id,
+      entityType: ContentEntityTypeSchema.parse(revision.entityType),
+      entityId: revision.entityId,
+      locale: revision.locale,
+      changeSummary: revision.changeSummary,
+      snapshot: revision.snapshot,
+      createdByUserId: revision.createdByUserId,
+      createdAt: revision.createdAt.toISOString()
+    };
+  }
+
+  private async recordContentRevision(
+    entityType: ContentEntityType,
+    entityId: string,
+    snapshot: unknown,
+    createdByUserId: string | null,
+    changeSummary: string | null
+  ) {
+    const locale =
+      snapshot && typeof snapshot === 'object' && 'locale' in snapshot
+        ? (snapshot.locale as string | null | undefined) ?? null
+        : null;
+
+    await this.prismaService.contentRevision.create({
+      data: {
+        entityType,
+        entityId,
+        locale,
+        changeSummary,
+        snapshot: snapshot as Prisma.InputJsonValue,
+        createdByUserId
+      }
+    });
+  }
+
+  private serializeSiteSettings(
+    settings: Array<{ key: string; value: Prisma.JsonValue }>
+  ): SiteSettings {
+    const map = new Map(settings.map((setting) => [setting.key, setting.value]));
+
+    return {
+      announcement:
+        typeof map.get('site_announcement') === 'string'
+          ? (map.get('site_announcement') as string)
+          : null,
+      primaryNavigation: Array.isArray(map.get('site_primary_navigation'))
+        ? (map.get('site_primary_navigation') as SiteSettings['primaryNavigation'])
+        : [],
+      footerColumns: Array.isArray(map.get('site_footer_columns'))
+        ? (map.get('site_footer_columns') as SiteSettings['footerColumns'])
+        : [],
+      footerNote:
+        typeof map.get('site_footer_note') === 'string'
+          ? (map.get('site_footer_note') as string)
+          : null,
+      fundingNote:
+        typeof map.get('site_funding_note') === 'string'
+          ? (map.get('site_funding_note') as string)
+          : null,
+      contactEmail:
+        typeof map.get('site_contact_email') === 'string'
+          ? (map.get('site_contact_email') as string)
+          : null,
+      contactLinks: Array.isArray(map.get('site_contact_links'))
+        ? (map.get('site_contact_links') as SiteSettings['contactLinks'])
+        : []
+    };
+  }
+
+  private serializeMediaAsset(asset: {
+    id: string;
+    slug: string;
+    title: string;
+    altText: string;
+    caption: string | null;
+    attribution: string | null;
+    rights: string | null;
+    mimeType: string;
+    fileName: string;
+    byteSize: number;
+    width: number | null;
+    height: number | null;
+    focalPointX: number | null;
+    focalPointY: number | null;
+    storageKey: string | null;
+    publicUrl: string | null;
+    locale: string;
+    status: string;
+    updatedAt: Date;
+  }): MediaAsset {
+    return {
+      id: asset.id,
+      slug: asset.slug,
+      title: asset.title,
+      altText: asset.altText,
+      caption: asset.caption,
+      attribution: asset.attribution,
+      rights: asset.rights,
+      mimeType: asset.mimeType,
+      fileName: asset.fileName,
+      byteSize: asset.byteSize,
+      width: asset.width,
+      height: asset.height,
+      focalPointX: asset.focalPointX,
+      focalPointY: asset.focalPointY,
+      storageKey: asset.storageKey,
+      publicUrl: asset.publicUrl,
+      locale: asset.locale,
+      status: asset.status as ContentStatus,
+      updatedAt: asset.updatedAt.toISOString()
+    };
+  }
+
+  private parseReportSnapshot(snapshot: Prisma.JsonValue): ReportResponse | null {
+    const parsed = ReportResponseSchema.safeParse(snapshot);
+    return parsed.success ? parsed.data : null;
+  }
+
+  private buildProgramEvaluationContext(source: {
+    country: string | null;
+    currentStage: string;
+    businessCategoryMain: string | null;
+    businessCategorySubcategory: string | null;
+    extendedNaceCode: string | null;
+    extendedNaceLabel: string | null;
+    naceDivision: string;
+  }) {
+    return {
+      country: source.country,
+      currentStage:
+        source.currentStage as ProgramDetail['submissions'][number]['context']['currentStage'],
+      businessCategoryMain: source.businessCategoryMain,
+      businessCategorySubcategory: source.businessCategorySubcategory,
+      extendedNaceCode: source.extendedNaceCode,
+      extendedNaceLabel: source.extendedNaceLabel,
+      naceDivision: source.naceDivision
+    };
+  }
+
+  private buildProgramDeterministicSummary(
+    report: ReportResponse | null,
+    fallback: {
+      financialTotal: number;
+      riskOverall: number;
+      opportunityOverall: number;
+      confidenceBand: string;
+    }
+  ) {
+    return {
+      financialTotal: report?.dashboard.financialTotal ?? fallback.financialTotal,
+      riskOverall: report?.dashboard.riskOverall ?? fallback.riskOverall,
+      opportunityOverall: report?.dashboard.opportunityOverall ?? fallback.opportunityOverall,
+      confidenceBand:
+        report?.dashboard.confidenceBand ??
+        (fallback.confidenceBand as ProgramDetail['submissions'][number]['deterministicSummary']['confidenceBand'])
+    };
+  }
+
+  private buildProgramMaterialTopicPreview(report: ReportResponse | null) {
+    return (report?.dashboard.materialAlerts ?? []).slice(0, 3).map((topic) => ({
+      topicCode: topic.topicCode,
+      title: topic.title,
+      score: topic.score,
+      priorityBand: topic.priorityBand,
+      recommendation: topic.recommendation
+    }));
+  }
+
+  private buildProgramRecommendationPreview(report: ReportResponse | null) {
+    return (report?.dashboard.recommendations ?? []).slice(0, 3).map((recommendation) => ({
+      id: recommendation.id,
+      title: recommendation.title,
+      text: recommendation.text,
+      source: recommendation.source,
+      severityBand: recommendation.severityBand,
+      rationale: recommendation.rationale
+    }));
+  }
+
+  private serializePartnerLead(lead: {
+    id: string;
+    organizationId: string | null;
+    programId: string | null;
+    name: string;
+    organizationName: string;
+    email: string;
+    websiteUrl: string | null;
+    message: string;
+    status: string;
+    assigneeName: string | null;
+    assigneeEmail: string | null;
+    notes: string | null;
+    sourcePage: string;
+    resolvedAt: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+  }): PartnerLeadSummary {
+    return {
+      id: lead.id,
+      organizationId: lead.organizationId,
+      programId: lead.programId,
+      name: lead.name,
+      organizationName: lead.organizationName,
+      email: lead.email,
+      websiteUrl: lead.websiteUrl,
+      message: lead.message,
+      status: lead.status as PartnerLeadSummary['status'],
+      assigneeName: lead.assigneeName,
+      assigneeEmail: lead.assigneeEmail,
+      notes: lead.notes,
+      sourcePage: lead.sourcePage,
+      resolvedAt: lead.resolvedAt?.toISOString() ?? null,
+      createdAt: lead.createdAt.toISOString(),
+      updatedAt: lead.updatedAt.toISOString()
+    };
+  }
+
+  private toCsvCell(value: string) {
+    return `"${value.replaceAll('"', '""')}"`;
+  }
+
   private serializePublicResource(resource: {
     id: string;
     slug: string;
@@ -1702,6 +3265,30 @@ export class PlatformService {
       sortOrder: resource.sortOrder,
       updatedAt: resource.updatedAt.toISOString()
     };
+  }
+
+  private async readSeededReferenceResource(resource: {
+    slug: string;
+    fileName: string | null;
+    mimeType: string | null;
+  }) {
+    const relativePath = referenceResourceFallbacks[resource.slug];
+
+    if (!relativePath) {
+      return null;
+    }
+
+    const absolutePath = path.resolve(process.cwd(), relativePath);
+
+    try {
+      return {
+        fileName: resource.fileName ?? path.basename(absolutePath),
+        mimeType: resource.mimeType ?? 'application/octet-stream',
+        content: await readFile(absolutePath)
+      };
+    } catch {
+      return null;
+    }
   }
 
   private serializeEvidence(item: {

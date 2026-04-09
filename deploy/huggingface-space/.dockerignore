@@ -14,4 +14,6 @@ dist
 **/*.tsbuildinfo
 .env
 .env.*
-references
+references/*
+!references/Hackathon_User Guidlines/
+!references/Hackathon_User Guidlines/**

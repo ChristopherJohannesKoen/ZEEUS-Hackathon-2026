@@ -11,9 +11,11 @@ import {
   buildInitialSummary,
   buildReportResponse,
   getBenchmarkReferenceProfile,
+  getExtendedNaceOptions,
   getOpportunityCatalog,
   getRiskCatalog,
   getScoringVersionInfo,
+  getStartupStageOptions,
   getStageOneTopicCatalog,
   scoreFinancialAnswers,
   scoreStage1TopicAnswer,
@@ -143,6 +145,10 @@ const evaluationStateSelect = Prisma.validator<Prisma.EvaluationSelect>()({
   userId: true,
   name: true,
   country: true,
+  businessCategoryMain: true,
+  businessCategorySubcategory: true,
+  extendedNaceCode: true,
+  extendedNaceLabel: true,
   naceDivision: true,
   offeringType: true,
   launched: true,
@@ -238,6 +244,10 @@ type EvaluationListRecord = Pick<
   | 'id'
   | 'name'
   | 'country'
+  | 'businessCategoryMain'
+  | 'businessCategorySubcategory'
+  | 'extendedNaceCode'
+  | 'extendedNaceLabel'
   | 'naceDivision'
   | 'currentStage'
   | 'status'
@@ -314,6 +324,10 @@ export class EvaluationsService {
         id: true,
         name: true,
         country: true,
+        businessCategoryMain: true,
+        businessCategorySubcategory: true,
+        extendedNaceCode: true,
+        extendedNaceLabel: true,
         naceDivision: true,
         currentStage: true,
         status: true,
@@ -357,7 +371,7 @@ export class EvaluationsService {
         data: {
           userId: currentUser.id,
           organizationId: primaryMembership?.organizationId ?? null,
-          ...payload,
+          ...this.normalizeContextForPersistence(payload),
           status: 'draft',
           currentStep: 'summary'
         },
@@ -453,7 +467,7 @@ export class EvaluationsService {
       await transaction.evaluation.update({
         where: { id: evaluationId },
         data: {
-          ...payload,
+          ...this.normalizeContextForPersistence(payload),
           status: 'draft',
           currentStep: 'summary',
           completedAt: null,
@@ -1425,6 +1439,10 @@ export class EvaluationsService {
     const reference = getBenchmarkReferenceProfile({
       name: current.report.evaluation.name,
       country: current.report.evaluation.country,
+      businessCategoryMain: current.report.evaluation.businessCategoryMain,
+      businessCategorySubcategory: current.report.evaluation.businessCategorySubcategory,
+      extendedNaceCode: current.report.evaluation.extendedNaceCode,
+      extendedNaceLabel: current.report.evaluation.extendedNaceLabel,
       naceDivision: current.report.evaluation.naceDivision,
       offeringType: current.report.evaluation.offeringType,
       launched: current.report.evaluation.launched,
@@ -1528,11 +1546,20 @@ export class EvaluationsService {
       revisionNumber: targetRevisionNumber,
       referenceProfile: {
         stage: current.report.evaluation.currentStage,
+        stageLabel:
+          getStartupStageOptions().find(
+            (option) => option.value === current.report.evaluation.currentStage
+          )?.label ?? current.report.evaluation.currentStage.replaceAll('_', ' '),
+        businessCategoryMain: current.report.evaluation.businessCategoryMain,
+        businessCategorySubcategory: current.report.evaluation.businessCategorySubcategory,
+        extendedNaceCode: current.report.evaluation.extendedNaceCode,
+        extendedNaceLabel: current.report.evaluation.extendedNaceLabel,
         naceDivision: current.report.evaluation.naceDivision,
         label: reference.label
       },
       metrics,
       topicShifts,
+      scoreInterpretation: current.report.dashboard.scoreInterpretation,
       takeaways: this.buildBenchmarkTakeaways(metrics, topicShifts)
     };
   }
@@ -1737,7 +1764,11 @@ export class EvaluationsService {
     const detail: EvaluationDetail = {
       id: evaluation.id,
       name: evaluation.name,
-      country: evaluation.country,
+      country: this.presentCountry(evaluation.country),
+      businessCategoryMain: evaluation.businessCategoryMain,
+      businessCategorySubcategory: evaluation.businessCategorySubcategory,
+      extendedNaceCode: evaluation.extendedNaceCode,
+      extendedNaceLabel: evaluation.extendedNaceLabel,
       naceDivision: evaluation.naceDivision,
       currentStage: evaluation.currentStage,
       status: evaluation.status,
@@ -2199,7 +2230,11 @@ export class EvaluationsService {
     return {
       id: evaluation.id,
       name: evaluation.name,
-      country: evaluation.country,
+      country: this.presentCountry(evaluation.country),
+      businessCategoryMain: evaluation.businessCategoryMain,
+      businessCategorySubcategory: evaluation.businessCategorySubcategory,
+      extendedNaceCode: evaluation.extendedNaceCode,
+      extendedNaceLabel: evaluation.extendedNaceLabel,
       naceDivision: evaluation.naceDivision,
       currentStage: evaluation.currentStage,
       status: evaluation.status,
@@ -2763,6 +2798,10 @@ export class EvaluationsService {
     const fields = [
       ['name', 'Startup name'],
       ['country', 'Country'],
+      ['businessCategoryMain', 'Business category'],
+      ['businessCategorySubcategory', 'Business subcategory'],
+      ['extendedNaceCode', 'Extended NACE code'],
+      ['extendedNaceLabel', 'Extended NACE label'],
       ['naceDivision', 'NACE division'],
       ['offeringType', 'Offering type'],
       ['launched', 'Launched'],
@@ -2956,11 +2995,51 @@ export class EvaluationsService {
     };
   }
 
+  private presentCountry(country: string | null) {
+    return country?.trim() ? country : 'Not specified';
+  }
+
+  private normalizeContextForPersistence(payload: EvaluationContextPayload) {
+    const matchingExtendedNace = payload.extendedNaceCode
+      ? (getExtendedNaceOptions().find((entry) => entry.code === payload.extendedNaceCode) ?? null)
+      : null;
+    const normalizedBusinessSubcategory =
+      payload.businessCategorySubcategory ??
+      matchingExtendedNace?.divisionLabel ??
+      payload.naceDivision ??
+      null;
+    const normalizedNaceDivision =
+      payload.naceDivision ??
+      (matchingExtendedNace
+        ? `${matchingExtendedNace.divisionCode} ${matchingExtendedNace.divisionLabel}`
+        : (normalizedBusinessSubcategory ??
+          payload.businessCategoryMain ??
+          'Unspecified business category'));
+
+    return {
+      name: payload.name,
+      country: payload.country,
+      businessCategoryMain: payload.businessCategoryMain ?? null,
+      businessCategorySubcategory: normalizedBusinessSubcategory,
+      extendedNaceCode: payload.extendedNaceCode ?? null,
+      extendedNaceLabel: payload.extendedNaceLabel ?? matchingExtendedNace?.label ?? null,
+      naceDivision: normalizedNaceDivision,
+      offeringType: payload.offeringType,
+      launched: payload.launched,
+      currentStage: payload.currentStage,
+      innovationApproach: payload.innovationApproach
+    };
+  }
+
   private toContextPayload(
     evaluation: Pick<
       EvaluationStateRecord,
       | 'name'
       | 'country'
+      | 'businessCategoryMain'
+      | 'businessCategorySubcategory'
+      | 'extendedNaceCode'
+      | 'extendedNaceLabel'
       | 'naceDivision'
       | 'offeringType'
       | 'launched'
@@ -2971,6 +3050,10 @@ export class EvaluationsService {
     return {
       name: evaluation.name,
       country: evaluation.country,
+      businessCategoryMain: evaluation.businessCategoryMain,
+      businessCategorySubcategory: evaluation.businessCategorySubcategory,
+      extendedNaceCode: evaluation.extendedNaceCode,
+      extendedNaceLabel: evaluation.extendedNaceLabel,
       naceDivision: evaluation.naceDivision,
       offeringType: evaluation.offeringType,
       launched: evaluation.launched,

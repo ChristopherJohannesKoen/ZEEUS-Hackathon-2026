@@ -6,6 +6,8 @@ import {
   OpportunityCodeSchema,
   PriorityBandSchema,
   RiskCodeSchema,
+  ScoreInterpretationGuideSchema,
+  StartupStageSchema,
   TopicCodeSchema
 } from './evaluations';
 
@@ -41,6 +43,48 @@ export type ContentStatus = z.infer<typeof ContentStatusSchema>;
 
 export const LocaleCodeSchema = z.string().trim().min(2).max(12).default('en');
 export type LocaleCode = z.infer<typeof LocaleCodeSchema>;
+
+export const PartnerLeadStatusSchema = z.enum([
+  'new',
+  'reviewing',
+  'contacted',
+  'qualified',
+  'archived'
+]);
+export type PartnerLeadStatus = z.infer<typeof PartnerLeadStatusSchema>;
+
+export const ContentEntityTypeSchema = z.enum([
+  'site_page',
+  'site_setting',
+  'knowledge_article',
+  'faq_entry',
+  'case_study',
+  'resource_asset',
+  'media_asset'
+]);
+export type ContentEntityType = z.infer<typeof ContentEntityTypeSchema>;
+
+export const SitePageTypeSchema = z.enum([
+  'landing',
+  'institutional',
+  'methodology',
+  'support',
+  'legal',
+  'resource_hub'
+]);
+export type SitePageType = z.infer<typeof SitePageTypeSchema>;
+
+export const SiteSectionKindSchema = z.enum([
+  'rich_text',
+  'feature_grid',
+  'step_grid',
+  'faq_list',
+  'audience_list',
+  'logo_strip',
+  'cta',
+  'quote'
+]);
+export type SiteSectionKind = z.infer<typeof SiteSectionKindSchema>;
 
 export const KnowledgeArticleCategorySchema = z.enum([
   'how_it_works',
@@ -132,6 +176,52 @@ export const ProgramMemberSummarySchema = z.object({
 });
 export type ProgramMemberSummary = z.infer<typeof ProgramMemberSummarySchema>;
 
+export const ProgramEvaluationContextSchema = z.object({
+  country: z.string().nullable().default(null),
+  currentStage: StartupStageSchema,
+  businessCategoryMain: z.string().nullable().default(null),
+  businessCategorySubcategory: z.string().nullable().default(null),
+  extendedNaceCode: z.string().nullable().default(null),
+  extendedNaceLabel: z.string().nullable().default(null),
+  naceDivision: z.string()
+});
+export type ProgramEvaluationContext = z.infer<typeof ProgramEvaluationContextSchema>;
+
+export const ProgramDeterministicSummarySchema = z.object({
+  financialTotal: z.number().nullable().default(null),
+  riskOverall: z.number().nullable().default(null),
+  opportunityOverall: z.number().nullable().default(null),
+  confidenceBand: ConfidenceBandSchema.nullable().default(null)
+});
+export type ProgramDeterministicSummary = z.infer<typeof ProgramDeterministicSummarySchema>;
+
+export const ProgramMaterialTopicPreviewSchema = z.object({
+  topicCode: TopicCodeSchema,
+  title: z.string(),
+  score: z.number(),
+  priorityBand: PriorityBandSchema,
+  recommendation: z.string().nullable().default(null)
+});
+export type ProgramMaterialTopicPreview = z.infer<typeof ProgramMaterialTopicPreviewSchema>;
+
+export const ProgramRecommendationPreviewSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  text: z.string(),
+  source: z.string(),
+  severityBand: z.string(),
+  rationale: z.string().nullable().default(null)
+});
+export type ProgramRecommendationPreview = z.infer<typeof ProgramRecommendationPreviewSchema>;
+
+export const ProgramReviewChecklistItemSchema = z.object({
+  key: z.string(),
+  label: z.string(),
+  completed: z.boolean(),
+  detail: z.string().nullable().default(null)
+});
+export type ProgramReviewChecklistItem = z.infer<typeof ProgramReviewChecklistItemSchema>;
+
 export const ProgramSubmissionSummarySchema = z.object({
   id: z.string(),
   evaluationId: z.string(),
@@ -140,6 +230,16 @@ export const ProgramSubmissionSummarySchema = z.object({
   revisionNumber: z.number().int().min(1),
   submissionStatus: ProgramSubmissionStatusSchema,
   evaluationStatus: EvaluationStatusSchema,
+  context: ProgramEvaluationContextSchema,
+  deterministicSummary: ProgramDeterministicSummarySchema,
+  scoreInterpretation: ScoreInterpretationGuideSchema.nullable().default(null),
+  topMaterialTopics: z.array(ProgramMaterialTopicPreviewSchema).default([]),
+  recommendationsPreview: z.array(ProgramRecommendationPreviewSchema).default([]),
+  reviewChecklist: z.array(ProgramReviewChecklistItemSchema).default([]),
+  openAssignmentCount: z.number().int().min(0).default(0),
+  overdueAssignmentCount: z.number().int().min(0).default(0),
+  latestDecisionRationale: z.string().nullable().default(null),
+  reportSnapshotHref: z.string().nullable().default(null),
   submittedAt: z.string().nullable().default(null),
   lastReviewedAt: z.string().nullable().default(null)
 });
@@ -150,6 +250,8 @@ export const ProgramEvaluationCandidateSchema = z.object({
   name: z.string(),
   status: EvaluationStatusSchema,
   currentRevisionNumber: z.number().int().min(0),
+  context: ProgramEvaluationContextSchema,
+  deterministicSummary: ProgramDeterministicSummarySchema,
   updatedAt: z.string()
 });
 export type ProgramEvaluationCandidate = z.infer<typeof ProgramEvaluationCandidateSchema>;
@@ -161,7 +263,8 @@ export const ReviewAssignmentSummarySchema = z.object({
   reviewerName: z.string(),
   status: ReviewAssignmentStatusSchema,
   dueAt: z.string().nullable().default(null),
-  decidedAt: z.string().nullable().default(null)
+  decidedAt: z.string().nullable().default(null),
+  isOverdue: z.boolean().default(false)
 });
 export type ReviewAssignmentSummary = z.infer<typeof ReviewAssignmentSummarySchema>;
 
@@ -174,6 +277,58 @@ export const ReviewCommentSummarySchema = z.object({
   createdAt: z.string()
 });
 export type ReviewCommentSummary = z.infer<typeof ReviewCommentSummarySchema>;
+
+export const ProgramStatusBreakdownItemSchema = z.object({
+  status: ProgramSubmissionStatusSchema,
+  count: z.number().int().min(0)
+});
+export type ProgramStatusBreakdownItem = z.infer<typeof ProgramStatusBreakdownItemSchema>;
+
+export const ProgramConfidenceBreakdownItemSchema = z.object({
+  band: ConfidenceBandSchema,
+  count: z.number().int().min(0)
+});
+export type ProgramConfidenceBreakdownItem = z.infer<typeof ProgramConfidenceBreakdownItemSchema>;
+
+export const ProgramRecurringTopicSchema = z.object({
+  topicCode: TopicCodeSchema,
+  title: z.string(),
+  appearances: z.number().int().min(0),
+  highPriorityCount: z.number().int().min(0),
+  relevantCount: z.number().int().min(0),
+  averageScore: z.number().min(0).max(4)
+});
+export type ProgramRecurringTopic = z.infer<typeof ProgramRecurringTopicSchema>;
+
+export const ProgramRecommendationPatternSchema = z.object({
+  title: z.string(),
+  source: z.string(),
+  severityBand: z.string(),
+  appearances: z.number().int().min(0)
+});
+export type ProgramRecommendationPattern = z.infer<typeof ProgramRecommendationPatternSchema>;
+
+export const ProgramReviewerWorkloadSchema = z.object({
+  reviewerUserId: z.string(),
+  reviewerName: z.string(),
+  pendingCount: z.number().int().min(0),
+  inReviewCount: z.number().int().min(0),
+  changesRequestedCount: z.number().int().min(0),
+  approvedCount: z.number().int().min(0),
+  overdueCount: z.number().int().min(0)
+});
+export type ProgramReviewerWorkload = z.infer<typeof ProgramReviewerWorkloadSchema>;
+
+export const ProgramCohortSummarySchema = z.object({
+  submissionFunnel: z.array(ProgramStatusBreakdownItemSchema).default([]),
+  confidenceDistribution: z.array(ProgramConfidenceBreakdownItemSchema).default([]),
+  averageFinancialTotal: z.number().nullable().default(null),
+  averageRiskOverall: z.number().nullable().default(null),
+  averageOpportunityOverall: z.number().nullable().default(null),
+  recurringTopics: z.array(ProgramRecurringTopicSchema).default([]),
+  recommendationPatterns: z.array(ProgramRecommendationPatternSchema).default([])
+});
+export type ProgramCohortSummary = z.infer<typeof ProgramCohortSummarySchema>;
 
 export const OrganizationDetailSchema = OrganizationSummarySchema.extend({
   members: z.array(OrganizationMemberSummarySchema),
@@ -188,7 +343,9 @@ export const ProgramDetailSchema = ProgramSummarySchema.extend({
   submissions: z.array(ProgramSubmissionSummarySchema),
   reviewAssignments: z.array(ReviewAssignmentSummarySchema),
   reviewComments: z.array(ReviewCommentSummarySchema),
-  availableEvaluations: z.array(ProgramEvaluationCandidateSchema)
+  availableEvaluations: z.array(ProgramEvaluationCandidateSchema),
+  cohortSummary: ProgramCohortSummarySchema,
+  reviewerWorkloads: z.array(ProgramReviewerWorkloadSchema)
 });
 export type ProgramDetail = z.infer<typeof ProgramDetailSchema>;
 
@@ -287,7 +444,179 @@ export const ResourceAssetSummarySchema = z.object({
 });
 export type ResourceAssetSummary = z.infer<typeof ResourceAssetSummarySchema>;
 
+export const SiteNavigationItemSchema = z.object({
+  label: z.string(),
+  href: z.string(),
+  group: z.string().nullable().default(null)
+});
+export type SiteNavigationItem = z.infer<typeof SiteNavigationItemSchema>;
+
+export const SiteFooterColumnSchema = z.object({
+  title: z.string(),
+  links: z.array(SiteNavigationItemSchema)
+});
+export type SiteFooterColumn = z.infer<typeof SiteFooterColumnSchema>;
+
+export const SitePageSectionItemSchema = z.object({
+  title: z.string(),
+  description: z.string().nullable().default(null),
+  label: z.string().nullable().default(null),
+  href: z.string().nullable().default(null),
+  eyebrow: z.string().nullable().default(null),
+  value: z.string().nullable().default(null),
+  microcopy: z.string().nullable().default(null)
+});
+export type SitePageSectionItem = z.infer<typeof SitePageSectionItemSchema>;
+
+export const SitePageSectionSchema = z.object({
+  id: z.string(),
+  kind: SiteSectionKindSchema,
+  eyebrow: z.string().nullable().default(null),
+  title: z.string().nullable().default(null),
+  body: z.string().nullable().default(null),
+  quote: z.string().nullable().default(null),
+  ctaLabel: z.string().nullable().default(null),
+  ctaHref: z.string().nullable().default(null),
+  items: z.array(SitePageSectionItemSchema).default([])
+});
+export type SitePageSection = z.infer<typeof SitePageSectionSchema>;
+
+export const MediaAssetSchema = z.object({
+  id: z.string(),
+  slug: z.string(),
+  title: z.string(),
+  altText: z.string(),
+  caption: z.string().nullable().default(null),
+  attribution: z.string().nullable().default(null),
+  rights: z.string().nullable().default(null),
+  mimeType: z.string(),
+  fileName: z.string(),
+  byteSize: z.number().int().nonnegative(),
+  width: z.number().int().positive().nullable().default(null),
+  height: z.number().int().positive().nullable().default(null),
+  focalPointX: z.number().min(0).max(1).nullable().default(null),
+  focalPointY: z.number().min(0).max(1).nullable().default(null),
+  storageKey: z.string().nullable().default(null),
+  publicUrl: z.string().nullable().default(null),
+  locale: LocaleCodeSchema,
+  status: ContentStatusSchema,
+  updatedAt: z.string()
+});
+export type MediaAsset = z.infer<typeof MediaAssetSchema>;
+
+export const SitePageSchema = z.object({
+  id: z.string(),
+  slug: z.string(),
+  locale: LocaleCodeSchema,
+  title: z.string(),
+  summary: z.string(),
+  pageType: SitePageTypeSchema,
+  status: ContentStatusSchema,
+  heroEyebrow: z.string().nullable().default(null),
+  heroTitle: z.string().nullable().default(null),
+  heroBody: z.string().nullable().default(null),
+  heroPrimaryCtaLabel: z.string().nullable().default(null),
+  heroPrimaryCtaHref: z.string().nullable().default(null),
+  heroSecondaryCtaLabel: z.string().nullable().default(null),
+  heroSecondaryCtaHref: z.string().nullable().default(null),
+  heroMediaAssetId: z.string().nullable().default(null),
+  heroMediaAsset: MediaAssetSchema.nullable().default(null),
+  navigationLabel: z.string().nullable().default(null),
+  navigationGroup: z.string().nullable().default(null),
+  showInPrimaryNav: z.boolean().default(false),
+  showInFooter: z.boolean().default(false),
+  canonicalUrl: z.string().nullable().default(null),
+  seoTitle: z.string().nullable().default(null),
+  seoDescription: z.string().nullable().default(null),
+  sections: z.array(SitePageSectionSchema).default([]),
+  sortOrder: z.number().int().min(0),
+  updatedAt: z.string()
+});
+export type SitePage = z.infer<typeof SitePageSchema>;
+
+export const SiteSettingSchema = z.object({
+  id: z.string(),
+  key: z.string(),
+  locale: LocaleCodeSchema,
+  title: z.string().nullable().default(null),
+  description: z.string().nullable().default(null),
+  value: z.unknown(),
+  updatedAt: z.string()
+});
+export type SiteSetting = z.infer<typeof SiteSettingSchema>;
+
+export const SiteSettingsSchema = z.object({
+  announcement: z.string().nullable().default(null),
+  primaryNavigation: z.array(SiteNavigationItemSchema).default([]),
+  footerColumns: z.array(SiteFooterColumnSchema).default([]),
+  footerNote: z.string().nullable().default(null),
+  fundingNote: z.string().nullable().default(null),
+  contactEmail: z.string().email().nullable().default(null),
+  contactLinks: z.array(SiteNavigationItemSchema).default([])
+});
+export type SiteSettings = z.infer<typeof SiteSettingsSchema>;
+
+export const PartnerLeadSummarySchema = z.object({
+  id: z.string(),
+  organizationId: z.string().nullable().default(null),
+  programId: z.string().nullable().default(null),
+  name: z.string(),
+  organizationName: z.string(),
+  email: z.string().email(),
+  websiteUrl: z.string().nullable().default(null),
+  message: z.string(),
+  status: PartnerLeadStatusSchema,
+  assigneeName: z.string().nullable().default(null),
+  assigneeEmail: z.string().nullable().default(null),
+  notes: z.string().nullable().default(null),
+  sourcePage: z.string(),
+  resolvedAt: z.string().nullable().default(null),
+  createdAt: z.string(),
+  updatedAt: z.string()
+});
+export type PartnerLeadSummary = z.infer<typeof PartnerLeadSummarySchema>;
+
+export const ContentRevisionSummarySchema = z.object({
+  id: z.string(),
+  entityType: ContentEntityTypeSchema,
+  entityId: z.string(),
+  locale: LocaleCodeSchema.nullable().default(null),
+  changeSummary: z.string().nullable().default(null),
+  snapshot: z.unknown(),
+  createdByUserId: z.string().nullable().default(null),
+  createdAt: z.string()
+});
+export type ContentRevisionSummary = z.infer<typeof ContentRevisionSummarySchema>;
+
+export const ContentRevisionListResponseSchema = z.object({
+  items: z.array(ContentRevisionSummarySchema)
+});
+export type ContentRevisionListResponse = z.infer<typeof ContentRevisionListResponseSchema>;
+
+export const SitePagePreviewTokenSchema = z.object({
+  sitePageId: z.string(),
+  slug: z.string(),
+  token: z.string(),
+  previewUrl: z.string(),
+  expiresAt: z.string()
+});
+export type SitePagePreviewToken = z.infer<typeof SitePagePreviewTokenSchema>;
+
+export const ReferenceMetadataSchema = z.object({
+  scoringVersion: z.string(),
+  catalogVersion: z.string(),
+  workbookPath: z.string(),
+  workbookSha256: z.string(),
+  extractedAt: z.string(),
+  sheetCount: z.number().int().min(1)
+});
+export type ReferenceMetadata = z.infer<typeof ReferenceMetadataSchema>;
+
 export const PublicSiteContentSchema = z.object({
+  referenceMetadata: ReferenceMetadataSchema,
+  sitePages: z.array(SitePageSchema),
+  settings: SiteSettingsSchema,
+  mediaAssets: z.array(MediaAssetSchema),
   articles: z.array(KnowledgeArticleSchema),
   faqEntries: z.array(FaqEntrySchema),
   caseStudies: z.array(CaseStudySchema),
@@ -297,10 +626,15 @@ export const PublicSiteContentSchema = z.object({
 export type PublicSiteContent = z.infer<typeof PublicSiteContentSchema>;
 
 export const EditorialOverviewSchema = z.object({
+  referenceMetadata: ReferenceMetadataSchema,
+  sitePages: z.array(SitePageSchema),
+  siteSettings: z.array(SiteSettingSchema),
+  mediaAssets: z.array(MediaAssetSchema),
   articles: z.array(KnowledgeArticleSchema),
   faqEntries: z.array(FaqEntrySchema),
   caseStudies: z.array(CaseStudySchema),
   resources: z.array(ResourceAssetSummarySchema),
+  partnerLeads: z.array(PartnerLeadSummarySchema),
   partnerInterestCount: z.number().int().min(0)
 });
 export type EditorialOverview = z.infer<typeof EditorialOverviewSchema>;
@@ -314,6 +648,53 @@ export const ResourceAssetParamsSchema = z.object({
   resourceId: z.string()
 });
 export type ResourceAssetParams = z.infer<typeof ResourceAssetParamsSchema>;
+
+export const SitePageParamsSchema = z.object({
+  contentId: z.string()
+});
+export type SitePageParams = z.infer<typeof SitePageParamsSchema>;
+
+export const SitePageSlugParamsSchema = z.object({
+  slug: z.string()
+});
+export type SitePageSlugParams = z.infer<typeof SitePageSlugParamsSchema>;
+
+export const SiteSettingParamsSchema = z.object({
+  contentId: z.string()
+});
+export type SiteSettingParams = z.infer<typeof SiteSettingParamsSchema>;
+
+export const MediaAssetParamsSchema = z.object({
+  mediaId: z.string()
+});
+export type MediaAssetParams = z.infer<typeof MediaAssetParamsSchema>;
+
+export const PartnerLeadParamsSchema = z.object({
+  leadId: z.string()
+});
+export type PartnerLeadParams = z.infer<typeof PartnerLeadParamsSchema>;
+
+export const ContentRevisionParamsSchema = z.object({
+  entityType: ContentEntityTypeSchema,
+  entityId: z.string()
+});
+export type ContentRevisionParams = z.infer<typeof ContentRevisionParamsSchema>;
+
+export const ContentRevisionItemParamsSchema = z.object({
+  contentId: z.string(),
+  revisionId: z.string()
+});
+export type ContentRevisionItemParams = z.infer<typeof ContentRevisionItemParamsSchema>;
+
+export const SitePagePreviewTokenParamsSchema = z.object({
+  token: z.string().min(16)
+});
+export type SitePagePreviewTokenParams = z.infer<typeof SitePagePreviewTokenParamsSchema>;
+
+export const LocaleQuerySchema = z.object({
+  locale: LocaleCodeSchema.optional()
+});
+export type LocaleQuery = z.infer<typeof LocaleQuerySchema>;
 
 export const UpsertKnowledgeArticlePayloadSchema = z.object({
   slug: z.string().trim().min(2).max(120),
@@ -364,6 +745,75 @@ export const UpsertResourceAssetPayloadSchema = z.object({
   sortOrder: z.number().int().min(0)
 });
 export type UpsertResourceAssetPayload = z.infer<typeof UpsertResourceAssetPayloadSchema>;
+
+export const UpsertSitePagePayloadSchema = z.object({
+  slug: z.string().trim().min(1).max(120),
+  locale: LocaleCodeSchema,
+  title: z.string().trim().min(2).max(160),
+  summary: z.string().trim().min(10).max(500),
+  pageType: SitePageTypeSchema,
+  status: ContentStatusSchema,
+  heroEyebrow: z.string().trim().max(120).nullable().optional(),
+  heroTitle: z.string().trim().max(240).nullable().optional(),
+  heroBody: z.string().trim().max(4000).nullable().optional(),
+  heroPrimaryCtaLabel: z.string().trim().max(120).nullable().optional(),
+  heroPrimaryCtaHref: z.string().trim().max(400).nullable().optional(),
+  heroSecondaryCtaLabel: z.string().trim().max(120).nullable().optional(),
+  heroSecondaryCtaHref: z.string().trim().max(400).nullable().optional(),
+  heroMediaAssetId: z.string().nullable().optional(),
+  navigationLabel: z.string().trim().max(120).nullable().optional(),
+  navigationGroup: z.string().trim().max(80).nullable().optional(),
+  showInPrimaryNav: z.boolean().default(false),
+  showInFooter: z.boolean().default(false),
+  canonicalUrl: z.string().trim().max(400).nullable().optional(),
+  seoTitle: z.string().trim().max(160).nullable().optional(),
+  seoDescription: z.string().trim().max(400).nullable().optional(),
+  sections: z.array(SitePageSectionSchema).default([]),
+  sortOrder: z.number().int().min(0)
+});
+export type UpsertSitePagePayload = z.infer<typeof UpsertSitePagePayloadSchema>;
+
+export const UpsertSiteSettingPayloadSchema = z.object({
+  key: z.string().trim().min(2).max(120),
+  locale: LocaleCodeSchema,
+  title: z.string().trim().max(160).nullable().optional(),
+  description: z.string().trim().max(500).nullable().optional(),
+  value: z.unknown()
+});
+export type UpsertSiteSettingPayload = z.infer<typeof UpsertSiteSettingPayloadSchema>;
+
+export const UpdatePartnerLeadPayloadSchema = z.object({
+  status: PartnerLeadStatusSchema,
+  assigneeName: z.string().trim().max(120).nullable().optional(),
+  assigneeEmail: z.string().email().nullable().optional(),
+  notes: z.string().trim().max(4000).nullable().optional()
+});
+export type UpdatePartnerLeadPayload = z.infer<typeof UpdatePartnerLeadPayloadSchema>;
+
+export const UploadMediaAssetPayloadSchema = z.object({
+  slug: z.string().trim().min(2).max(120),
+  title: z.string().trim().min(2).max(160),
+  altText: z.string().trim().min(2).max(240),
+  caption: z.string().trim().max(500).nullable().optional(),
+  attribution: z.string().trim().max(240).nullable().optional(),
+  rights: z.string().trim().max(240).nullable().optional(),
+  locale: LocaleCodeSchema,
+  status: ContentStatusSchema
+});
+export type UploadMediaAssetPayload = z.infer<typeof UploadMediaAssetPayloadSchema>;
+
+export const UpdateMediaAssetPayloadSchema = z.object({
+  title: z.string().trim().min(2).max(160),
+  altText: z.string().trim().min(2).max(240),
+  caption: z.string().trim().max(500).nullable().optional(),
+  attribution: z.string().trim().max(240).nullable().optional(),
+  rights: z.string().trim().max(240).nullable().optional(),
+  locale: LocaleCodeSchema,
+  status: ContentStatusSchema,
+  focalPointX: z.number().min(0).max(1).nullable().optional(),
+  focalPointY: z.number().min(0).max(1).nullable().optional()
+});
+export type UpdateMediaAssetPayload = z.infer<typeof UpdateMediaAssetPayloadSchema>;
 
 export const SubmitPartnerInterestPayloadSchema = z.object({
   name: z.string().trim().min(2).max(120),
@@ -467,7 +917,8 @@ export const ProgramSubmissionParamsSchema = z.object({
 export type ProgramSubmissionParams = z.infer<typeof ProgramSubmissionParamsSchema>;
 
 export const UpdateProgramSubmissionStatusPayloadSchema = z.object({
-  status: ProgramSubmissionStatusSchema
+  status: ProgramSubmissionStatusSchema,
+  rationale: z.string().trim().max(4000).nullable().optional()
 });
 export type UpdateProgramSubmissionStatusPayload = z.infer<
   typeof UpdateProgramSubmissionStatusPayloadSchema

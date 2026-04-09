@@ -1,37 +1,14 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { buildContentSecurityPolicy, generateNonce, readBooleanEnv } from './lib/csp';
+import { resolveRuntimeMode } from './lib/runtime-mode';
 
 const apiOrigin = process.env.API_ORIGIN ?? 'http://localhost:4000';
 const cspReportUri = process.env.CSP_REPORT_URI?.trim();
-const publicSpaceMode =
-  readBooleanEnv(process.env.NEXT_PUBLIC_HF_SPACE_PUBLIC_MODE) ||
-  readBooleanEnv(process.env.HF_SPACE_PUBLIC_MODE);
-const spaceHostedMode = Boolean(process.env.SPACE_ID || process.env.SPACE_HOST);
-const allowEmbedding = publicSpaceMode || spaceHostedMode;
+const runtimeMode = resolveRuntimeMode();
+const allowEmbedding = runtimeMode.publicSpaceMode || runtimeMode.spaceHostedMode;
 
 export function middleware(request: NextRequest) {
-  if (publicSpaceMode) {
-    const pathname = request.nextUrl.pathname;
-    const publicOnlyPrefixes = [
-      '/app',
-      '/internal',
-      '/login',
-      '/signup',
-      '/forgot-password',
-      '/reset-password'
-    ];
-
-    if (
-      publicOnlyPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
-    ) {
-      const redirectUrl = request.nextUrl.clone();
-      redirectUrl.pathname = pathname.startsWith('/app/programs') ? '/partners' : '/';
-      redirectUrl.search = '';
-      return NextResponse.redirect(redirectUrl);
-    }
-  }
-
   const nonce = generateNonce();
   const requestHeaders = new Headers(request.headers);
   const contentSecurityPolicy = buildContentSecurityPolicy({

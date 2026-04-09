@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This repository ships the ZEEUS hackathon assessment app as a monorepo with:
+This repository ships the ZEEUS sustainability platform as a monorepo with:
 
 - `apps/web`: Next.js public site, founder workspace, and partner console
 - `apps/api`: NestJS API
@@ -100,7 +100,7 @@ The worker consumes queued export and narrative jobs after the stack is healthy.
 
 ## Verification Checklist
 
-Run this before a demo or handoff:
+Run this before a release or handoff:
 
 ```powershell
 npm run typecheck
@@ -129,5 +129,5 @@ Then verify:
 - If the workbook catalogs need updating, rerun `node scripts/extract-workbook-catalogs.mjs`.
 - If `next build` on Windows warns about an invalid native SWC binary, the repo already falls back to `@next/swc-wasm-nodejs` during the web build.
 - If the API cannot connect to Postgres in Docker, confirm `.env` exists and that `docker compose ps` shows `db` as healthy.
-- If exports remain `pending`, check `docker compose ps` for healthy `redis`, `minio`, and `worker` services and inspect `docker logs zeeus-hackathon-2026-worker-1`.
+- If exports remain `pending`, check `docker compose ps` for healthy `redis`, `minio`, and `worker` services and inspect `docker compose logs worker`.
 - If artifact downloads fail, confirm the `zeeus-artifacts` bucket exists in MinIO and that `S3_ENDPOINT`, `S3_BUCKET`, and credentials match the Compose defaults.

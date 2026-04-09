@@ -1,13 +1,18 @@
 import { Card } from '@packages/ui';
 import { MarketingShell } from '../../components/marketing-shell';
-import { getCurrentUser, getPublicSiteContent } from '../../lib/server-api';
+import { getOptionalCurrentUser, getPublicSiteContent } from '../../lib/server-api';
+import { getSiteSettings } from '../../lib/site-content';
 
 export default async function FaqPage() {
-  const [currentUser, content] = await Promise.all([getCurrentUser(), getPublicSiteContent()]);
+  const [currentUser, content] = await Promise.all([
+    getOptionalCurrentUser(),
+    getPublicSiteContent()
+  ]);
 
   return (
     <MarketingShell
       currentUser={currentUser}
+      settings={getSiteSettings(content)}
       eyebrow="FAQ"
       title="Frequently asked questions"
       intro="The FAQ keeps the tone aligned with the ZEEUS source pack: practical, startup-friendly, and methodologically clear."

@@ -167,7 +167,16 @@ until curl -fsS http://127.0.0.1:4000/api/health >/dev/null 2>&1; do
 done
 
 log "Starting web app"
-npm run start --workspace=@apps/web -- -H 0.0.0.0 -p "$PORT" &
+if [[ -f "apps/web/.next/standalone/apps/web/server.js" ]]; then
+  log "Using Next.js standalone server"
+  node apps/web/.next/standalone/apps/web/server.js &
+elif [[ -f "apps/web/.next/standalone/server.js" ]]; then
+  log "Using Next.js standalone server"
+  node apps/web/.next/standalone/server.js &
+else
+  log "Standalone server not found, falling back to next start"
+  npm run start --workspace=@apps/web -- -H 0.0.0.0 -p "$PORT" &
+fi
 WEB_PID=$!
 
 until curl -fsS "http://127.0.0.1:${PORT}/" >/dev/null 2>&1; do

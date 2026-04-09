@@ -54,12 +54,43 @@ export default async function ProgramDetailPage({ params }: { params: Params }) 
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge tone="emerald">{submission.submissionStatus}</Badge>
                     <Badge tone="slate">{submission.evaluationStatus}</Badge>
+                    {submission.deterministicSummary.confidenceBand ? (
+                      <Badge tone="amber">{submission.deterministicSummary.confidenceBand}</Badge>
+                    ) : null}
                   </div>
                   <p className="mt-3 font-semibold text-slate-950">{submission.startupName}</p>
                   <p className="mt-2 text-sm text-slate-600">
                     Revision {submission.revisionNumber} / Submitted{' '}
                     {submission.submittedAt ?? 'not yet'}
                   </p>
+                  <p className="mt-2 text-xs uppercase tracking-[0.18em] text-slate-500">
+                    {submission.context.currentStage.replaceAll('_', ' ')} /{' '}
+                    {submission.context.businessCategoryMain ?? submission.context.naceDivision}
+                  </p>
+                  <div className="mt-4 grid gap-3 md:grid-cols-3">
+                    <div className="rounded-[20px] bg-white px-3 py-3">
+                      <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                        Financial
+                      </p>
+                      <p className="mt-2 text-lg font-black text-slate-950">
+                        {submission.deterministicSummary.financialTotal ?? 'n/a'}
+                      </p>
+                    </div>
+                    <div className="rounded-[20px] bg-white px-3 py-3">
+                      <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Risk</p>
+                      <p className="mt-2 text-lg font-black text-slate-950">
+                        {submission.deterministicSummary.riskOverall?.toFixed(1) ?? 'n/a'}
+                      </p>
+                    </div>
+                    <div className="rounded-[20px] bg-white px-3 py-3">
+                      <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
+                        Opportunity
+                      </p>
+                      <p className="mt-2 text-lg font-black text-slate-950">
+                        {submission.deterministicSummary.opportunityOverall?.toFixed(1) ?? 'n/a'}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>

@@ -1,19 +1,16 @@
 import type { MetadataRoute } from 'next';
 import { resolveSiteOrigin } from '../lib/runtime-mode';
+import { getPublicSiteContent } from '../lib/server-api';
 
-const publicRoutes = [
-  '',
-  '/how-it-works',
-  '/methodology',
-  '/faq',
-  '/sdg-esrs',
-  '/resources',
-  '/partners',
-  '/contact'
-];
-
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const origin = resolveSiteOrigin();
+  const content = await getPublicSiteContent();
+  const dynamicRoutes = content.sitePages
+    .filter((page) => page.status === 'published')
+    .map((page) => (page.slug === 'home' ? '' : `/${page.slug}`));
+  const publicRoutes = Array.from(
+    new Set(['', '/faq', '/resources', '/case-studies', ...dynamicRoutes])
+  );
 
   return publicRoutes.map((route) => ({
     url: `${origin}${route}`,

@@ -1,0 +1,152 @@
+{
+  "scoreInterpretation": {
+    "title": "Workbook score interpretation",
+    "subtitle": "Use the workbook bands to read topic materiality and prioritization consistently across the site.",
+    "bands": [
+      {
+        "key": "not_applicable",
+        "scoreRangeLabel": "#N/A",
+        "title": "Not applicable",
+        "interpretation": "Not relevant for your business model"
+      },
+      {
+        "key": "very_low",
+        "scoreRangeLabel": ">0 – <1",
+        "title": "Very Low",
+        "interpretation": "Minimal impact, risk, or opportunity — no action needed"
+      },
+      {
+        "key": "low",
+        "scoreRangeLabel": "≥1 – <2",
+        "title": "Low",
+        "interpretation": "Minor relevance — monitor and reassess with tool when business vision changes"
+      },
+      {
+        "key": "relevant",
+        "scoreRangeLabel": "≥2 – <2.5",
+        "title": "Relevant",
+        "interpretation": "Relevant topic — review recommendations"
+      },
+      {
+        "key": "high_priority",
+        "scoreRangeLabel": "≥2.5 – 4",
+        "title": "High Priority",
+        "interpretation": "High relevance — take strategic action, review recommendations"
+      }
+    ]
+  },
+  "riskMatrixLegend": {
+    "title": "Workbook risk matrix",
+    "subtitle": "Probability × impact ratings with ESRS and business interpretation from the workbook.",
+    "entries": [
+      {
+        "label": "Sustainable (low concern)",
+        "score": 1,
+        "whatItMeans": "Low likelihood and/or low severity; controls are effective and residual risk is acceptable.",
+        "esrsAngle": "Unlikely to be material inside-out or outside-in; monitor but no escalation.",
+        "businessSignal": "Meets legal norms; stakeholder expectations satisfied.",
+        "actionWindow": "Routine monitoring, periodic review; keep KPIs and controls steady."
+      },
+      {
+        "label": "Moderate (manage & watch)",
+        "score": 2,
+        "whatItMeans": "Non-trivial likelihood or moderate potential impact; existing controls reduce but do not eliminate risk.",
+        "esrsAngle": "May become material as scale, geography or regulation changes; needs evidence and trend tracking.",
+        "businessSignal": "Possible cost, delay or reputation effects if unmanaged.",
+        "actionWindow": "Planed mitigation with targets/timelines; assign ownership and track quarterly."
+      },
+      {
+        "label": "Severe(priority, likely material)",
+        "score": 3,
+        "whatItMeans": "High likelihood or high potential impact with meaningful financial/externality exposure.",
+        "esrsAngle": "Material risk for one or both lenses: \nOutside-in: could affect cash flows, cost of capital, market access.\nInside-out: significant adverse impact on people/environment requiring due diligence.",
+        "businessSignal": "Regulatory scrutiny, customer pressure, supply/operations disruption plausible.",
+        "actionWindow": "Immediate mitigation plan with accountable owners, budget, milestones; disclose in management narrative and risk register."
+      },
+      {
+        "label": "Critical (immediate, intolerable)",
+        "score": 4,
+        "whatItMeans": "Very high likelihood and severe/irreversible impact; current exposure is not acceptable.",
+        "esrsAngle": "Clearly material and may trigger mandatory disclosure, remediation, stakeholder engagement, and potential restatement of strategy.",
+        "businessSignal": "Breach risk (law/permits/standards), loss of license to operate, major financial hit.",
+        "actionWindow": "Executive-level response now—stop, stabilize, redesign; external notifications and independent assurance where required."
+      },
+      {
+        "label": "Neutral (not applicable / unknown)",
+        "score": 0,
+        "whatItMeans": "Topic not relevant to activities or evidence is insufficient to rate.",
+        "esrsAngle": "If truly N/A, document the screening logic; if unknown, it’s a data-gap—not a low risk.",
+        "businessSignal": "Avoid complacency; gaps can mask emerging material issues.",
+        "actionWindow": "Record rationale; if unknown, set a time-bound plan to gather data and re-assess."
+      }
+    ]
+  },
+  "opportunityMatrixLegend": {
+    "title": "Workbook opportunity matrix",
+    "subtitle": "Likelihood × impact ratings with ESRS and business interpretation from the workbook.",
+    "entries": [
+      {
+        "label": "Small (incremental improvement)",
+        "score": 1,
+        "whatItMeans": "Limited, incremental upside; narrow scope or mainly compliance/efficiency.",
+        "esrsAngle": "Useful for steady progress; unlikely to shift materiality alone.",
+        "businessSignal": "Quick wins and optimizations with low effort.",
+        "actionWindow": "Do when convenient; bundle with larger initiatives; light KPIs."
+      },
+      {
+        "label": "Reasonable (promising, manage and grow)",
+        "score": 2,
+        "whatItMeans": "Plausible benefits of moderate size; execution/context dependent.",
+        "esrsAngle": "Supports priority topics but partial coverage or partner reliance.",
+        "businessSignal": "Good medium-term ROI; solid proof-of-concept candidate.",
+        "actionWindow": "Pilot & evaluate; define metrics, partners, and scale-up gate."
+      },
+      {
+        "label": "Sustainable (solid, durable upside)",
+        "score": 3,
+        "whatItMeans": "Likely, notable and durable benefits aligned with long-term trends.",
+        "esrsAngle": "Contributes to material ESRS topics with measurable improvements suitable for reporting.",
+        "businessSignal": "Improves margins/resilience, strengthens brand and partner preference.",
+        "actionWindow": "Plan & scale: pilot quickly, standardize, set targets and track."
+      },
+      {
+        "label": "Great (priority growth move)",
+        "score": 4,
+        "whatItMeans": "High likelihood and high positive impact; step-change potential.",
+        "esrsAngle": "Strong double-materiality upside (outside-in value + inside-out outcomes); ideal for disclosure and target-setting.",
+        "businessSignal": "Strategic differentiator: premium positioning, green finance eligibility, major cost/revenue gains.",
+        "actionWindow": "Invest now; put in roadmap with owners, budget, KPIs; communicate externally."
+      },
+      {
+        "label": "Neutral (not applicable / unknown)",
+        "score": 0,
+        "whatItMeans": "No clear upside identified or insufficient evidence.",
+        "esrsAngle": "If truly N/A, document screening; if unknown, it’s a data gap (not “no opportunity”).",
+        "businessSignal": "Revisit as tech/data/partners evolve.",
+        "actionWindow": "Record rationale; set review date or run a low-cost scan for emerging options."
+      }
+    ]
+  },
+  "initialSummaryExplanationBlocks": [
+    {
+      "title": "About this Initial Summary & SDG Alignment",
+      "body": "This page gives you an initial-level summary based on the business category and startup stage you selected. It is designed as a screening view of the Sustainable Development Goals (SDGs) that are likely relevant for ideas like yours."
+    },
+    {
+      "title": "How to read this?",
+      "body": "● Treat the listed SDGs as signals, not final verdicts.\n● In the next steps, your detailed answers will be assessed against the ESRS topics and other criteria. That deeper analysis may refine or re-prioritize what matters most for your specific concept."
+    },
+    {
+      "title": "Example:",
+      "body": "You might see SDG 6 – Clean Water and Sanitation flagged here because companies in your category often interact with water. After the detailed assessment, the tool may conclude that water is not a high concern for your idea (e.g., limited water use, no sensitive-area footprint, strong controls). Both statements can be true: water is a category-level default concern, but not necessarily a priority for your specific business model."
+    },
+    {
+      "title": "Why results may evolve?",
+      "body": "● Early inputs are broad; later inputs are context-rich (operations, geography, impacts, and dependencies).\n● As detail increases, the tool recalculates materiality and can elevate or de-emphasize topics accordingly"
+    },
+    {
+      "title": "Takeaway:",
+      "body": "Use this summary to focus your thinking and to spot potential opportunities and risks early. Then proceed—your next inputs will sharpen the picture so you can act with confidence on what truly matters for your venture."
+    }
+  ]
+}

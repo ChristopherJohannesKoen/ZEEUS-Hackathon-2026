@@ -2,37 +2,39 @@ import Link from 'next/link';
 import { Card, buttonClassName } from '@packages/ui';
 import { MarketingShell } from '../../components/marketing-shell';
 import { PartnerInterestForm } from '../../components/partner-interest-form';
-import { isPublicSpaceMode } from '../../lib/runtime-mode';
-import { getCurrentUser, getPublicSiteContent } from '../../lib/server-api';
+import { getOptionalCurrentUser, getPublicSiteContent } from '../../lib/server-api';
+import { getSitePage, getSiteSettings } from '../../lib/site-content';
 
 export default async function PartnersPage() {
-  const [currentUser, content] = await Promise.all([getCurrentUser(), getPublicSiteContent()]);
-  const article = content.articles.find((item) => item.slug === 'partner-programs');
-  const publicPreviewMode = isPublicSpaceMode;
+  const [currentUser, content] = await Promise.all([
+    getOptionalCurrentUser(),
+    getPublicSiteContent()
+  ]);
+  const page = getSitePage(content, 'partners');
 
   return (
     <MarketingShell
       currentUser={currentUser}
+      settings={getSiteSettings(content)}
       eyebrow="Partner programs"
-      title={article?.title ?? 'Partner and program workflows'}
+      title={page?.title ?? 'Partner and program workflows'}
       intro={
-        article?.summary ??
+        page?.summary ??
         'Support cohorts, reviewer workflows, and co-branded outputs on top of immutable evaluation revisions.'
       }
     >
       <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
         <Card className="border-surface-border">
-          <p className="text-sm leading-8 text-slate-700">{article?.body}</p>
+          <p className="text-sm leading-8 text-slate-700">
+            {page?.heroBody ??
+              'Partners can manage cohort oversight, startup submissions, reviewer workflows, and official outputs while keeping deterministic scoring immutable.'}
+          </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
               className={buttonClassName({ className: 'bg-brand hover:bg-brand-dark' })}
-              href={publicPreviewMode ? '/contact' : currentUser ? '/app/programs' : '/login'}
+              href={currentUser ? '/app/programs' : '/login'}
             >
-              {publicPreviewMode
-                ? 'Public preview deployment'
-                : currentUser
-                  ? 'Open program console'
-                  : 'Sign in to program console'}
+              {currentUser ? 'Open program console' : 'Sign in to program console'}
             </Link>
             <Link className={buttonClassName({ variant: 'secondary' })} href="/contact">
               Contact support

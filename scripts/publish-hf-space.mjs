@@ -1,4 +1,4 @@
-import { cp, mkdir, mkdtemp, readdir } from 'node:fs/promises';
+import { cp, mkdir, mkdtemp, readdir, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -20,6 +20,7 @@ if (!repoId) {
 const ignoredTopLevel = new Set([
   '.git',
   '.github',
+  '.gitignore',
   '.artifacts',
   '.hf-space-build',
   '.turbo',
@@ -31,6 +32,15 @@ const ignoredTopLevel = new Set([
 ]);
 
 const ignoredNames = new Set(['node_modules', '.next', 'dist']);
+const spaceReferenceFiles = [
+  '1) Introduction_ZEEUS.pdf',
+  '2) Usermanual_ZEEUS.pdf',
+  '3) FAQ_ZEEUS.pdf',
+  '4) Score Interpretation_ZEEUS.pdf',
+  '5) Tool & Example.zip',
+  '6) GUIDELINES KIT- ZEEUS.pdf',
+  'Tool_Introduction_Video.txt'
+];
 
 function shouldCopy(relativePath) {
   if (!relativePath || relativePath === '.') {
@@ -80,14 +90,34 @@ for (const entry of topLevelEntries) {
   });
 }
 
-await mkdir(path.join(stageDir, 'references'), { recursive: true });
-await cp(
-  path.join(repoRoot, 'references', 'Hackathon_User Guidlines'),
-  path.join(stageDir, 'references', 'Hackathon_User Guidlines'),
-  {
-    recursive: true,
-    filter: (source) => shouldCopy(path.relative(repoRoot, source))
-  }
+const stageReferenceDir = path.join(stageDir, 'references', 'Hackathon_User Guidlines');
+await mkdir(stageReferenceDir, { recursive: true });
+
+for (const fileName of spaceReferenceFiles) {
+  await cp(
+    path.join(repoRoot, 'references', 'Hackathon_User Guidlines', fileName),
+    path.join(stageReferenceDir, fileName)
+  );
+}
+
+await writeFile(
+  path.join(stageDir, '.gitignore'),
+  [
+    'node_modules',
+    '**/node_modules',
+    'dist',
+    '**/dist',
+    '**/.next',
+    '*.tsbuildinfo',
+    '**/*.tsbuildinfo',
+    '.env',
+    '.env.*',
+    '.artifacts',
+    'coverage',
+    'playwright-report',
+    'test-results'
+  ].join('\n') + '\n',
+  'utf8'
 );
 
 await cp(path.join(overlayDir, 'README.md'), path.join(stageDir, 'README.md'));

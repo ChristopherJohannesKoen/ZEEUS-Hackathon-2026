@@ -17,4 +17,11 @@ dist
 server
 references/*
 !references/Hackathon_User Guidlines/
-!references/Hackathon_User Guidlines/**
+references/Hackathon_User Guidlines/*
+!references/Hackathon_User Guidlines/1) Introduction_ZEEUS.pdf
+!references/Hackathon_User Guidlines/2) Usermanual_ZEEUS.pdf
+!references/Hackathon_User Guidlines/3) FAQ_ZEEUS.pdf
+!references/Hackathon_User Guidlines/4) Score Interpretation_ZEEUS.pdf
+!references/Hackathon_User Guidlines/5) Tool & Example.zip
+!references/Hackathon_User Guidlines/6) GUIDELINES KIT- ZEEUS.pdf
+!references/Hackathon_User Guidlines/Tool_Introduction_Video.txt

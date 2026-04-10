@@ -152,6 +152,14 @@ The publisher script builds a staged bundle in `.hf-space-build`, creates a
 Docker Space if needed, and uploads the current repo snapshot with the Space
 overlay files from `deploy/huggingface-space`.
 
+Automatic publishing is also wired through GitHub Actions on pushes to `main`
+for Space-relevant files. The repo uses:
+
+- GitHub secret `HF_TOKEN`
+- GitHub variable `HF_SPACE_REPO_ID`
+
+The current target Space is `ChristopherJKoen/zeeus-ultimate-site`.
+
 - `db` on port `5432`
 - `api` on port `4000`
 - `web` on port `3000`

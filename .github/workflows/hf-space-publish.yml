@@ -1,0 +1,77 @@
+name: Hugging Face Space
+
+on:
+  push:
+    branches: ['main']
+    paths:
+      - '.github/workflows/hf-space-publish.yml'
+      - '.dockerignore'
+      - 'apps/**'
+      - 'deploy/huggingface-space/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'packages/**'
+      - 'references/Hackathon_User Guidlines/**'
+      - 'scripts/publish-hf-space.mjs'
+      - 'scripts/validate-reference-pack.mjs'
+  workflow_dispatch:
+    inputs:
+      space_repo_id:
+        description: 'Optional override for the target Space repo id (owner/name).'
+        required: false
+        type: string
+
+concurrency:
+  group: hf-space-publish
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Install Hugging Face CLI
+        run: python3 -m pip install --upgrade "huggingface_hub[cli]"
+
+      - name: Resolve target Space repo
+        shell: bash
+        run: |
+          repo_id="${{ inputs.space_repo_id }}"
+          if [ -z "$repo_id" ]; then
+            repo_id="${{ vars.HF_SPACE_REPO_ID }}"
+          fi
+
+          if [ -z "$repo_id" ]; then
+            echo "HF_SPACE_REPO_ID is not configured." >&2
+            exit 1
+          fi
+
+          echo "HF_SPACE_REPO_ID=$repo_id" >> "$GITHUB_ENV"
+
+      - name: Validate Hugging Face auth
+        shell: bash
+        run: |
+          if [ -z "$HF_TOKEN" ]; then
+            echo "HF_TOKEN is not configured." >&2
+            exit 1
+          fi
+
+      - name: Validate reference pack
+        run: npm run references:validate
+
+      - name: Publish Space bundle
+        env:
+          HF_SPACE_COMMIT_MESSAGE: Deploy Hugging Face Space from GitHub Actions
+        run: npm run hf:space:publish

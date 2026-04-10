@@ -10,6 +10,23 @@ function toAbsoluteUrl(pathname: string) {
   return new URL(pathname, window.location.origin).toString();
 }
 
+function navigateTopLevel(url: string) {
+  if (!isEmbeddedHuggingFaceSpace(window.location.hostname, isEmbeddedWindow())) {
+    return false;
+  }
+
+  try {
+    if (window.top) {
+      window.top.location.href = url;
+      return true;
+    }
+  } catch {
+    return false;
+  }
+
+  return false;
+}
+
 export function redirectEmbeddedAuthPageToTopLevel() {
   if (
     typeof window === 'undefined' ||
@@ -23,26 +40,14 @@ export function redirectEmbeddedAuthPageToTopLevel() {
     window.location.origin
   ).toString();
 
-  try {
-    window.top?.location.replace(currentUrl);
-  } catch {
-    window.location.replace(currentUrl);
-  }
-
-  return true;
+  return navigateTopLevel(currentUrl);
 }
 
 export function navigateToAuthenticatedApp() {
   const appUrl = toAbsoluteUrl('/app');
 
-  if (isEmbeddedHuggingFaceSpace(window.location.hostname, isEmbeddedWindow())) {
-    try {
-      window.top?.location.assign(appUrl);
-      return;
-    } catch {
-      window.location.assign(appUrl);
-      return;
-    }
+  if (navigateTopLevel(appUrl)) {
+    return;
   }
 
   window.location.assign(appUrl);

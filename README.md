@@ -1,8 +1,8 @@
 ---
-title: ZEEUS Sustainability Platform
+title: ZEEUS Hackathon 2026
 emoji: 🚀
-colorFrom: green
-colorTo: teal
+colorFrom: blue
+colorTo: purple
 sdk: docker
 app_port: 3000
 pinned: false
@@ -128,7 +128,7 @@ current product slice as a single-container full-stack staging deployment:
 - impact summary, SDG alignment, dashboard, evidence, scenarios, and reports
 - async CSV/PDF exports and narrative jobs
 - seeded organization, partner-program, submission, and reviewer workflows
-- iframe-safe headers remain enabled for the Space host without forking the public product surface
+- iframe-safe headers remain enabled for the Space host without forcing a separate preview-only experience
 
 The Space starts local PostgreSQL and Redis inside the container. Artifact files
 persist to the local filesystem and automatically use `/data` when persistent

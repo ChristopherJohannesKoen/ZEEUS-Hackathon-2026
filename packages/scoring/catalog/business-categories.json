@@ -1,0 +1,107 @@
+[
+  {
+    "sectionCode": "A",
+    "label": "Agriculture, Forestry, and Fishing",
+    "sdgs": [2, 12, 13, 15]
+  },
+  {
+    "sectionCode": "B",
+    "label": "Mining and Quarrying",
+    "sdgs": [8, 9, 12, 13, 15]
+  },
+  {
+    "sectionCode": "C",
+    "label": "Manufacturing",
+    "sdgs": [8, 9, 12, 13]
+  },
+  {
+    "sectionCode": "D",
+    "label": "Electricity, Gas, Steam, and Air Conditioning Supply",
+    "sdgs": [7, 9, 12, 13]
+  },
+  {
+    "sectionCode": "E",
+    "label": "Water Supply; Sewerage, Waste Management, and Remediation Activities",
+    "sdgs": [6, 11, 12, 13]
+  },
+  {
+    "sectionCode": "F",
+    "label": "Construction",
+    "sdgs": [9, 11, 12, 13]
+  },
+  {
+    "sectionCode": "G",
+    "label": "Wholesale and Retail Trade; Repair of Motor Vehicles and Motorcycles",
+    "sdgs": [8, 12]
+  },
+  {
+    "sectionCode": "H",
+    "label": "Transportation and Storage",
+    "sdgs": [9, 11, 13]
+  },
+  {
+    "sectionCode": "I",
+    "label": "Accommodation and Food Service Activities",
+    "sdgs": [3, 8, 12]
+  },
+  {
+    "sectionCode": "J",
+    "label": "Information and Communication",
+    "sdgs": [4, 9, 17]
+  },
+  {
+    "sectionCode": "K",
+    "label": "Financial and Insurance Activities",
+    "sdgs": [8, 10, 16]
+  },
+  {
+    "sectionCode": "L",
+    "label": "Real Estate Activities",
+    "sdgs": [11, 12, 13]
+  },
+  {
+    "sectionCode": "M",
+    "label": "Professional, Scientific, and Technical Activities",
+    "sdgs": [4, 8, 9]
+  },
+  {
+    "sectionCode": "N",
+    "label": "Administrative and Support Service Activities",
+    "sdgs": [8, 10]
+  },
+  {
+    "sectionCode": "O",
+    "label": "Public Administration and Defence; Compulsory Social Security",
+    "sdgs": [16, 17]
+  },
+  {
+    "sectionCode": "P",
+    "label": "Education",
+    "sdgs": [4, 5, 10]
+  },
+  {
+    "sectionCode": "Q",
+    "label": "Human Health and Social Work Activities",
+    "sdgs": [3, 10]
+  },
+  {
+    "sectionCode": "R",
+    "label": "Arts, Entertainment, and Recreation",
+    "sdgs": [3, 4, 11]
+  },
+  {
+    "sectionCode": "S",
+    "label": "Other Service Activities",
+    "sdgs": [8, 12]
+  },
+  {
+    "sectionCode": "T",
+    "label": "Activities of Households as Employers; Undifferentiated Goods- and Services-Producing Activities of Households for Own Use",
+    "sdgs": [5, 8]
+  },
+  {
+    "sectionCode": "U",
+    "label": "Other",
+    "sdgs": []
+  }
+]

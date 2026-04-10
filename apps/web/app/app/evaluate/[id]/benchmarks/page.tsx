@@ -48,7 +48,7 @@ export default async function EvaluationBenchmarksPage({
             <h1 className="mt-2 text-4xl font-black text-slate-950">{evaluation.name}</h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
               Compare the selected revision against earlier saved revisions and a seeded reference
-              profile for this startup stage and NACE division.
+              profile for the same workbook stage and business context.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -67,9 +67,20 @@ export default async function EvaluationBenchmarksPage({
             <Badge tone="slate">{benchmarks.referenceProfile.label}</Badge>
           </div>
           <p className="mt-4 text-sm leading-7 text-slate-600">
-            Stage {benchmarks.referenceProfile.stage.replaceAll('_', ' ')} / NACE{' '}
-            {benchmarks.referenceProfile.naceDivision}
+            {benchmarks.referenceProfile.stageLabel} /{' '}
+            {benchmarks.referenceProfile.businessCategoryMain ??
+              benchmarks.referenceProfile.naceDivision}
+            {benchmarks.referenceProfile.extendedNaceCode
+              ? ` / ${benchmarks.referenceProfile.extendedNaceCode}`
+              : ''}
           </p>
+          {benchmarks.referenceProfile.businessCategorySubcategory ||
+          benchmarks.referenceProfile.extendedNaceLabel ? (
+            <p className="mt-2 text-xs uppercase tracking-[0.2em] text-slate-500">
+              {benchmarks.referenceProfile.businessCategorySubcategory ??
+                benchmarks.referenceProfile.extendedNaceLabel}
+            </p>
+          ) : null}
           <div className="mt-5 flex flex-wrap gap-2">
             {revisions.items.map((revision) => (
               <Link
@@ -82,6 +93,32 @@ export default async function EvaluationBenchmarksPage({
               >
                 Revision {revision.revisionNumber}
               </Link>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="border-surface-border bg-[#fbfdf8]">
+          <p className="text-xs uppercase tracking-[0.25em] text-[#58724d]">
+            How to read the benchmark
+          </p>
+          <h2 className="mt-2 text-2xl font-black text-slate-950">
+            Compare movement through score interpretation bands
+          </h2>
+          <p className="mt-3 text-sm leading-7 text-slate-600">
+            The benchmark workspace keeps the same workbook score language as the founder-facing
+            report. Use it to see where the current revision moved relative to prior saved work and
+            the seeded reference profile for a similar startup context.
+          </p>
+          <div className="mt-5 grid gap-3 md:grid-cols-4">
+            {benchmarks.scoreInterpretation.bands.map((band) => (
+              <div className="rounded-[24px] border border-[#dce7d3] bg-white p-4" key={band.key}>
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">{band.key}</p>
+                <p className="mt-2 font-bold text-slate-950">{band.title}</p>
+                <p className="mt-2 text-xs uppercase tracking-[0.18em] text-slate-400">
+                  {band.scoreRangeLabel}
+                </p>
+                <p className="mt-2 text-sm leading-6 text-slate-600">{band.interpretation}</p>
+              </div>
             ))}
           </div>
         </Card>

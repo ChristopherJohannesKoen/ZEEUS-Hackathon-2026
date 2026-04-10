@@ -1,22 +1,29 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-function jsonResponse(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    headers: { 'content-type': 'application/json' },
-    status
-  });
-}
-
-function getRequestUrl(input: RequestInfo | URL) {
-  if (typeof input === 'string') {
-    return input;
+const mockBrowserClient = {
+  auth: {
+    csrf: vi.fn()
+  },
+  evaluations: {
+    updateContext: vi.fn()
   }
+};
 
-  if (input instanceof URL) {
-    return input.toString();
-  }
+vi.mock('@ts-rest/core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@ts-rest/core')>();
 
-  return input.url;
+  return {
+    ...actual,
+    initClient: vi.fn(() => mockBrowserClient)
+  };
+});
+
+function contractResponse(body: unknown, status = 200, headers = new Headers()) {
+  return {
+    status,
+    body,
+    headers
+  };
 }
 
 function evaluationResponse(overrides: Record<string, unknown> = {}) {
@@ -70,53 +77,33 @@ function evaluationResponse(overrides: Record<string, unknown> = {}) {
 describe('clientApiRequest', () => {
   beforeEach(() => {
     vi.resetModules();
+    mockBrowserClient.auth.csrf.mockReset();
+    mockBrowserClient.evaluations.updateContext.mockReset();
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
-    vi.unstubAllGlobals();
   });
 
   it('retries an unsafe request once when the server returns csrf_invalid', async () => {
     const firstCsrfToken = 'csrf-token-one-1234567890abcdef123456';
     const secondCsrfToken = 'csrf-token-two-1234567890abcdef123456';
-    let csrfRequestCount = 0;
-    let updateContextCount = 0;
-    const seenUpdateHeaders: Headers[] = [];
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const requestUrl = getRequestUrl(input);
-      const requestHeaders = new Headers(init?.headers);
-
-      if (requestUrl.endsWith('/api/auth/csrf')) {
-        csrfRequestCount += 1;
-        return jsonResponse({
-          csrfToken: csrfRequestCount === 1 ? firstCsrfToken : secondCsrfToken
-        });
-      }
-
-      if (requestUrl.endsWith('/api/evaluations/evaluation_1/context')) {
-        updateContextCount += 1;
-        seenUpdateHeaders.push(requestHeaders);
-
-        if (updateContextCount === 1) {
-          return jsonResponse(
-            {
-              statusCode: 403,
-              message: 'A valid CSRF token is required.',
-              code: 'csrf_invalid',
-              errors: []
-            },
-            403
-          );
-        }
-
-        return jsonResponse(evaluationResponse());
-      }
-
-      throw new Error(`Unexpected request in client-api test: ${requestUrl}`);
-    });
-
-    vi.stubGlobal('fetch', fetchMock);
+    mockBrowserClient.auth.csrf
+      .mockResolvedValueOnce(contractResponse({ csrfToken: firstCsrfToken }))
+      .mockResolvedValueOnce(contractResponse({ csrfToken: secondCsrfToken }));
+    mockBrowserClient.evaluations.updateContext
+      .mockResolvedValueOnce(
+        contractResponse(
+          {
+            statusCode: 403,
+            message: 'A valid CSRF token is required.',
+            code: 'csrf_invalid',
+            errors: []
+          },
+          403
+        )
+      )
+      .mockResolvedValueOnce(contractResponse(evaluationResponse()));
 
     const { updateEvaluationContext } = await import('../lib/client-api');
 
@@ -139,29 +126,33 @@ describe('clientApiRequest', () => {
       name: 'Updated assessment'
     });
 
-    expect(csrfRequestCount).toBe(2);
-    expect(updateContextCount).toBe(2);
-    expect(seenUpdateHeaders[0]?.get('x-csrf-token')).toBe(firstCsrfToken);
-    expect(seenUpdateHeaders[1]?.get('x-csrf-token')).toBe(secondCsrfToken);
+    expect(mockBrowserClient.auth.csrf).toHaveBeenCalledTimes(2);
+    expect(mockBrowserClient.evaluations.updateContext).toHaveBeenCalledTimes(2);
+    expect(mockBrowserClient.evaluations.updateContext.mock.calls[0]?.[0]).toMatchObject({
+      params: { id: 'evaluation_1' },
+      headers: { 'x-csrf-token': firstCsrfToken }
+    });
+    expect(mockBrowserClient.evaluations.updateContext.mock.calls[1]?.[0]).toMatchObject({
+      params: { id: 'evaluation_1' },
+      headers: { 'x-csrf-token': secondCsrfToken }
+    });
   });
 
   it('does not replay a generic forbidden mutation', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(jsonResponse({ csrfToken: 'csrf-token-1234567890abcdef123456' }))
-      .mockResolvedValueOnce(
-        jsonResponse(
-          {
-            statusCode: 403,
-            message: 'You do not have permission to modify this evaluation.',
-            code: 'forbidden',
-            errors: []
-          },
-          403
-        )
-      );
-
-    vi.stubGlobal('fetch', fetchMock);
+    mockBrowserClient.auth.csrf.mockResolvedValueOnce(
+      contractResponse({ csrfToken: 'csrf-token-1234567890abcdef123456' })
+    );
+    mockBrowserClient.evaluations.updateContext.mockResolvedValueOnce(
+      contractResponse(
+        {
+          statusCode: 403,
+          message: 'You do not have permission to modify this evaluation.',
+          code: 'forbidden',
+          errors: []
+        },
+        403
+      )
+    );
 
     const { updateEvaluationContext } = await import('../lib/client-api');
 
@@ -184,6 +175,7 @@ describe('clientApiRequest', () => {
       statusCode: 403
     });
 
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(mockBrowserClient.auth.csrf).toHaveBeenCalledTimes(1);
+    expect(mockBrowserClient.evaluations.updateContext).toHaveBeenCalledTimes(1);
   });
 });

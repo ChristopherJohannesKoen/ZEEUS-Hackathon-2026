@@ -1,0 +1,6 @@
+ZEEUS FAQ
+
+- Is ZEEUS a judgment tool? No. It is a guidance tool for better startup decisions.
+- Are SDGs a checklist? No. They are a map, not a checklist.
+- Can early teams use qualitative inputs? Yes, as long as assumptions are explicit.
+- Does AI change deterministic scores? No. AI is advisory only.

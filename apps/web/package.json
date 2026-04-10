@@ -2,11 +2,12 @@
   "name": "@apps/web",
   "private": true,
   "scripts": {
-    "predev": "node ../../scripts/prepare-web-runtime.mjs --clean-next",
+    "predev": "node ../../scripts/prepare-web-runtime.mjs --skip-runtime-build --clean-next",
     "dev": "next dev",
     "dev:e2e": "node ../../scripts/prepare-web-runtime.mjs --skip-runtime-build --clean-next && next dev",
-    "prebuild": "node ../../scripts/prepare-web-runtime.mjs --clean-next",
+    "prebuild": "node ../../scripts/prepare-web-runtime.mjs --skip-runtime-build --clean-next",
     "build": "next build",
+    "pretypecheck": "node ../../scripts/prepare-web-runtime.mjs --skip-runtime-build --clean-next && next typegen",
     "start": "next start",
     "lint": "eslint \"app/**/*.{ts,tsx}\" \"components/**/*.{ts,tsx}\" \"lib/**/*.{ts,tsx}\" \"test/**/*.{ts,tsx}\" --max-warnings=0",
     "typecheck": "tsc --noEmit",
@@ -33,6 +34,6 @@
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.9.3",
-    "vitest": "^4.1.2"
+    "vitest": "^4.1.3"
   }
 }

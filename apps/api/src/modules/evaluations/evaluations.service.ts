@@ -11,9 +11,11 @@ import {
   buildInitialSummary,
   buildReportResponse,
   getBenchmarkReferenceProfile,
+  getExtendedNaceOptions,
   getOpportunityCatalog,
   getRiskCatalog,
   getScoringVersionInfo,
+  getStartupStageOptions,
   getStageOneTopicCatalog,
   scoreFinancialAnswers,
   scoreStage1TopicAnswer,
@@ -29,6 +31,7 @@ import {
   type EvaluationBenchmarkSummary,
   type EvaluationArtifactListResponse,
   type EvaluationNarrativeListResponse,
+  type EvaluationNarrativeSourceReference,
   type EvaluationNarrativeSummary,
   type EvaluationContextPayload,
   type EvaluationDetail,
@@ -115,6 +118,7 @@ const narrativeSelect = Prisma.validator<Prisma.EvaluationNarrativeSelect>()({
   outputTokens: true,
   estimatedCostUsd: true,
   content: true,
+  sourceReferences: true,
   requestedAt: true,
   readyAt: true,
   failedAt: true,
@@ -141,6 +145,10 @@ const evaluationStateSelect = Prisma.validator<Prisma.EvaluationSelect>()({
   userId: true,
   name: true,
   country: true,
+  businessCategoryMain: true,
+  businessCategorySubcategory: true,
+  extendedNaceCode: true,
+  extendedNaceLabel: true,
   naceDivision: true,
   offeringType: true,
   launched: true,
@@ -236,6 +244,10 @@ type EvaluationListRecord = Pick<
   | 'id'
   | 'name'
   | 'country'
+  | 'businessCategoryMain'
+  | 'businessCategorySubcategory'
+  | 'extendedNaceCode'
+  | 'extendedNaceLabel'
   | 'naceDivision'
   | 'currentStage'
   | 'status'
@@ -289,13 +301,33 @@ export class EvaluationsService {
   async listEvaluations(currentUser: SessionUser): Promise<EvaluationListResponse> {
     const evaluations: EvaluationListRecord[] = await this.prismaService.evaluation.findMany({
       where: {
-        userId: currentUser.id
+        OR: [
+          {
+            userId: currentUser.id
+          },
+          {
+            organization: {
+              members: {
+                some: {
+                  userId: currentUser.id,
+                  role: {
+                    in: ['owner', 'manager', 'member']
+                  }
+                }
+              }
+            }
+          }
+        ]
       },
       orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
       select: {
         id: true,
         name: true,
         country: true,
+        businessCategoryMain: true,
+        businessCategorySubcategory: true,
+        extendedNaceCode: true,
+        extendedNaceLabel: true,
         naceDivision: true,
         currentStage: true,
         status: true,
@@ -325,10 +357,21 @@ export class EvaluationsService {
     payload: CreateEvaluationPayload
   ): Promise<EvaluationDetail> {
     const result = await this.prismaService.$transaction(async (transaction) => {
+      const primaryMembership = await transaction.organizationMember.findFirst({
+        where: {
+          userId: currentUser.id
+        },
+        orderBy: [{ joinedAt: 'asc' }],
+        select: {
+          organizationId: true
+        }
+      });
+
       const created = await transaction.evaluation.create({
         data: {
           userId: currentUser.id,
-          ...payload,
+          organizationId: primaryMembership?.organizationId ?? null,
+          ...this.normalizeContextForPersistence(payload),
           status: 'draft',
           currentStep: 'summary'
         },
@@ -424,7 +467,7 @@ export class EvaluationsService {
       await transaction.evaluation.update({
         where: { id: evaluationId },
         data: {
-          ...payload,
+          ...this.normalizeContextForPersistence(payload),
           status: 'draft',
           currentStep: 'summary',
           completedAt: null,
@@ -1396,6 +1439,10 @@ export class EvaluationsService {
     const reference = getBenchmarkReferenceProfile({
       name: current.report.evaluation.name,
       country: current.report.evaluation.country,
+      businessCategoryMain: current.report.evaluation.businessCategoryMain,
+      businessCategorySubcategory: current.report.evaluation.businessCategorySubcategory,
+      extendedNaceCode: current.report.evaluation.extendedNaceCode,
+      extendedNaceLabel: current.report.evaluation.extendedNaceLabel,
       naceDivision: current.report.evaluation.naceDivision,
       offeringType: current.report.evaluation.offeringType,
       launched: current.report.evaluation.launched,
@@ -1499,11 +1546,20 @@ export class EvaluationsService {
       revisionNumber: targetRevisionNumber,
       referenceProfile: {
         stage: current.report.evaluation.currentStage,
+        stageLabel:
+          getStartupStageOptions().find(
+            (option) => option.value === current.report.evaluation.currentStage
+          )?.label ?? current.report.evaluation.currentStage.replaceAll('_', ' '),
+        businessCategoryMain: current.report.evaluation.businessCategoryMain,
+        businessCategorySubcategory: current.report.evaluation.businessCategorySubcategory,
+        extendedNaceCode: current.report.evaluation.extendedNaceCode,
+        extendedNaceLabel: current.report.evaluation.extendedNaceLabel,
         naceDivision: current.report.evaluation.naceDivision,
         label: reference.label
       },
       metrics,
       topicShifts,
+      scoreInterpretation: current.report.dashboard.scoreInterpretation,
       takeaways: this.buildBenchmarkTakeaways(metrics, topicShifts)
     };
   }
@@ -1708,7 +1764,11 @@ export class EvaluationsService {
     const detail: EvaluationDetail = {
       id: evaluation.id,
       name: evaluation.name,
-      country: evaluation.country,
+      country: this.presentCountry(evaluation.country),
+      businessCategoryMain: evaluation.businessCategoryMain,
+      businessCategorySubcategory: evaluation.businessCategorySubcategory,
+      extendedNaceCode: evaluation.extendedNaceCode,
+      extendedNaceLabel: evaluation.extendedNaceLabel,
       naceDivision: evaluation.naceDivision,
       currentStage: evaluation.currentStage,
       status: evaluation.status,
@@ -1772,7 +1832,7 @@ export class EvaluationsService {
     evaluation: EvaluationStateRecord
   ): Promise<ReportResponse> {
     if (!evaluation.currentRevisionId) {
-      return this.buildOutputsFromState(evaluation).report;
+      return this.hydrateDraftReport(evaluation.id, this.buildOutputsFromState(evaluation).report);
     }
 
     const revision = await this.prismaService.evaluationRevision.findUnique({
@@ -1785,15 +1845,24 @@ export class EvaluationsService {
     });
 
     if (!revision) {
-      return this.buildOutputsFromState(evaluation).report;
+      return this.hydrateDraftReport(evaluation.id, this.buildOutputsFromState(evaluation).report);
     }
 
     return this.hydrateRevisionReport(evaluation.currentRevisionId, revision.reportSnapshot);
   }
 
+  private async hydrateDraftReport(evaluationId: string, report: ReportResponse) {
+    const runtime = await this.getReportRuntimeData(evaluationId, null);
+
+    return {
+      ...report,
+      ...runtime
+    };
+  }
+
   private async hydrateRevisionReport(revisionId: string, reportSnapshot: Prisma.JsonValue) {
     const report = ReportResponseSchema.parse(reportSnapshot as unknown);
-    const [actions, artifacts] = await Promise.all([
+    const [actions, artifacts, runtime] = await Promise.all([
       this.prismaService.evaluationRecommendationAction.findMany({
         where: {
           revisionId
@@ -1807,11 +1876,13 @@ export class EvaluationsService {
         },
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         select: artifactSelect
-      })
+      }),
+      this.getReportRuntimeData(report.evaluation.id, revisionId)
     ]);
 
     return {
       ...report,
+      ...runtime,
       evaluation: {
         ...report.evaluation,
         artifacts: artifacts.map((artifact: EvaluationArtifactRecord) =>
@@ -1819,6 +1890,119 @@ export class EvaluationsService {
         )
       },
       dashboard: this.attachRecommendationActionsToDashboard(report.dashboard, actions)
+    };
+  }
+
+  private async getReportRuntimeData(evaluationId: string, revisionId: string | null) {
+    const prismaWithOptionalDomains = this.prismaService as PrismaService & {
+      evidenceAsset?: PrismaService['evidenceAsset'];
+      programSubmission?: PrismaService['programSubmission'];
+    };
+    const evidenceDelegate = prismaWithOptionalDomains.evidenceAsset;
+    const submissionDelegate = prismaWithOptionalDomains.programSubmission;
+
+    const [evidenceItems, submission] = await Promise.all([
+      evidenceDelegate
+        ? evidenceDelegate.findMany({
+            where: revisionId
+              ? {
+                  revisionId
+                }
+              : {
+                  evaluationId,
+                  revisionId: null
+                },
+            orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+            select: {
+              id: true,
+              title: true,
+              kind: true,
+              evidenceBasis: true,
+              ownerName: true,
+              sourceDate: true,
+              sourceUrl: true,
+              linkedTopicCode: true,
+              fileName: true
+            }
+          })
+        : Promise.resolve([]),
+      revisionId && submissionDelegate
+        ? submissionDelegate.findFirst({
+            where: {
+              evaluationId,
+              revisionId
+            },
+            orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+            select: {
+              programId: true,
+              status: true,
+              lastReviewedAt: true,
+              program: {
+                select: {
+                  name: true,
+                  primaryLabel: true,
+                  partnerLabel: true,
+                  coBrandingLabel: true,
+                  watermarkLabel: true
+                }
+              },
+              reviewAssignments: {
+                select: {
+                  status: true
+                }
+              }
+            }
+          })
+        : Promise.resolve(null)
+    ]);
+
+    return {
+      evidenceSummary: {
+        totalCount: evidenceItems.length,
+        items: evidenceItems.map((item: (typeof evidenceItems)[number]) => ({
+          id: item.id,
+          title: item.title,
+          kind: item.kind as 'file' | 'link' | 'note',
+          evidenceBasis: item.evidenceBasis,
+          ownerName: item.ownerName,
+          sourceDate: item.sourceDate ? item.sourceDate.toISOString().slice(0, 10) : null,
+          sourceUrl: item.sourceUrl,
+          linkedTopicCode: item.linkedTopicCode,
+          fileName: item.fileName
+        }))
+      },
+      programBranding: submission
+        ? {
+            primaryLabel: submission.program.primaryLabel,
+            partnerLabel: submission.program.partnerLabel,
+            coBrandingLabel: submission.program.coBrandingLabel,
+            watermarkLabel: submission.program.watermarkLabel
+          }
+        : null,
+      submissionReviewState: submission
+        ? {
+            programId: submission.programId,
+            programName: submission.program.name,
+            submissionStatus: submission.status as
+              | 'draft'
+              | 'submitted'
+              | 'in_review'
+              | 'changes_requested'
+              | 'approved'
+              | 'archived',
+            lastReviewedAt: submission.lastReviewedAt
+              ? submission.lastReviewedAt.toISOString()
+              : null,
+            reviewerStatusSummary: ['pending', 'in_review', 'changes_requested', 'approved'].map(
+              (status) => ({
+                status: status as 'pending' | 'in_review' | 'changes_requested' | 'approved',
+                count: submission.reviewAssignments.filter(
+                  (item: (typeof submission.reviewAssignments)[number]) => item.status === status
+                ).length
+              })
+            )
+          }
+        : null
     };
   }
 
@@ -1854,7 +2038,23 @@ export class EvaluationsService {
     const evaluation = await client.evaluation.findFirst({
       where: {
         id: evaluationId,
-        userId
+        OR: [
+          {
+            userId
+          },
+          {
+            organization: {
+              members: {
+                some: {
+                  userId,
+                  role: {
+                    in: ['owner', 'manager', 'member']
+                  }
+                }
+              }
+            }
+          }
+        ]
       },
       select: {
         id: true
@@ -1874,7 +2074,23 @@ export class EvaluationsService {
     const evaluation = await client.evaluation.findFirst({
       where: {
         id: evaluationId,
-        userId
+        OR: [
+          {
+            userId
+          },
+          {
+            organization: {
+              members: {
+                some: {
+                  userId,
+                  role: {
+                    in: ['owner', 'manager', 'member']
+                  }
+                }
+              }
+            }
+          }
+        ]
       },
       select: {
         id: true,
@@ -1897,7 +2113,23 @@ export class EvaluationsService {
     const evaluation = await client.evaluation.findFirst({
       where: {
         id: evaluationId,
-        userId
+        OR: [
+          {
+            userId
+          },
+          {
+            organization: {
+              members: {
+                some: {
+                  userId,
+                  role: {
+                    in: ['owner', 'manager', 'member']
+                  }
+                }
+              }
+            }
+          }
+        ]
       },
       select: evaluationStateSelect
     });
@@ -1930,7 +2162,23 @@ export class EvaluationsService {
         id: artifactId,
         evaluationId,
         evaluation: {
-          userId
+          OR: [
+            {
+              userId
+            },
+            {
+              organization: {
+                members: {
+                  some: {
+                    userId,
+                    role: {
+                      in: ['owner', 'manager', 'member']
+                    }
+                  }
+                }
+              }
+            }
+          ]
         }
       },
       select: artifactSelect
@@ -1949,7 +2197,23 @@ export class EvaluationsService {
         id: narrativeId,
         evaluationId,
         evaluation: {
-          userId
+          OR: [
+            {
+              userId
+            },
+            {
+              organization: {
+                members: {
+                  some: {
+                    userId,
+                    role: {
+                      in: ['owner', 'manager', 'member']
+                    }
+                  }
+                }
+              }
+            }
+          ]
         }
       },
       select: narrativeSelect
@@ -1966,7 +2230,11 @@ export class EvaluationsService {
     return {
       id: evaluation.id,
       name: evaluation.name,
-      country: evaluation.country,
+      country: this.presentCountry(evaluation.country),
+      businessCategoryMain: evaluation.businessCategoryMain,
+      businessCategorySubcategory: evaluation.businessCategorySubcategory,
+      extendedNaceCode: evaluation.extendedNaceCode,
+      extendedNaceLabel: evaluation.extendedNaceLabel,
       naceDivision: evaluation.naceDivision,
       currentStage: evaluation.currentStage,
       status: evaluation.status,
@@ -2044,6 +2312,7 @@ export class EvaluationsService {
       outputTokens: narrative.outputTokens ?? null,
       estimatedCostUsd: narrative.estimatedCostUsd ?? null,
       content: narrative.content,
+      sourceReferences: this.parseNarrativeSourceReferences(narrative.sourceReferences),
       requestedAt: narrative.requestedAt.toISOString(),
       readyAt: narrative.readyAt ? narrative.readyAt.toISOString() : null,
       failedAt: narrative.failedAt ? narrative.failedAt.toISOString() : null,
@@ -2075,6 +2344,32 @@ export class EvaluationsService {
         action: actionsByRecommendationId.get(recommendation.id) ?? null
       }))
     };
+  }
+
+  private parseNarrativeSourceReferences(value: Prisma.JsonValue | null | undefined) {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value.map((item) => {
+      const record =
+        typeof item === 'object' && item
+          ? (item as Record<string, unknown>)
+          : ({} as Record<string, unknown>);
+
+      return {
+        type:
+          record.type === 'guidance_article' ||
+          record.type === 'evidence_item' ||
+          record.type === 'report_section'
+            ? record.type
+            : 'report_section',
+        id: typeof record.id === 'string' ? record.id : null,
+        label: typeof record.label === 'string' ? record.label : 'Source',
+        href: typeof record.href === 'string' ? record.href : null,
+        description: typeof record.description === 'string' ? record.description : null
+      } satisfies EvaluationNarrativeSourceReference;
+    });
   }
 
   private async logRevisionCreated(
@@ -2298,6 +2593,23 @@ export class EvaluationsService {
       throw new NotFoundException('Narrative job payload not found.');
     }
 
+    const guidanceArticles = await this.prismaService.knowledgeArticle.findMany({
+      where: {
+        category: {
+          in: this.getGuidanceCategoriesForNarrativeKind(narrative.kind)
+        }
+      },
+      orderBy: [{ sortOrder: 'asc' }, { updatedAt: 'desc' }],
+      take: 4,
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        summary: true,
+        category: true
+      }
+    });
+
     return {
       id: narrative.id,
       evaluationId: narrative.evaluationId,
@@ -2307,7 +2619,14 @@ export class EvaluationsService {
       report: await this.hydrateRevisionReport(
         narrative.revisionId,
         narrative.revision.reportSnapshot
-      )
+      ),
+      guidanceArticles: guidanceArticles.map((article: (typeof guidanceArticles)[number]) => ({
+        id: article.id,
+        slug: article.slug,
+        title: article.title,
+        summary: article.summary,
+        category: article.category
+      }))
     };
   }
 
@@ -2347,6 +2666,7 @@ export class EvaluationsService {
       outputTokens?: number | null;
       estimatedCostUsd?: number | null;
       content: string;
+      sourceReferences?: EvaluationNarrativeSourceReference[];
     }
   ) {
     const narrative = await this.prismaService.evaluationNarrative.update({
@@ -2362,6 +2682,7 @@ export class EvaluationsService {
         outputTokens: input.outputTokens ?? null,
         estimatedCostUsd: input.estimatedCostUsd ?? null,
         content: input.content,
+        sourceReferences: (input.sourceReferences ?? []) as Prisma.InputJsonValue,
         readyAt: new Date(),
         failedAt: null,
         errorMessage: null
@@ -2382,6 +2703,22 @@ export class EvaluationsService {
         model: input.model
       }
     });
+  }
+
+  private getGuidanceCategoriesForNarrativeKind(
+    kind: EvaluationNarrativeRecord['kind']
+  ): Array<'how_it_works' | 'methodology' | 'sdg_esrs' | 'partner' | 'contact'> {
+    switch (kind) {
+      case 'material_topics':
+        return ['methodology', 'sdg_esrs'];
+      case 'evidence_guidance':
+        return ['how_it_works', 'methodology'];
+      case 'risks_opportunities':
+        return ['methodology', 'sdg_esrs'];
+      case 'executive_summary':
+      default:
+        return ['how_it_works', 'methodology'];
+    }
   }
 
   async markNarrativeFailed(narrativeId: string, errorMessage: string) {
@@ -2461,6 +2798,10 @@ export class EvaluationsService {
     const fields = [
       ['name', 'Startup name'],
       ['country', 'Country'],
+      ['businessCategoryMain', 'Business category'],
+      ['businessCategorySubcategory', 'Business subcategory'],
+      ['extendedNaceCode', 'Extended NACE code'],
+      ['extendedNaceLabel', 'Extended NACE label'],
       ['naceDivision', 'NACE division'],
       ['offeringType', 'Offering type'],
       ['launched', 'Launched'],
@@ -2654,11 +2995,51 @@ export class EvaluationsService {
     };
   }
 
+  private presentCountry(country: string | null) {
+    return country?.trim() ? country : 'Not specified';
+  }
+
+  private normalizeContextForPersistence(payload: EvaluationContextPayload) {
+    const matchingExtendedNace = payload.extendedNaceCode
+      ? (getExtendedNaceOptions().find((entry) => entry.code === payload.extendedNaceCode) ?? null)
+      : null;
+    const normalizedBusinessSubcategory =
+      payload.businessCategorySubcategory ??
+      matchingExtendedNace?.divisionLabel ??
+      payload.naceDivision ??
+      null;
+    const normalizedNaceDivision =
+      payload.naceDivision ??
+      (matchingExtendedNace
+        ? `${matchingExtendedNace.divisionCode} ${matchingExtendedNace.divisionLabel}`
+        : (normalizedBusinessSubcategory ??
+          payload.businessCategoryMain ??
+          'Unspecified business category'));
+
+    return {
+      name: payload.name,
+      country: payload.country,
+      businessCategoryMain: payload.businessCategoryMain ?? null,
+      businessCategorySubcategory: normalizedBusinessSubcategory,
+      extendedNaceCode: payload.extendedNaceCode ?? null,
+      extendedNaceLabel: payload.extendedNaceLabel ?? matchingExtendedNace?.label ?? null,
+      naceDivision: normalizedNaceDivision,
+      offeringType: payload.offeringType,
+      launched: payload.launched,
+      currentStage: payload.currentStage,
+      innovationApproach: payload.innovationApproach
+    };
+  }
+
   private toContextPayload(
     evaluation: Pick<
       EvaluationStateRecord,
       | 'name'
       | 'country'
+      | 'businessCategoryMain'
+      | 'businessCategorySubcategory'
+      | 'extendedNaceCode'
+      | 'extendedNaceLabel'
       | 'naceDivision'
       | 'offeringType'
       | 'launched'
@@ -2669,6 +3050,10 @@ export class EvaluationsService {
     return {
       name: evaluation.name,
       country: evaluation.country,
+      businessCategoryMain: evaluation.businessCategoryMain,
+      businessCategorySubcategory: evaluation.businessCategorySubcategory,
+      extendedNaceCode: evaluation.extendedNaceCode,
+      extendedNaceLabel: evaluation.extendedNaceLabel,
       naceDivision: evaluation.naceDivision,
       offeringType: evaluation.offeringType,
       launched: evaluation.launched,

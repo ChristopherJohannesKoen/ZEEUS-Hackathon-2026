@@ -25,6 +25,8 @@ import { EvaluationsModule } from './evaluations/evaluations.module';
 import { EvaluationsController } from './evaluations/evaluations.controller';
 import { IdentityModule } from './identity/identity.module';
 import { IdentityController, ScimController } from './identity/identity.controller';
+import { PlatformModule } from './platform/platform.module';
+import { PlatformController } from './platform/platform.controller';
 import { UsersModule } from './users/users.module';
 import { UsersController } from './users/users.controller';
 
@@ -54,6 +56,7 @@ const internalSurfacesEnabled = readBooleanConfig(process.env.ENABLE_INTERNAL_SU
     UsersModule,
     ...(internalSurfacesEnabled ? [AdminModule] : []),
     EvaluationsModule,
+    PlatformModule,
     HealthModule
   ],
   providers: [
@@ -76,6 +79,7 @@ export class AppModule implements NestModule {
           AuthController,
           UsersController,
           EvaluationsController,
+          PlatformController,
           HealthController,
           ...(internalSurfacesEnabled ? [IdentityController, AdminController, ScimController] : [])
         ]

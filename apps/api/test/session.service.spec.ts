@@ -107,6 +107,28 @@ describe('SessionService', () => {
     expect(service.decodeSessionCookieToken(`${encodedToken}tampered`)).toBeUndefined();
   });
 
+  it('uses SameSite=None for Hugging Face hosted production cookies', () => {
+    const service = new SessionService(
+      {} as never,
+      createConfigService({
+        NODE_ENV: 'production',
+        SPACE_HOST: 'christopherjkoen-zeeus-ultimate-site.hf.space',
+        APP_URL: 'https://christopherjkoen-zeeus-ultimate-site.hf.space'
+      }) as never,
+      createMetricsService() as never,
+      createSecretService() as never
+    );
+
+    expect(service.getCookieOptions(new Date('2026-04-15T00:00:00.000Z'))).toMatchObject({
+      sameSite: 'none',
+      secure: true
+    });
+    expect(service.getClearCookieOptions()).toMatchObject({
+      sameSite: 'none',
+      secure: true
+    });
+  });
+
   it('invalidates sessions for disabled users on the next request', async () => {
     const prismaService = {
       session: {

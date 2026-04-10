@@ -83,7 +83,11 @@ function buildEvaluationStateFixture(
   const context: EvaluationContextPayload = {
     name: 'EcoGrid Pilot',
     country: 'South Africa',
-    naceDivision: 'A',
+    businessCategoryMain: 'Information and Communication',
+    businessCategorySubcategory: 'Computer programming, consultancy and related activities',
+    extendedNaceCode: '62.10',
+    extendedNaceLabel: '62.10 Computer programming activities',
+    naceDivision: '62 Computer programming, consultancy and related activities',
     offeringType: 'product',
     launched: true,
     currentStage: overrides.currentStage ?? 'validation',
@@ -138,8 +142,13 @@ function buildEvaluationStateFixture(
     id: 'evaluation_1',
     userId: currentUser.id,
     name: context.name,
-    country: context.country,
-    naceDivision: context.naceDivision,
+    country: context.country ?? 'South Africa',
+    businessCategoryMain: context.businessCategoryMain,
+    businessCategorySubcategory: context.businessCategorySubcategory,
+    extendedNaceCode: context.extendedNaceCode,
+    extendedNaceLabel: context.extendedNaceLabel,
+    naceDivision:
+      context.naceDivision ?? '62 Computer programming, consultancy and related activities',
     offeringType: context.offeringType,
     launched: context.launched,
     currentStage: context.currentStage,
@@ -217,8 +226,13 @@ function buildReportFixture(
 ) {
   const initialSummary = buildInitialSummary({
     name: state.name,
-    country: state.country,
-    naceDivision: state.naceDivision,
+    country: state.country ?? 'South Africa',
+    businessCategoryMain: state.businessCategoryMain,
+    businessCategorySubcategory: state.businessCategorySubcategory,
+    extendedNaceCode: state.extendedNaceCode,
+    extendedNaceLabel: state.extendedNaceLabel,
+    naceDivision:
+      state.naceDivision ?? '62 Computer programming, consultancy and related activities',
     offeringType: state.offeringType,
     launched: state.launched,
     currentStage: state.currentStage,
@@ -300,8 +314,13 @@ function buildReportFixture(
   const detail = {
     id: state.id,
     name: state.name,
-    country: state.country,
-    naceDivision: state.naceDivision,
+    country: state.country ?? 'South Africa',
+    businessCategoryMain: state.businessCategoryMain,
+    businessCategorySubcategory: state.businessCategorySubcategory,
+    extendedNaceCode: state.extendedNaceCode,
+    extendedNaceLabel: state.extendedNaceLabel,
+    naceDivision:
+      state.naceDivision ?? '62 Computer programming, consultancy and related activities',
     offeringType: state.offeringType,
     launched: state.launched,
     currentStage: state.currentStage,
@@ -356,15 +375,31 @@ describe('EvaluationsService', () => {
     await expect(
       service.compareRevisions(currentUser, 'evaluation_1', 4, 4)
     ).rejects.toBeInstanceOf(BadRequestException);
-    expect(prismaService.evaluation.findFirst).toHaveBeenCalledWith({
-      where: {
-        id: 'evaluation_1',
-        userId: currentUser.id
-      },
-      select: {
-        id: true
-      }
-    });
+    expect(prismaService.evaluation.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          id: 'evaluation_1',
+          OR: expect.arrayContaining([
+            expect.objectContaining({ userId: currentUser.id }),
+            expect.objectContaining({
+              organization: {
+                members: {
+                  some: {
+                    userId: currentUser.id,
+                    role: {
+                      in: ['owner', 'manager', 'member']
+                    }
+                  }
+                }
+              }
+            })
+          ])
+        }),
+        select: {
+          id: true
+        }
+      })
+    );
   });
 
   it('compares immutable revisions using stored report snapshots', async () => {

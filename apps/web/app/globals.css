@@ -9,10 +9,11 @@
   --zeeus-green-2: #39b54a;
   --zeeus-green-3: #3fa535;
   --zeeus-dark: #00654a;
-  --surface: #f8faf7;
+  --surface: #fcfef9;
   --surface-card: #ffffff;
-  --surface-border: #e5eddf;
-  --surface-muted: #eff5eb;
+  --surface-border: #dfe9d5;
+  --surface-muted: #eff6e8;
+  --font-brand-stack: var(--font-brand), 'Avenir Next', Montserrat, Poppins, Arial, sans-serif;
 }
 
 *,
@@ -29,9 +30,11 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
+  font-family: var(--font-brand-stack);
   background:
-    radial-gradient(circle at top left, rgba(185, 224, 33, 0.18), transparent 26rem),
-    radial-gradient(circle at top right, rgba(57, 181, 74, 0.08), transparent 20rem), var(--surface);
+    radial-gradient(circle at top left, rgba(185, 224, 33, 0.16), transparent 26rem),
+    radial-gradient(circle at top right, rgba(57, 181, 74, 0.1), transparent 22rem),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 252, 240, 0.55)), var(--surface);
   color: #163126;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -51,6 +54,11 @@ h6 {
   letter-spacing: -0.02em;
 }
 
+::selection {
+  background: rgba(185, 224, 33, 0.35);
+  color: #06291f;
+}
+
 .pattern-dots {
   background-image: radial-gradient(circle, rgba(57, 181, 74, 0.1) 1px, transparent 1px);
   background-size: 20px 20px;
@@ -60,6 +68,13 @@ h6 {
   background-image:
     radial-gradient(circle at 18% 25%, rgba(185, 224, 33, 0.12) 0%, transparent 40%),
     radial-gradient(circle at 82% 74%, rgba(57, 181, 74, 0.09) 0%, transparent 44%);
+}
+
+.pattern-brand-outline {
+  background-image: url('/brand/zeeus/patterns/pattern-outline-green.png');
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
 }
 
 .btn-primary {

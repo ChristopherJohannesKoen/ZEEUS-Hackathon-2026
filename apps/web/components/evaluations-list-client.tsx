@@ -29,6 +29,7 @@ export function EvaluationsListClient({ evaluations }: { evaluations: Evaluation
         const matchesQuery =
           evaluation.name.toLowerCase().includes(query.toLowerCase()) ||
           evaluation.country.toLowerCase().includes(query.toLowerCase()) ||
+          (evaluation.businessCategoryMain ?? '').toLowerCase().includes(query.toLowerCase()) ||
           evaluation.naceDivision.toLowerCase().includes(query.toLowerCase());
         const matchesStatus = statusFilter === 'all' || evaluation.status === statusFilter;
         return matchesQuery && matchesStatus;
@@ -42,7 +43,7 @@ export function EvaluationsListClient({ evaluations }: { evaluations: Evaluation
         <input
           className="min-w-[240px] flex-1 rounded-2xl border border-surface-border bg-white px-4 py-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-brand-dark"
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search by startup, country, or NACE division"
+          placeholder="Search by startup, country, business category, or NACE division"
           type="search"
           value={query}
         />
@@ -98,7 +99,8 @@ export function EvaluationsListClient({ evaluations }: { evaluations: Evaluation
                   <div>
                     <h2 className="text-2xl font-black text-slate-950">{evaluation.name}</h2>
                     <p className="mt-2 text-sm text-slate-600">
-                      {evaluation.country} / {evaluation.naceDivision}
+                      {evaluation.country} /{' '}
+                      {evaluation.businessCategoryMain ?? evaluation.naceDivision}
                     </p>
                   </div>
                 </div>

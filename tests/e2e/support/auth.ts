@@ -21,13 +21,7 @@ export async function signIn(page: Page, credentials: Credentials) {
   await page.goto('/login');
   await page.getByTestId('sign-in-email').fill(credentials.email);
   await page.getByTestId('sign-in-password').fill(credentials.password);
-  await Promise.all([
-    page.waitForResponse(
-      (candidate) =>
-        candidate.url().includes('/api/auth/login') && candidate.request().method() === 'POST'
-    ),
-    page.getByTestId('sign-in-submit').click()
-  ]);
+  await page.getByTestId('sign-in-submit').click();
   await expect(page).toHaveURL(/\/app$/);
 }
 
@@ -36,13 +30,7 @@ export async function signUp(page: Page, payload: SignupPayload) {
   await page.getByTestId('sign-up-name').fill(payload.name);
   await page.getByTestId('sign-up-email').fill(payload.email);
   await page.getByTestId('sign-up-password').fill(payload.password);
-  await Promise.all([
-    page.waitForResponse(
-      (candidate) =>
-        candidate.url().includes('/api/auth/signup') && candidate.request().method() === 'POST'
-    ),
-    page.getByTestId('sign-up-submit').click()
-  ]);
+  await page.getByTestId('sign-up-submit').click();
   await expect(page).toHaveURL(/\/app$/);
 }
 

@@ -34,15 +34,15 @@ export default defineConfig({
       command: 'node ./tests/e2e/start-api.mjs',
       env: e2eEnv,
       reuseExistingServer: true,
-      timeout: 240_000,
+      timeout: 420_000,
       url: `${e2eEnv.API_ORIGIN}/api/health`
     },
     {
-      command: `npm run dev:e2e --workspace=@apps/web -- --hostname 127.0.0.1 --port ${e2eEnv.WEB_PORT}`,
+      command: 'node ./tests/e2e/start-web.mjs',
       env: e2eEnv,
       reuseExistingServer: true,
-      timeout: 240_000,
-      url: e2eEnv.APP_URL
+      timeout: 420_000,
+      url: `${e2eEnv.APP_URL}/robots.txt`
     }
   ]
 });

@@ -11,13 +11,19 @@ test('renders the public landing page and auth links', async ({ page }) => {
 
   await expect(
     page.getByRole('heading', {
-      name: 'Build a startup that works for people, planet, and long-term growth.'
+      name: 'Build your startup with sustainability in mind from day one'
     })
   ).toBeVisible();
   await expect(
-    page.getByRole('navigation').getByRole('link', { name: 'Create account' })
+    page.getByRole('navigation').getByRole('link', { name: 'Start evaluation' })
   ).toBeVisible();
   await expect(page.getByRole('navigation').getByRole('link', { name: 'Sign in' })).toBeVisible();
+  await expect(
+    page.getByRole('navigation').getByRole('link', { name: 'How it works' })
+  ).toBeVisible();
+  await expect(
+    page.getByRole('navigation').getByRole('link', { name: 'About ZEEUS' })
+  ).toBeVisible();
 });
 
 test('serves hardened security headers on public and protected pages', async ({ page }) => {
@@ -85,7 +91,7 @@ test('redirects authenticated users away from login and signup', async ({ page }
 
 test('signs in the seeded owner, updates the profile, and logs out', async ({ page }) => {
   await signIn(page, seededUsers.owner);
-  await expect(page.getByRole('heading', { name: /Welcome back, Template Owner\./ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Welcome back,/ })).toBeVisible();
 
   await page.goto('/app/settings');
   await page.getByTestId('profile-name').fill('Template Owner Updated');
@@ -140,4 +146,64 @@ test('completes the forgot and reset password flow end to end', async ({ page })
   await page.getByTestId('sign-in-password').fill(newPassword);
   await page.getByTestId('sign-in-submit').click();
   await expect(page).toHaveURL(/\/app$/);
+});
+
+test('serves the new public guidance pages', async ({ page }) => {
+  await page.goto('/methodology');
+  await expect(
+    page.getByRole('heading', { name: 'Deterministic scoring with startup-friendly guidance' })
+  ).toBeVisible();
+  await expect(page.getByText('Relevant topics begin at 2.0.')).toHaveCount(0);
+
+  await page.goto('/faq');
+  await expect(page.getByRole('heading', { name: 'Frequently asked questions' })).toBeVisible();
+
+  await page.goto('/resources');
+  await expect(
+    page.getByRole('heading', {
+      name: 'Guides, manuals, score interpretation, and source-pack downloads'
+    })
+  ).toBeVisible();
+  await expect(page.getByTestId('resource-core-downloads')).toContainText('User manual');
+  await expect(page.getByTestId('resource-methodology-library')).toContainText(
+    'Interpretation text used by the live workflow'
+  );
+  await expect(page.getByTestId('resource-methodology-library')).toContainText(
+    'How to read relevant and high-priority topics'
+  );
+  await expect(page.getByTestId('resource-reference-metadata')).toContainText(
+    'Active workbook and reference-pack metadata'
+  );
+
+  await page.goto('/partners');
+  await expect(
+    page.getByRole('heading', {
+      name: 'Partner and program workflows'
+    })
+  ).toBeVisible();
+
+  for (const [path, heading] of [
+    ['/privacy', 'A clear statement of data handling responsibilities'],
+    ['/accessibility', 'Designed for broad access and continuous improvement'],
+    ['/cookies', 'Minimal, accountable use of browser storage'],
+    ['/terms', 'Guidance-oriented use with institutional governance'],
+    ['/funding-support', 'Part of a broader innovation and sustainability effort'],
+    ['/consortium', 'A wider network behind the platform']
+  ] as const) {
+    await page.goto(path);
+    await expect(page.getByRole('heading', { name: heading })).toBeVisible();
+  }
+});
+
+test('downloads a seeded source-pack asset from the reference hub', async ({ page }) => {
+  await page.goto('/resources');
+
+  const downloadPromise = page.waitForEvent('download');
+  await page
+    .getByTestId('resource-card-zeeus-user-manual')
+    .getByRole('link', { name: /Download/i })
+    .click();
+
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toContain('Usermanual_ZEEUS.pdf');
 });

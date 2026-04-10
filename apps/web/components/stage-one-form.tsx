@@ -1,9 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Card, Field, Select, Textarea } from '@packages/ui';
-import { getFinancialIndicatorOptions } from '@packages/scoring';
+import { getFinancialIndicatorOptions, getWorkbookGuidance } from '@packages/scoring';
 import type {
   EvaluationDetail,
   Stage1FinancialAnswersPayload,
@@ -32,6 +33,7 @@ const evidenceOptions = [
   { value: 'estimated', label: 'Estimated' },
   { value: 'assumed', label: 'Assumed' }
 ] as const;
+const workbookGuidance = getWorkbookGuidance();
 
 function normaliseTopicAnswer(item: Stage1TopicAnswer, applicable: boolean): Stage1TopicAnswer {
   if (applicable) {
@@ -119,14 +121,34 @@ export function StageOneForm({ evaluation }: { evaluation: EvaluationDetail }) {
             topics use the deterministic formula{' '}
             <strong>((Magnitude + Scale + Irreversibility) / 3) x Likelihood</strong>.
           </p>
+          <p className="text-sm leading-7 text-slate-600">
+            Open the{' '}
+            <Link className="font-semibold text-brand-dark underline" href="/resources">
+              reference hub
+            </Link>{' '}
+            if you need the workbook score sheet, manual, or deeper explanation before saving Stage
+            I.
+          </p>
         </div>
 
         <details className="mt-5 rounded-2xl border border-[#dbe8cf] bg-[#fbfdf7] p-4 text-sm text-[#566953]">
           <summary className="cursor-pointer font-semibold text-[#355d2d]">Formula help</summary>
           <p className="mt-3 leading-7">
-            Preserve Excel parity. Topics below 2 stay low-priority. Topics from 2 to below 2.5 are
-            shown as relevant, and 2.5 or above are shown as high priority.
+            Preserve workbook parity. Stage I uses
+            <strong> ((Magnitude + Scale + Irreversibility) / 3) x Likelihood</strong> and the
+            workbook score bands below.
           </p>
+          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+            {workbookGuidance.scoreInterpretation.bands.map((band) => (
+              <div className="rounded-2xl border border-[#dbe8cf] bg-white p-3" key={band.key}>
+                <p className="text-xs uppercase tracking-[0.18em] text-[#607557]">
+                  {band.scoreRangeLabel}
+                </p>
+                <p className="mt-2 font-semibold text-slate-950">{band.title}</p>
+                <p className="mt-2 text-xs leading-6 text-slate-600">{band.interpretation}</p>
+              </div>
+            ))}
+          </div>
         </details>
       </Card>
 
@@ -394,6 +416,17 @@ export function StageOneForm({ evaluation }: { evaluation: EvaluationDetail }) {
                 <p className="mt-4 text-xs font-semibold uppercase tracking-[0.22em] text-[#607557]">
                   Current band: {formatEnumLabel(item.priorityBand)}
                 </p>
+                {item.interpretation ? (
+                  <p className="mt-2 text-sm leading-7 text-slate-600">{item.interpretation}</p>
+                ) : null}
+                {item.guidance ? (
+                  <div className="mt-3 rounded-2xl border border-[#dbe8cf] bg-white p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-[#607557]">
+                      Workbook guidance
+                    </p>
+                    <p className="mt-2 text-sm leading-7 text-slate-600">{item.guidance}</p>
+                  </div>
+                ) : null}
 
                 <div className="mt-4">
                   <Field

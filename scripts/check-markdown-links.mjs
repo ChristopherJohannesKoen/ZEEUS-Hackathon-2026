@@ -4,7 +4,9 @@ import process from 'node:process';
 
 const rootDirectory = process.cwd();
 const ignoredDirectories = new Set([
+  '.artifacts',
   '.git',
+  '.hf-space-build',
   '.next',
   'coverage',
   'dist',

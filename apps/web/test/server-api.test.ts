@@ -85,6 +85,21 @@ describe('server-api helpers', () => {
     );
   });
 
+  it('returns undefined for optional current-user requests when the auth probe fails upstream', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response('<html>gateway timeout</html>', {
+        headers: { 'content-type': 'text/html' },
+        status: 502
+      })
+    );
+
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { getOptionalCurrentUser } = await import('../lib/server-api');
+
+    await expect(getOptionalCurrentUser()).resolves.toBeUndefined();
+  });
+
   it('rethrows upstream failures when resolving the current user', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       jsonResponse(

@@ -3,6 +3,10 @@ import {
   buildDashboard,
   buildImpactSummary,
   buildInitialSummary,
+  getBusinessCategoryOptions,
+  getBusinessSubcategoryOptions,
+  getExtendedNaceOptions,
+  getWorkbookGuidance,
   scoreFinancialAnswers,
   scoreStage1TopicAnswer,
   scoreStage2OpportunityAnswer,
@@ -49,6 +53,10 @@ describe('scoring package', () => {
     const summary = buildInitialSummary({
       name: 'Example Startup',
       country: 'Germany',
+      businessCategoryMain: 'Information and Communication',
+      businessCategorySubcategory: '62 Computer programming, consultancy and related activities',
+      extendedNaceCode: '62.01',
+      extendedNaceLabel: '62.01 Computer programming activities',
       naceDivision: '62 Computer programming, consultancy and related activities',
       offeringType: 'product',
       launched: false,
@@ -62,6 +70,26 @@ describe('scoring package', () => {
       summary.mergedSdgs.find((item: { number: number; sourceType: string }) => item.number === 8)
         ?.sourceType
     ).toBe('both');
+    expect(summary.screeningContextLabel).toContain('62.01');
+    expect(summary.explanationBlocks.length).toBeGreaterThan(0);
+  });
+
+  it('exposes workbook taxonomy and guidance accessors', () => {
+    const categories = getBusinessCategoryOptions();
+    const subcategories = getBusinessSubcategoryOptions('Information and Communication');
+    const extendedNace = getExtendedNaceOptions({
+      businessCategoryMain: 'Information and Communication'
+    });
+    const guidance = getWorkbookGuidance();
+
+    expect(categories.some((item) => item.label === 'Information and Communication')).toBe(true);
+    expect(subcategories.length).toBeGreaterThan(0);
+    expect(extendedNace.length).toBeGreaterThan(0);
+    expect(
+      guidance.scoreInterpretation.bands.find((item) => item.key === 'high_priority')
+        ?.scoreRangeLabel
+    ).toContain('2.5');
+    expect(guidance.riskMatrixLegend.entries.length).toBeGreaterThan(0);
   });
 
   it('matches the example workbook financial total', () => {
@@ -100,6 +128,21 @@ describe('scoring package', () => {
     expect(highPriorityTopic.priorityBand).toBe('high_priority');
   });
 
+  it('promotes topics at 2.5 or higher into the high-priority band', () => {
+    const thresholdTopic = scoreStage1TopicAnswer({
+      topicCode: 'E2',
+      applicable: true,
+      magnitude: 'significant',
+      scale: 'significant',
+      irreversibility: 'high',
+      likelihood: 'likely',
+      evidenceBasis: 'measured'
+    });
+
+    expect(thresholdTopic.impactScore).toBe(2.5);
+    expect(thresholdTopic.priorityBand).toBe('high_priority');
+  });
+
   it('scores stage two risk and opportunity matrices deterministically', () => {
     const risk = scoreStage2RiskAnswer({
       riskCode: 'climate_policy_risk',
@@ -126,6 +169,10 @@ describe('scoring package', () => {
     const initialSummary = buildInitialSummary({
       name: 'Example Startup',
       country: 'Germany',
+      businessCategoryMain: 'Information and Communication',
+      businessCategorySubcategory: '62 Computer programming, consultancy and related activities',
+      extendedNaceCode: '62.01',
+      extendedNaceLabel: '62.01 Computer programming activities',
       naceDivision: '62 Computer programming, consultancy and related activities',
       offeringType: 'product',
       launched: false,

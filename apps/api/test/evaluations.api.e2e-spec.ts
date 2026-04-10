@@ -39,7 +39,11 @@ function buildEvaluationPayload(name = 'EcoGrid Pilot'): CreateEvaluationPayload
   return {
     name,
     country: 'South Africa',
-    naceDivision: 'A1',
+    businessCategoryMain: 'Information and Communication',
+    businessCategorySubcategory: 'Computer programming, consultancy and related activities',
+    extendedNaceCode: '62.10',
+    extendedNaceLabel: '62.10 Computer programming activities',
+    naceDivision: '62 Computer programming, consultancy and related activities',
     offeringType: 'product',
     launched: true,
     currentStage: 'validation',
@@ -90,6 +94,20 @@ function buildStage2Payload(): SaveStage2Payload {
 }
 
 async function clearDatabase() {
+  await prisma.reviewComment.deleteMany();
+  await prisma.reviewAssignment.deleteMany();
+  await prisma.programSubmission.deleteMany();
+  await prisma.programMember.deleteMany();
+  await prisma.program.deleteMany();
+  await prisma.organizationInvitation.deleteMany();
+  await prisma.organizationMember.deleteMany();
+  await prisma.organization.deleteMany();
+  await prisma.evidenceAsset.deleteMany();
+  await prisma.scenarioRun.deleteMany();
+  await prisma.sdgTarget.deleteMany();
+  await prisma.caseStudy.deleteMany();
+  await prisma.faqEntry.deleteMany();
+  await prisma.knowledgeArticle.deleteMany();
   await prisma.evaluationNarrative.deleteMany();
   await prisma.evaluationRecommendationAction.deleteMany();
   await prisma.evaluationArtifact.deleteMany();
@@ -268,8 +286,10 @@ describe('Evaluations API (DB-backed)', () => {
     expect(created.status).toBe(201);
     const evaluationId = created.body.id as string;
 
-    expect((await saveStage1(app, owner, evaluationId)).status).toBe(200);
-    expect((await saveStage2(app, owner, evaluationId)).status).toBe(200);
+    const stage1Saved = await saveStage1(app, owner, evaluationId);
+    const stage2Saved = await saveStage2(app, owner, evaluationId);
+    expect(stage1Saved.status).toBe(200);
+    expect(stage2Saved.status).toBe(200);
     const completed = await completeEvaluation(app, owner, evaluationId);
 
     expect(completed.status).toBe(200);
@@ -333,8 +353,10 @@ describe('Evaluations API (DB-backed)', () => {
     const created = await createEvaluation(app, owner, buildEvaluationPayload('Artifact Pilot'));
     const evaluationId = created.body.id as string;
 
-    expect((await saveStage1(app, owner, evaluationId)).status).toBe(200);
-    expect((await saveStage2(app, owner, evaluationId)).status).toBe(200);
+    const stage1Saved = await saveStage1(app, owner, evaluationId);
+    const stage2Saved = await saveStage2(app, owner, evaluationId);
+    expect(stage1Saved.status).toBe(200);
+    expect(stage2Saved.status).toBe(200);
     expect((await completeEvaluation(app, owner, evaluationId)).status).toBe(200);
 
     const artifactResponse = await request(app.getHttpServer())
@@ -444,5 +466,238 @@ describe('Evaluations API (DB-backed)', () => {
     expect(benchmarks.status).toBe(200);
     expect(benchmarks.body.revisionNumber).toBeGreaterThan(0);
     expect(Array.isArray(benchmarks.body.metrics)).toBe(true);
+  });
+
+  it('supports binary evidence uploads, report evidence appendices, and writable program review flows', async () => {
+    const ownerEmail = `program-owner-${Date.now()}@example.com`;
+    const reviewerEmail = `program-reviewer-${Date.now()}@example.com`;
+    const owner = await signUp(app, ownerEmail);
+    await signUp(app, reviewerEmail);
+    const reviewerUser = await prisma.user.findUniqueOrThrow({
+      where: {
+        email: reviewerEmail
+      }
+    });
+
+    const organization = await prisma.organization.create({
+      data: {
+        slug: `org-${Date.now()}`,
+        name: 'Circular Launchpad',
+        description: 'Program host organization'
+      }
+    });
+
+    const ownerUser = await prisma.user.findFirstOrThrow({
+      where: {
+        email: ownerEmail
+      }
+    });
+
+    await prisma.organizationMember.createMany({
+      data: [
+        {
+          organizationId: organization.id,
+          userId: ownerUser.id,
+          role: 'owner'
+        },
+        {
+          organizationId: organization.id,
+          userId: reviewerUser.id,
+          role: 'reviewer'
+        }
+      ]
+    });
+
+    const program = await prisma.program.create({
+      data: {
+        organizationId: organization.id,
+        slug: `launchpad-${Date.now()}`,
+        name: 'Climate Launchpad',
+        summary: 'Partner review flow',
+        description: 'Program workflow for partner review.',
+        cohortLabel: '2026 Cohort',
+        status: 'active',
+        isPublic: true,
+        primaryLabel: 'ZEEUS',
+        partnerLabel: 'Climate Launchpad',
+        coBrandingLabel: 'KIC x EU'
+      }
+    });
+
+    await prisma.programMember.createMany({
+      data: [
+        {
+          programId: program.id,
+          userId: ownerUser.id,
+          role: 'manager'
+        },
+        {
+          programId: program.id,
+          userId: reviewerUser.id,
+          role: 'reviewer'
+        }
+      ]
+    });
+
+    await prisma.knowledgeArticle.create({
+      data: {
+        slug: 'methodology',
+        title: 'Methodology',
+        summary: 'Method guidance for reviewers.',
+        body: 'Methodology body',
+        category: 'methodology',
+        sortOrder: 1
+      }
+    });
+
+    const created = await createEvaluation(app, owner, buildEvaluationPayload('Program Pilot'));
+    expect(created.status).toBe(201);
+    const evaluationId = created.body.id as string;
+
+    await prisma.evaluation.update({
+      where: {
+        id: evaluationId
+      },
+      data: {
+        organizationId: organization.id
+      }
+    });
+
+    const stage1Saved = await saveStage1(app, owner, evaluationId);
+    const stage2Saved = await saveStage2(app, owner, evaluationId);
+    expect(stage1Saved.status).toBe(200);
+    expect(stage2Saved.status).toBe(200);
+
+    const evidenceUpload = await request(app.getHttpServer())
+      .post(`/evaluations/${evaluationId}/evidence/upload`)
+      .set('Cookie', owner.cookie)
+      .set('x-csrf-token', owner.csrfToken)
+      .set('idempotency-key', randomUUID())
+      .field('title', 'Lifecycle inventory')
+      .field('description', 'Measured pilot evidence for lifecycle claims.')
+      .field('ownerName', 'Operations lead')
+      .field('sourceDate', '2026-04-08')
+      .field('evidenceBasis', 'measured')
+      .field('confidenceWeight', '0.9')
+      .field('linkedTopicCode', 'E1')
+      .attach('file', Buffer.from('verified evidence payload'), 'lifecycle.txt');
+
+    expect(evidenceUpload.status).toBe(201);
+    expect(evidenceUpload.body.hasBinary).toBe(true);
+    expect(evidenceUpload.body.fileName).toBe('lifecycle.txt');
+
+    const createdSubmission = await request(app.getHttpServer())
+      .post(`/programs/${program.id}/submissions`)
+      .set('Cookie', owner.cookie)
+      .set('x-csrf-token', owner.csrfToken)
+      .set('idempotency-key', randomUUID())
+      .send({
+        evaluationId,
+        revisionNumber: stage2Saved.body.currentRevisionNumber as number
+      });
+
+    expect(createdSubmission.status).toBe(201);
+    const submissionId = createdSubmission.body.submissions[0].id as string;
+
+    const assignment = await request(app.getHttpServer())
+      .post(`/programs/${program.id}/submissions/${submissionId}/assignments`)
+      .set('Cookie', owner.cookie)
+      .set('x-csrf-token', owner.csrfToken)
+      .set('idempotency-key', randomUUID())
+      .send({
+        reviewerUserId: reviewerUser.id,
+        dueAt: '2026-04-30'
+      });
+
+    expect(assignment.status).toBe(201);
+    expect(assignment.body.reviewAssignments[0].reviewerUserId).toBe(reviewerUser.id);
+
+    const statusUpdate = await request(app.getHttpServer())
+      .put(`/programs/${program.id}/submissions/${submissionId}`)
+      .set('Cookie', owner.cookie)
+      .set('x-csrf-token', owner.csrfToken)
+      .send({
+        status: 'in_review'
+      });
+
+    expect(statusUpdate.status).toBe(200);
+
+    const comment = await request(app.getHttpServer())
+      .post(`/programs/${program.id}/submissions/${submissionId}/comments`)
+      .set('Cookie', owner.cookie)
+      .set('x-csrf-token', owner.csrfToken)
+      .set('idempotency-key', randomUUID())
+      .send({
+        body: 'Please attach the pilot methodology note to support the measured claim.'
+      });
+
+    expect(comment.status).toBe(201);
+    expect(comment.body.reviewComments[0].body).toContain('pilot methodology note');
+
+    const report = await request(app.getHttpServer())
+      .get(`/evaluations/${evaluationId}/report`)
+      .set('Cookie', owner.cookie);
+
+    expect(report.status).toBe(200);
+    expect(report.body.evidenceSummary.totalCount).toBe(1);
+    expect(report.body.programBranding.partnerLabel).toBe('Climate Launchpad');
+    expect(report.body.submissionReviewState.programId).toBe(program.id);
+
+    const narrativeResponse = await request(app.getHttpServer())
+      .post(`/evaluations/${evaluationId}/narratives`)
+      .set('Cookie', owner.cookie)
+      .set('x-csrf-token', owner.csrfToken)
+      .set('idempotency-key', randomUUID())
+      .send({ kind: 'evidence_guidance' });
+
+    expect(narrativeResponse.status).toBe(201);
+
+    const narrativeJob = await request(app.getHttpServer())
+      .get(`/internal/evaluations/narratives/${narrativeResponse.body.id}/job-data`)
+      .set('x-internal-service-token', internalServiceToken);
+
+    expect(narrativeJob.status).toBe(200);
+    expect(narrativeJob.body.report.evidenceSummary.totalCount).toBe(1);
+    expect(narrativeJob.body.guidanceArticles.length).toBeGreaterThan(0);
+
+    expect(
+      (
+        await request(app.getHttpServer())
+          .post(`/internal/evaluations/narratives/${narrativeResponse.body.id}/ready`)
+          .set('x-internal-service-token', internalServiceToken)
+          .send({
+            provider: 'openai',
+            model: 'gpt-5.4-mini',
+            promptVersion: 'integration-test',
+            inputTokens: 50,
+            outputTokens: 40,
+            estimatedCostUsd: 0.002,
+            content: 'Collect measured operating evidence and link it to the saved material topic.',
+            sourceReferences: [
+              {
+                type: 'guidance_article',
+                id: 'methodology',
+                label: 'Methodology',
+                href: '/methodology',
+                description: 'Method guidance for reviewers.'
+              },
+              {
+                type: 'evidence_item',
+                id: evidenceUpload.body.id,
+                label: 'Lifecycle inventory',
+                href: `/app/evaluate/${evaluationId}/evidence`,
+                description: 'lifecycle.txt'
+              }
+            ]
+          })
+      ).status
+    ).toBe(201);
+
+    const narratives = await request(app.getHttpServer())
+      .get(`/evaluations/${evaluationId}/narratives`)
+      .set('Cookie', owner.cookie);
+
+    expect(narratives.status).toBe(200);
+    expect(narratives.body.items[0].sourceReferences).toHaveLength(2);
   });
 });

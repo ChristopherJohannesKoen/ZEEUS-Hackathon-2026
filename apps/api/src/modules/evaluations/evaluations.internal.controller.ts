@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiHeader, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { EvaluationNarrativeSourceReferenceSchema } from '@packages/shared';
 import { z } from 'zod';
 import { InternalServiceGuard } from '../../common/guards/internal-service.guard';
 import { parseZodSchema } from '../../common/validation/zod-validation';
@@ -38,7 +39,8 @@ const markNarrativeReadyBodySchema = z.object({
   inputTokens: z.number().int().nonnegative().optional().nullable(),
   outputTokens: z.number().int().nonnegative().optional().nullable(),
   estimatedCostUsd: z.number().nonnegative().optional().nullable(),
-  content: z.string().min(1)
+  content: z.string().min(1),
+  sourceReferences: z.array(EvaluationNarrativeSourceReferenceSchema).default([])
 });
 
 @ApiTags('internal-evaluations')

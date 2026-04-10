@@ -7,6 +7,18 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
+function getRequestUrl(input: RequestInfo | URL) {
+  if (typeof input === 'string') {
+    return input;
+  }
+
+  if (input instanceof URL) {
+    return input.toString();
+  }
+
+  return input.url;
+}
+
 function evaluationResponse(overrides: Record<string, unknown> = {}) {
   return {
     id: 'evaluation_1',
@@ -68,22 +80,41 @@ describe('clientApiRequest', () => {
   it('retries an unsafe request once when the server returns csrf_invalid', async () => {
     const firstCsrfToken = 'csrf-token-one-1234567890abcdef123456';
     const secondCsrfToken = 'csrf-token-two-1234567890abcdef123456';
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(jsonResponse({ csrfToken: firstCsrfToken }))
-      .mockResolvedValueOnce(
-        jsonResponse(
-          {
-            statusCode: 403,
-            message: 'A valid CSRF token is required.',
-            code: 'csrf_invalid',
-            errors: []
-          },
-          403
-        )
-      )
-      .mockResolvedValueOnce(jsonResponse({ csrfToken: secondCsrfToken }))
-      .mockResolvedValueOnce(jsonResponse(evaluationResponse()));
+    let csrfRequestCount = 0;
+    let updateContextCount = 0;
+    const seenUpdateHeaders: Headers[] = [];
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const requestUrl = getRequestUrl(input);
+      const requestHeaders = new Headers(init?.headers);
+
+      if (requestUrl.endsWith('/api/auth/csrf')) {
+        csrfRequestCount += 1;
+        return jsonResponse({
+          csrfToken: csrfRequestCount === 1 ? firstCsrfToken : secondCsrfToken
+        });
+      }
+
+      if (requestUrl.endsWith('/api/evaluations/evaluation_1/context')) {
+        updateContextCount += 1;
+        seenUpdateHeaders.push(requestHeaders);
+
+        if (updateContextCount === 1) {
+          return jsonResponse(
+            {
+              statusCode: 403,
+              message: 'A valid CSRF token is required.',
+              code: 'csrf_invalid',
+              errors: []
+            },
+            403
+          );
+        }
+
+        return jsonResponse(evaluationResponse());
+      }
+
+      throw new Error(`Unexpected request in client-api test: ${requestUrl}`);
+    });
 
     vi.stubGlobal('fetch', fetchMock);
 
@@ -108,13 +139,10 @@ describe('clientApiRequest', () => {
       name: 'Updated assessment'
     });
 
-    expect(fetchMock).toHaveBeenCalledTimes(4);
-    expect(new Headers(fetchMock.mock.calls[1]?.[1]?.headers).get('X-CSRF-Token')).toBe(
-      firstCsrfToken
-    );
-    expect(new Headers(fetchMock.mock.calls[3]?.[1]?.headers).get('X-CSRF-Token')).toBe(
-      secondCsrfToken
-    );
+    expect(csrfRequestCount).toBe(2);
+    expect(updateContextCount).toBe(2);
+    expect(seenUpdateHeaders[0]?.get('x-csrf-token')).toBe(firstCsrfToken);
+    expect(seenUpdateHeaders[1]?.get('x-csrf-token')).toBe(secondCsrfToken);
   });
 
   it('does not replay a generic forbidden mutation', async () => {

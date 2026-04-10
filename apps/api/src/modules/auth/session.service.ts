@@ -287,11 +287,12 @@ export class SessionService {
 
   getCookieOptions(expiresAt: Date) {
     const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
+    const sameSite = this.getCookieSameSite();
 
     return {
       httpOnly: true,
-      sameSite: 'lax' as const,
-      secure: isProduction,
+      sameSite,
+      secure: isProduction || sameSite === 'none',
       expires: expiresAt,
       path: '/'
     };
@@ -299,11 +300,12 @@ export class SessionService {
 
   getClearCookieOptions() {
     const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
+    const sameSite = this.getCookieSameSite();
 
     return {
       httpOnly: true,
-      sameSite: 'lax' as const,
-      secure: isProduction,
+      sameSite,
+      secure: isProduction || sameSite === 'none',
       path: '/'
     };
   }
@@ -495,6 +497,30 @@ export class SessionService {
 
   private getSessionRotationWindowMs() {
     return Number(this.configService.get<string>('SESSION_ROTATION_MS', '43200000'));
+  }
+
+  private getCookieSameSite(): 'lax' | 'strict' | 'none' {
+    const configuredSameSite = this.configService
+      .get<string>('SESSION_COOKIE_SAME_SITE', '')
+      .trim()
+      .toLowerCase();
+
+    if (
+      configuredSameSite === 'lax' ||
+      configuredSameSite === 'strict' ||
+      configuredSameSite === 'none'
+    ) {
+      return configuredSameSite;
+    }
+
+    const spaceHost = this.configService.get<string>('SPACE_HOST', '').trim();
+    const appUrl = this.configService.get<string>('APP_URL', '').trim().toLowerCase();
+
+    if (spaceHost || appUrl.includes('.hf.space')) {
+      return 'none';
+    }
+
+    return 'lax';
   }
 
   private getSessionTouchIntervalMs() {

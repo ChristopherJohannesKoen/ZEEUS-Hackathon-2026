@@ -21,6 +21,7 @@ const environmentSchema = Joi.object({
   API_PREFIX: Joi.string().default('api'),
   DATABASE_URL: Joi.string().required(),
   SESSION_COOKIE_NAME: Joi.string().default('zeeus_assessment_session'),
+  SESSION_COOKIE_SAME_SITE: Joi.string().valid('lax', 'strict', 'none').allow('').optional(),
   SESSION_COOKIE_ENCRYPTION_KEY: Joi.string().hex().length(64).allow('').optional(),
   SESSION_COOKIE_ENCRYPTION_KEY_FILE: Joi.string().allow('').optional(),
   SSO_STATE_ENCRYPTION_KEY: Joi.string().hex().length(64).allow('').optional(),

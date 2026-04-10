@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { AuthTopLevelGuard } from '../../components/auth-top-level-guard';
 import { ResetPasswordForm } from '../../components/reset-password-form';
 import { getSsoProviders } from '../../lib/server-api';
 
@@ -18,6 +19,7 @@ export default async function ResetPasswordPage({ searchParams }: { searchParams
 
   return (
     <main className="flex min-h-screen items-center justify-center px-6 py-16">
+      <AuthTopLevelGuard />
       <ResetPasswordForm initialToken={token} />
     </main>
   );

@@ -33,11 +33,11 @@ export class EvaluationJobsService implements OnModuleDestroy {
   }
 
   async enqueueArtifact(artifactId: string) {
-    await this.enqueue('artifact.process', artifactId, `artifact:${artifactId}`);
+    await this.enqueue('artifact.process', artifactId, this.buildJobId('artifact', artifactId));
   }
 
   async enqueueNarrative(narrativeId: string) {
-    await this.enqueue('narrative.process', narrativeId, `narrative:${narrativeId}`);
+    await this.enqueue('narrative.process', narrativeId, this.buildJobId('narrative', narrativeId));
   }
 
   async onModuleDestroy() {
@@ -68,5 +68,9 @@ export class EvaluationJobsService implements OnModuleDestroy {
     );
 
     return true;
+  }
+
+  private buildJobId(prefix: 'artifact' | 'narrative', entityId: string) {
+    return `${prefix}-${entityId}`;
   }
 }

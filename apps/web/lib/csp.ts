@@ -2,6 +2,7 @@ type CspOptions = {
   apiOrigin: string;
   environment: string | undefined;
   nonce: string;
+  allowEmbedding?: boolean;
   reportOnly?: boolean;
   reportUri?: string;
   styleHashes?: string[];
@@ -47,6 +48,7 @@ export function buildContentSecurityPolicy({
   apiOrigin,
   environment,
   nonce,
+  allowEmbedding = false,
   reportOnly = false,
   reportUri,
   styleHashes
@@ -63,7 +65,7 @@ export function buildContentSecurityPolicy({
   const directives = [
     "default-src 'self'",
     "base-uri 'self'",
-    "frame-ancestors 'none'",
+    allowEmbedding ? "frame-ancestors 'self' https://huggingface.co" : "frame-ancestors 'none'",
     "form-action 'self'",
     "object-src 'none'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDevelopment ? " 'unsafe-eval'" : ''}`,

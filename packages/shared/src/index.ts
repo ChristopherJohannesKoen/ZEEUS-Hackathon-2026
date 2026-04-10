@@ -66,6 +66,8 @@ export const AuditActionSchema = z.enum([
   'evaluation.unarchived',
   'evaluation.revision_created',
   'evaluation.recommendation_action_updated',
+  'evidence.created',
+  'scenario.created',
   'artifact.requested',
   'artifact.processing',
   'artifact.ready',
@@ -324,4 +326,5 @@ export const ScimGroupListResponseSchema = ScimListResponseSchema(ScimGroupSchem
 export type ScimGroupListResponse = z.infer<typeof ScimGroupListResponseSchema>;
 
 export * from './evaluations';
+export * from './platform';
 export * from './report-artifacts';

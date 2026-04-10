@@ -27,8 +27,8 @@ export default async function SdgAlignmentPage({ params }: { params: Params }) {
             Merged stage and business SDGs
           </h1>
           <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
-            Stage and NACE suggestions are de-duplicated, tagged, and linked to the official UN goal
-            pages.
+            Stage and NACE suggestions are de-duplicated, tagged, and linked to both the official UN
+            goal pages and the in-app SDG target explorer.
           </p>
         </Card>
 
@@ -52,14 +52,29 @@ export default async function SdgAlignmentPage({ params }: { params: Params }) {
                 </span>
               </div>
               <h2 className="mt-4 text-xl font-bold text-slate-950">{sdg.title}</h2>
-              <a
-                className="mt-5 inline-flex text-sm font-semibold text-[#00654A] hover:text-[#0b7a59]"
-                href={sdg.url}
-                rel="noreferrer"
-                target="_blank"
-              >
-                Open official goal page
-              </a>
+              <p className="mt-3 text-sm leading-7 text-slate-600">
+                {sdg.sourceType === 'both'
+                  ? 'Suggested by both startup stage and business category.'
+                  : sdg.sourceType === 'stage'
+                    ? 'Suggested from the startup stage and current maturity profile.'
+                    : 'Suggested from the NACE business category and sector footprint.'}
+              </p>
+              <div className="mt-5 flex flex-wrap gap-3">
+                <Link
+                  className={buttonClassName({ variant: 'secondary' })}
+                  href={`/sdg/${sdg.number}`}
+                >
+                  Explore targets
+                </Link>
+                <a
+                  className="inline-flex text-sm font-semibold text-[#00654A] hover:text-[#0b7a59]"
+                  href={sdg.url}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  Open official goal page
+                </a>
+              </div>
             </Card>
           ))}
         </div>

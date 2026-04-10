@@ -87,13 +87,9 @@ export class EvaluationStorageService {
     );
   }
 
-  buildStorageKey(checksumSha256: string, filename: string) {
+  buildStorageKey(checksumSha256: string, filename: string, namespace = 'artifacts') {
     const extension = path.extname(filename);
-    return path.posix.join(
-      'artifacts',
-      checksumSha256.slice(0, 2),
-      `${checksumSha256}${extension}`
-    );
+    return path.posix.join(namespace, checksumSha256.slice(0, 2), `${checksumSha256}${extension}`);
   }
 
   private resolveLocalPath(storageKey: string) {

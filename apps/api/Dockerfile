@@ -1,4 +1,4 @@
-FROM node:22-alpine AS base
+FROM node:25-alpine AS base
 ENV npm_config_fetch_retries=5
 ENV npm_config_fetch_retry_mintimeout=20000
 ENV npm_config_fetch_retry_maxtimeout=120000
@@ -42,8 +42,11 @@ COPY --from=builder /app/packages/contracts/dist ./packages/contracts/dist
 COPY --from=builder /app/packages/scoring/package.json ./packages/scoring/package.json
 COPY --from=builder /app/packages/scoring/catalog ./packages/scoring/catalog
 COPY --from=builder /app/packages/scoring/dist ./packages/scoring/dist
+COPY --from=builder /app/apps/web/public ./apps/web/public
+COPY --from=builder /app/references ./references
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/scripts/with-env.mjs ./scripts/with-env.mjs
+RUN mkdir -p /app/.artifacts && chown -R nestjs:nodejs /app/.artifacts
 USER nestjs
 EXPOSE 4000
 CMD ["node", "apps/api/dist/main.js"]

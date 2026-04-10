@@ -11,6 +11,12 @@ const overlayDir = path.join(repoRoot, 'deploy', 'huggingface-space');
 
 const repoId = process.argv[2] ?? process.env.HF_SPACE_REPO_ID;
 const shouldUpload = !process.argv.includes('--skip-upload');
+const githubSha = process.env.GITHUB_SHA?.slice(0, 7);
+const commitMessage =
+  process.env.HF_SPACE_COMMIT_MESSAGE ??
+  (githubSha
+    ? `Deploy ZEEUS full-stack Space demo from ${githubSha}`
+    : 'Deploy ZEEUS full-stack Space demo');
 
 if (!repoId) {
   console.error('Usage: npm run hf:space:publish -- <username/space-name> [--skip-upload]');
@@ -152,7 +158,7 @@ run('hf', [
   '--repo-type',
   'space',
   '--commit-message',
-  'Deploy ZEEUS full-stack Space demo'
+  commitMessage
 ]);
 
 console.log(`Published https://huggingface.co/spaces/${repoId}`);

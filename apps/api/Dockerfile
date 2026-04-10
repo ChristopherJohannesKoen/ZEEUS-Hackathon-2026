@@ -43,7 +43,7 @@ COPY --from=builder /app/packages/scoring/package.json ./packages/scoring/packag
 COPY --from=builder /app/packages/scoring/catalog ./packages/scoring/catalog
 COPY --from=builder /app/packages/scoring/dist ./packages/scoring/dist
 COPY --from=builder /app/apps/web/public ./apps/web/public
-COPY --from=builder ["/app/references/Hackathon_User Guidlines", "./references/Hackathon_User Guidlines"]
+COPY --from=builder /app/references ./references
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/scripts/with-env.mjs ./scripts/with-env.mjs
 RUN mkdir -p /app/.artifacts && chown -R nestjs:nodejs /app/.artifacts

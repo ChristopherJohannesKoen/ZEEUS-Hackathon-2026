@@ -681,7 +681,10 @@ export function ContentStudioClient({ overview }: { overview: EditorialOverview 
                         variant="secondary"
                         onClick={() =>
                           runMutation(async () => {
-                            const restored = await restoreSitePageRevision(pageForm.id, revision.id);
+                            const restored = await restoreSitePageRevision(
+                              pageForm.id,
+                              revision.id
+                            );
                             setPageForm(pageToForm(restored));
                             await refreshPageRevisions(pageForm.id);
                             setMessage(`Restored revision for ${pageForm.slug}.`);

@@ -23,9 +23,9 @@ test('content studio stores site-page revisions and creates preview links', asyn
   await sitePageForm.getByLabel('Title', { exact: true }).fill('Playwright Preview Page');
   await sitePageForm.getByLabel('Summary').fill(originalSummary);
   await sitePageForm.getByLabel('Hero title').fill('Preview and revision testing');
-  await sitePageForm.getByLabel('Hero body').fill(
-    'This page is created by the E2E suite to verify editorial preview and restore support.'
-  );
+  await sitePageForm
+    .getByLabel('Hero body')
+    .fill('This page is created by the E2E suite to verify editorial preview and restore support.');
   await sitePageForm.getByLabel('Primary CTA label').fill('Start evaluation');
   await sitePageForm.getByLabel('Primary CTA href').fill('/signup');
   await sitePageForm.getByRole('button', { name: 'Create page' }).click();

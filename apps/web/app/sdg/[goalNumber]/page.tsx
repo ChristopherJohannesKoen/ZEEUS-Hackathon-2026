@@ -2,11 +2,7 @@ import { notFound } from 'next/navigation';
 import { Card } from '@packages/ui';
 import { MarketingShell } from '../../../components/marketing-shell';
 import { ApiRequestError } from '../../../lib/api-error';
-import {
-  getOptionalCurrentUser,
-  getPublicSiteContent,
-  getSdgGoal
-} from '../../../lib/server-api';
+import { getOptionalCurrentUser, getPublicSiteContent, getSdgGoal } from '../../../lib/server-api';
 import { getSiteSettings } from '../../../lib/site-content';
 
 type Params = Promise<{ goalNumber: string }>;

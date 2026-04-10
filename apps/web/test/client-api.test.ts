@@ -1,10 +1,29 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-function jsonResponse(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    headers: { 'content-type': 'application/json' },
-    status
-  });
+const mockBrowserClient = {
+  auth: {
+    csrf: vi.fn()
+  },
+  evaluations: {
+    updateContext: vi.fn()
+  }
+};
+
+vi.mock('@ts-rest/core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@ts-rest/core')>();
+
+  return {
+    ...actual,
+    initClient: vi.fn(() => mockBrowserClient)
+  };
+});
+
+function contractResponse(body: unknown, status = 200, headers = new Headers()) {
+  return {
+    status,
+    body,
+    headers
+  };
 }
 
 function evaluationResponse(overrides: Record<string, unknown> = {}) {
@@ -12,6 +31,10 @@ function evaluationResponse(overrides: Record<string, unknown> = {}) {
     id: 'evaluation_1',
     name: 'Updated assessment',
     country: 'South Africa',
+    businessCategoryMain: 'Manufacturing',
+    businessCategorySubcategory: 'Food products',
+    extendedNaceCode: '10.11',
+    extendedNaceLabel: '10.11 Processing and preserving of meat',
     naceDivision: '10 Manufacture of food products',
     currentStage: 'validation',
     status: 'draft',
@@ -54,21 +77,23 @@ function evaluationResponse(overrides: Record<string, unknown> = {}) {
 describe('clientApiRequest', () => {
   beforeEach(() => {
     vi.resetModules();
+    mockBrowserClient.auth.csrf.mockReset();
+    mockBrowserClient.evaluations.updateContext.mockReset();
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
-    vi.unstubAllGlobals();
   });
 
   it('retries an unsafe request once when the server returns csrf_invalid', async () => {
     const firstCsrfToken = 'csrf-token-one-1234567890abcdef123456';
     const secondCsrfToken = 'csrf-token-two-1234567890abcdef123456';
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(jsonResponse({ csrfToken: firstCsrfToken }))
+    mockBrowserClient.auth.csrf
+      .mockResolvedValueOnce(contractResponse({ csrfToken: firstCsrfToken }))
+      .mockResolvedValueOnce(contractResponse({ csrfToken: secondCsrfToken }));
+    mockBrowserClient.evaluations.updateContext
       .mockResolvedValueOnce(
-        jsonResponse(
+        contractResponse(
           {
             statusCode: 403,
             message: 'A valid CSRF token is required.',
@@ -78,10 +103,7 @@ describe('clientApiRequest', () => {
           403
         )
       )
-      .mockResolvedValueOnce(jsonResponse({ csrfToken: secondCsrfToken }))
-      .mockResolvedValueOnce(jsonResponse(evaluationResponse()));
-
-    vi.stubGlobal('fetch', fetchMock);
+      .mockResolvedValueOnce(contractResponse(evaluationResponse()));
 
     const { updateEvaluationContext } = await import('../lib/client-api');
 
@@ -89,6 +111,10 @@ describe('clientApiRequest', () => {
       updateEvaluationContext('evaluation_1', {
         name: 'Updated assessment',
         country: 'South Africa',
+        businessCategoryMain: 'Manufacturing',
+        businessCategorySubcategory: 'Food products',
+        extendedNaceCode: '10.11',
+        extendedNaceLabel: '10.11 Processing and preserving of meat',
         naceDivision: '10 Manufacture of food products',
         offeringType: 'product',
         launched: true,
@@ -100,32 +126,33 @@ describe('clientApiRequest', () => {
       name: 'Updated assessment'
     });
 
-    expect(fetchMock).toHaveBeenCalledTimes(4);
-    expect(new Headers(fetchMock.mock.calls[1]?.[1]?.headers).get('X-CSRF-Token')).toBe(
-      firstCsrfToken
-    );
-    expect(new Headers(fetchMock.mock.calls[3]?.[1]?.headers).get('X-CSRF-Token')).toBe(
-      secondCsrfToken
-    );
+    expect(mockBrowserClient.auth.csrf).toHaveBeenCalledTimes(2);
+    expect(mockBrowserClient.evaluations.updateContext).toHaveBeenCalledTimes(2);
+    expect(mockBrowserClient.evaluations.updateContext.mock.calls[0]?.[0]).toMatchObject({
+      params: { id: 'evaluation_1' },
+      headers: { 'x-csrf-token': firstCsrfToken }
+    });
+    expect(mockBrowserClient.evaluations.updateContext.mock.calls[1]?.[0]).toMatchObject({
+      params: { id: 'evaluation_1' },
+      headers: { 'x-csrf-token': secondCsrfToken }
+    });
   });
 
   it('does not replay a generic forbidden mutation', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(jsonResponse({ csrfToken: 'csrf-token-1234567890abcdef123456' }))
-      .mockResolvedValueOnce(
-        jsonResponse(
-          {
-            statusCode: 403,
-            message: 'You do not have permission to modify this evaluation.',
-            code: 'forbidden',
-            errors: []
-          },
-          403
-        )
-      );
-
-    vi.stubGlobal('fetch', fetchMock);
+    mockBrowserClient.auth.csrf.mockResolvedValueOnce(
+      contractResponse({ csrfToken: 'csrf-token-1234567890abcdef123456' })
+    );
+    mockBrowserClient.evaluations.updateContext.mockResolvedValueOnce(
+      contractResponse(
+        {
+          statusCode: 403,
+          message: 'You do not have permission to modify this evaluation.',
+          code: 'forbidden',
+          errors: []
+        },
+        403
+      )
+    );
 
     const { updateEvaluationContext } = await import('../lib/client-api');
 
@@ -133,6 +160,10 @@ describe('clientApiRequest', () => {
       updateEvaluationContext('evaluation_1', {
         name: 'Updated assessment',
         country: 'South Africa',
+        businessCategoryMain: 'Manufacturing',
+        businessCategorySubcategory: 'Food products',
+        extendedNaceCode: '10.11',
+        extendedNaceLabel: '10.11 Processing and preserving of meat',
         naceDivision: '10 Manufacture of food products',
         offeringType: 'product',
         launched: true,
@@ -144,6 +175,7 @@ describe('clientApiRequest', () => {
       statusCode: 403
     });
 
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(mockBrowserClient.auth.csrf).toHaveBeenCalledTimes(1);
+    expect(mockBrowserClient.evaluations.updateContext).toHaveBeenCalledTimes(1);
   });
 });

@@ -41,7 +41,10 @@ export default async function ResourcesPage() {
       intro="This hub brings the official ZEEUS source pack together with the workbook-parity guidance used in the live application so founders, reviewers, and programme teams can read the same method in one place."
     >
       <div className="grid gap-6">
-        <section className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]" data-testid="resource-reference-metadata">
+        <section
+          className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]"
+          data-testid="resource-reference-metadata"
+        >
           <Card className="border-surface-border bg-[#fbfdf8]">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#58724d]">
               Canonical source
@@ -50,8 +53,8 @@ export default async function ResourcesPage() {
               Active workbook and reference-pack metadata
             </h2>
             <p className="mt-3 text-sm leading-7 text-slate-600">
-              Public pages, the founder workflow, reviewer views, and reports all read from the
-              same workbook-derived catalog version shown here.
+              Public pages, the founder workflow, reviewer views, and reports all read from the same
+              workbook-derived catalog version shown here.
             </p>
             <div className="mt-5 grid gap-3 md:grid-cols-2">
               <div className="rounded-[24px] bg-white p-4">
@@ -98,9 +101,18 @@ export default async function ResourcesPage() {
               How the site stays aligned with the source pack
             </h2>
             <div className="mt-4 grid gap-3 text-sm leading-7 text-slate-600">
-              <p>Workbook-driven scoring logic remains deterministic across founder, reviewer, and report surfaces.</p>
-              <p>Source-pack downloads below remain available as original assets for manual verification and institutional review.</p>
-              <p>Editorial summaries can add context, but score bands, matrix legends, and workbook thresholds come from the scoring catalog rather than ad hoc page copy.</p>
+              <p>
+                Workbook-driven scoring logic remains deterministic across founder, reviewer, and
+                report surfaces.
+              </p>
+              <p>
+                Source-pack downloads below remain available as original assets for manual
+                verification and institutional review.
+              </p>
+              <p>
+                Editorial summaries can add context, but score bands, matrix legends, and workbook
+                thresholds come from the scoring catalog rather than ad hoc page copy.
+              </p>
             </div>
             <p className="mt-4 rounded-[24px] bg-[#f7f9f4] px-4 py-4 text-xs leading-6 text-slate-500">
               {content.referenceMetadata.workbookPath}

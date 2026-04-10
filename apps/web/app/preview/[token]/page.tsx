@@ -50,7 +50,8 @@ export default async function PreviewSitePage({ params }: PreviewPageProps) {
       heroMedia={page.heroMediaAsset}
     >
       <section className="mx-auto mb-8 max-w-6xl rounded-3xl border border-dashed border-brand/40 bg-brand-tint px-6 py-4 text-sm text-slate-700">
-        Preview mode. This page is being rendered from an unpublished editorial snapshot and is not visible on the public site.
+        Preview mode. This page is being rendered from an unpublished editorial snapshot and is not
+        visible on the public site.
       </section>
       <SitePageSections page={page} />
     </MarketingShell>

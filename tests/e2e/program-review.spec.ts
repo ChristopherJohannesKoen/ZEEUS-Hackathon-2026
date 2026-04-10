@@ -24,14 +24,18 @@ test('manager workflows preserve deterministic reviewer parity while handling as
   await page
     .locator('[data-testid^="program-submission-rationale-"]')
     .first()
-    .fill('Approved because the revision already includes a deterministic snapshot, actionable recommendations, and a reviewer-ready evidence trail.');
+    .fill(
+      'Approved because the revision already includes a deterministic snapshot, actionable recommendations, and a reviewer-ready evidence trail.'
+    );
   await page
     .locator('[data-testid^="program-submission-status-"]')
     .first()
     .selectOption('approved');
   await expect(page.getByText('approved').first()).toBeVisible();
   await expect(page.getByText('Latest decision rationale')).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Open immutable report snapshot' }).first()).toBeVisible();
+  await expect(
+    page.getByRole('link', { name: 'Open immutable report snapshot' }).first()
+  ).toBeVisible();
   await expect(page.getByText('Review checklist')).toBeVisible();
 
   await page
@@ -52,5 +56,7 @@ test('manager workflows preserve deterministic reviewer parity while handling as
   await expect(
     page.getByText('Please keep the deterministic result and clarify the supporting evidence pack.')
   ).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Open immutable report snapshot' }).first()).toBeVisible();
+  await expect(
+    page.getByRole('link', { name: 'Open immutable report snapshot' }).first()
+  ).toBeVisible();
 });

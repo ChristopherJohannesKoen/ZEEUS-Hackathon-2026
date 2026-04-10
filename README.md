@@ -1,32 +1,46 @@
-# ZEEUS Hackathon Assessment Platform
+---
+title: ZEEUS Sustainability Platform
+emoji: 🚀
+colorFrom: green
+colorTo: teal
+sdk: docker
+app_port: 3000
+pinned: false
+---
 
-This repository is the working submission codebase for the ZEEUS hackathon.
-It turns the Excel-based Sustainability by Design workflow into a reproducible
-web application with:
+## ZEEUS Sustainability Platform
 
+This repository contains the working ZEEUS Sustainability by Design platform.
+It turns the Excel-based workflow into a reproducible web application with:
+
+- a public website for methodology, FAQ, resources, and partner onboarding
 - deterministic scoring
 - saved evaluations in PostgreSQL
+- organization, program, evidence, and scenario workflows
 - immutable revision history and comparison
 - dashboard, review, benchmark, and report views
 - persisted CSV and PDF export artifacts backed by object storage
 - async worker-driven PDF rendering and AI narratives
 - Docker-based local setup
+- Hugging Face Spaces full-stack deployment path
 
 ## Product Scope
 
 The implemented product flow is:
 
 1. Public landing page
-2. Authenticated evaluation workspace
-3. Startup context intake
-4. Initial SDG pre-screen
-5. Stage I holistic startup assessment
-6. Stage II risks and opportunities
-7. Impact summary
-8. SDG alignment
-9. Results dashboard
-10. Pre-completion review
-11. Full report, revision history, compare view, and export artifacts
+2. Public methodology, FAQ, SDG/ESRS, case-study, resources, partner, and contact pages
+3. Authenticated evaluation workspace
+4. Organization and partner-program workspace views
+5. Startup context intake
+6. Initial SDG pre-screen
+7. Stage I holistic startup assessment
+8. Stage II risks and opportunities
+9. Impact summary
+10. SDG alignment plus goal/target explorer
+11. Results dashboard, evidence vault, and scenario lab
+12. Pre-completion review
+13. Full report, revision history, compare view, benchmark view, and export artifacts
 
 The scoring path stays deterministic. AI is not used to decide materiality,
 risk ratings, opportunity ratings, or final scores.
@@ -104,6 +118,40 @@ docker compose up --build
 
 The Compose stack starts:
 
+## Hugging Face Spaces
+
+The repo also includes a Hugging Face Spaces deployment profile that runs the
+current product slice as a single-container full-stack staging deployment:
+
+- public marketing and methodology pages
+- signup, login, and saved founder workspaces
+- impact summary, SDG alignment, dashboard, evidence, scenarios, and reports
+- async CSV/PDF exports and narrative jobs
+- seeded organization, partner-program, submission, and reviewer workflows
+- iframe-safe headers remain enabled for the Space host without forking the public product surface
+
+The Space starts local PostgreSQL and Redis inside the container. Artifact files
+persist to the local filesystem and automatically use `/data` when persistent
+Space storage is available. If `OPENAI_API_KEY` is not configured, narrative
+requests fall back to the built-in deterministic explainer so the staging deployment remains
+functional.
+
+Seeded local accounts:
+
+- Owner: `owner@example.com` / `ChangeMe123!`
+- Admin: `admin@example.com` / `ChangeMe123!`
+- Member: `member@example.com` / `ChangeMe123!`
+
+Publish the Space bundle with:
+
+```powershell
+npm run hf:space:publish -- ChristopherJKoen/zeeus-ultimate-site
+```
+
+The publisher script builds a staged bundle in `.hf-space-build`, creates a
+Docker Space if needed, and uploads the current repo snapshot with the Space
+overlay files from `deploy/huggingface-space`.
+
 - `db` on port `5432`
 - `api` on port `4000`
 - `web` on port `3000`
@@ -135,7 +183,7 @@ Default runtime values:
   scores.
 - Benchmarks are derived from immutable revision snapshots and seeded baseline
   profiles. They never change canonical saved results.
-- AI narratives are generated from immutable revision snapshots and evidence
+- AI narratives are generated from immutable revision snapshots, linked evidence, and structured guidance content
   metadata only. They do not participate in scoring.
 
 ## Common Commands
@@ -155,7 +203,7 @@ Default runtime values:
 
 ## Validation
 
-Recommended verification before a handoff or submission:
+Recommended verification before a handoff or release:
 
 ```powershell
 npm run typecheck
@@ -173,6 +221,9 @@ Health checks:
 - generate a CSV or PDF artifact from the dashboard or review screen and confirm it remains downloadable from revision history after restarting `api` and `worker`
 - request an AI narrative from the dashboard and confirm it transitions from `pending` to `ready`
 - verify the benchmark view loads for the active revision
+- verify the public methodology, FAQ, resources, and partner pages load
+- verify the evidence vault and scenario lab work for a saved evaluation
+- verify the partner program console loads seeded submission and review data
 
 ## Docs
 
@@ -185,9 +236,10 @@ Health checks:
 
 ## Notes
 
-- The evaluation flow is the primary product slice.
+- The evaluation flow remains the deterministic core product slice.
+- The platform now includes public content, organization scaffolding, partner programs, evidence vault items, and advisory scenario runs.
 - Enterprise identity, admin, and observability modules remain available in the
-  codebase, but they are not the critical-path hackathon scope.
+  codebase, but they are not yet the critical-path public release scope.
 - Completed revisions are audit-stable. Reports, compare views, artifacts, AI
   narratives, and benchmarks all read from immutable revision snapshots.
 - The running application lives under `apps/` and shared packages under

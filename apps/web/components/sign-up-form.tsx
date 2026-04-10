@@ -1,16 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Button, Card, Field, Input } from '@packages/ui';
 import { signUp } from '../lib/client-api';
 import { describedByIds, toFieldErrorMap } from '../lib/form-errors';
 import { toApiError } from '../lib/api-error';
+import { navigateToAuthenticatedApp } from '../lib/post-auth-redirect';
 import { FieldErrorMessage, FormErrorMessage } from './form-feedback';
 
 export function SignUpForm() {
-  const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string>();
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -27,7 +26,7 @@ export function SignUpForm() {
         password: String(formData.get('password') ?? '')
       });
 
-      router.push('/app');
+      navigateToAuthenticatedApp();
     } catch (caughtError) {
       const apiError = toApiError(caughtError);
       setError(apiError.message);

@@ -3,12 +3,19 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Badge, Button, Card, Field, Input, Select, buttonClassName } from '@packages/ui';
-import { getNaceDivisionOptions, getStartupStageOptions } from '@packages/scoring';
+import {
+  getBusinessCategoryOptions,
+  getBusinessSubcategoryOptions,
+  getExtendedNaceOptions,
+  getStartupStageOptions,
+  getWorkbookGuidance
+} from '@packages/scoring';
 import type { EvaluationContextPayload } from '@packages/shared';
 import { createEvaluation, updateEvaluationContext } from '../lib/client-api';
 
-const naceOptions = getNaceDivisionOptions();
+const businessCategoryOptions = getBusinessCategoryOptions();
 const startupStageOptions = getStartupStageOptions();
+const workbookGuidance = getWorkbookGuidance();
 
 export function EvaluationContextForm({
   initialValue,
@@ -22,6 +29,25 @@ export function EvaluationContextForm({
   const router = useRouter();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
+  const [businessCategoryMain, setBusinessCategoryMain] = useState(
+    initialValue?.businessCategoryMain ?? ''
+  );
+  const [businessCategorySubcategory, setBusinessCategorySubcategory] = useState(
+    initialValue?.businessCategorySubcategory ?? initialValue?.naceDivision ?? ''
+  );
+  const [extendedNaceCode, setExtendedNaceCode] = useState(initialValue?.extendedNaceCode ?? '');
+
+  const subcategoryOptions = getBusinessSubcategoryOptions(businessCategoryMain || null);
+  const selectedSubcategory = subcategoryOptions.find(
+    (option) => option.value === businessCategorySubcategory
+  );
+  const extendedNaceOptions = getExtendedNaceOptions({
+    businessCategoryMain: businessCategoryMain || null,
+    divisionCode: selectedSubcategory?.code ?? null
+  });
+  const selectedExtendedNace = extendedNaceOptions.find(
+    (option) => option.code === extendedNaceCode
+  );
 
   return (
     <Card className="border-[#d4e8c2] shadow-[0_25px_60px_-45px_rgba(0,101,74,0.5)]">
@@ -30,7 +56,8 @@ export function EvaluationContextForm({
           Startup context
         </Badge>
         <p className="text-sm text-[#4c6146]">
-          These inputs personalise the SDG pre-screen and the full assessment workflow.
+          These inputs mirror the workbook primary-data section and personalise the SDG pre-screen,
+          Stage I, and Stage II workflow.
         </p>
       </div>
       <form
@@ -44,14 +71,24 @@ export function EvaluationContextForm({
           const formData = new FormData(event.currentTarget);
           const payload: EvaluationContextPayload = {
             name: String(formData.get('name') ?? ''),
-            country: String(formData.get('country') ?? ''),
-            naceDivision: String(formData.get('naceDivision') ?? ''),
+            country: String(formData.get('country') ?? '').trim() || null,
+            businessCategoryMain: businessCategoryMain || null,
+            businessCategorySubcategory: businessCategorySubcategory || null,
+            extendedNaceCode: selectedExtendedNace?.code ?? null,
+            extendedNaceLabel: selectedExtendedNace?.label ?? null,
+            naceDivision:
+              businessCategorySubcategory ||
+              (selectedExtendedNace
+                ? `${selectedExtendedNace.divisionCode} ${selectedExtendedNace.divisionLabel}`
+                : null) ||
+              businessCategoryMain ||
+              null,
             offeringType: String(
               formData.get('offeringType') ?? 'product'
             ) as EvaluationContextPayload['offeringType'],
             launched: String(formData.get('launched') ?? 'false') === 'true',
             currentStage: String(
-              formData.get('currentStage') ?? 'pre_seed'
+              formData.get('currentStage') ?? 'ideation'
             ) as EvaluationContextPayload['currentStage'],
             innovationApproach: String(
               formData.get('innovationApproach') ?? 'sustaining'
@@ -75,7 +112,7 @@ export function EvaluationContextForm({
         }}
       >
         <div className="grid gap-5 md:grid-cols-2">
-          <Field hint="Use the startup or venture name shown in your report." label="Name">
+          <Field hint="Use the startup or venture name shown in the report." label="Name">
             <Input
               data-testid="evaluation-name"
               defaultValue={initialValue?.name}
@@ -85,32 +122,82 @@ export function EvaluationContextForm({
             />
           </Field>
           <Field
-            hint="Country context helps frame stage and market interpretation."
+            hint="Optional in workbook logic. Add the country if it helps frame market and regulatory context."
             label="Country"
           >
             <Input
               data-testid="evaluation-country"
-              defaultValue={initialValue?.country}
+              defaultValue={
+                initialValue?.country === 'Not specified' ? '' : (initialValue?.country ?? '')
+              }
               name="country"
               placeholder="Germany"
-              required
             />
           </Field>
         </div>
 
+        <div className="grid gap-5 md:grid-cols-2">
+          <Field
+            hint="This is the main workbook business category and drives the initial SDG screening."
+            label="Business category (Main)"
+          >
+            <Select
+              data-testid="evaluation-business-category-main"
+              name="businessCategoryMain"
+              onChange={(event) => {
+                setBusinessCategoryMain(event.target.value);
+                setBusinessCategorySubcategory('');
+                setExtendedNaceCode('');
+              }}
+              required
+              value={businessCategoryMain}
+            >
+              <option value="">Select a main business category</option>
+              {businessCategoryOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field
+            hint="Use the closest workbook subcategory when it is already clear."
+            label="Subcategory"
+          >
+            <Select
+              data-testid="evaluation-business-subcategory"
+              disabled={!businessCategoryMain}
+              name="businessCategorySubcategory"
+              onChange={(event) => {
+                setBusinessCategorySubcategory(event.target.value);
+                setExtendedNaceCode('');
+              }}
+              value={businessCategorySubcategory}
+            >
+              <option value="">Select a subcategory</option>
+              {subcategoryOptions.map((option) => (
+                <option key={option.code} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        </div>
+
         <Field
-          hint="The web version uses NACE divisions to keep the business categorisation consistent."
-          label="NACE division"
+          hint="Optional: use the extended NACE list when the main/subcategory view is still too broad."
+          label="Extended NACE (Optional)"
         >
           <Select
-            data-testid="evaluation-nace-division"
-            defaultValue={initialValue?.naceDivision}
-            name="naceDivision"
-            required
+            data-testid="evaluation-extended-nace"
+            disabled={!businessCategoryMain}
+            name="extendedNaceCode"
+            onChange={(event) => setExtendedNaceCode(event.target.value)}
+            value={extendedNaceCode}
           >
-            <option value="">Select a NACE division</option>
-            {naceOptions.map((option) => (
-              <option key={option.value} value={option.value}>
+            <option value="">Select an extended NACE entry</option>
+            {extendedNaceOptions.map((option) => (
+              <option key={option.code} value={option.code}>
                 {option.label}
               </option>
             ))}
@@ -119,7 +206,7 @@ export function EvaluationContextForm({
 
         <div className="grid gap-5 md:grid-cols-2">
           <Field
-            hint="The toolkit adapts a few suggestions depending on the offering type."
+            hint="The workbook adapts some guidance depending on whether the offer is product- or service-led."
             label="Offering type"
           >
             <Select
@@ -133,7 +220,7 @@ export function EvaluationContextForm({
             </Select>
           </Field>
           <Field
-            hint="Choose yes only if the offer is already launched to the market."
+            hint="Choose yes only if the offer has already been launched to the market."
             label="Launched"
           >
             <Select
@@ -150,7 +237,7 @@ export function EvaluationContextForm({
 
         <div className="grid gap-5 md:grid-cols-2">
           <Field
-            hint="This drives the stage-based SDG suggestions and next-step guidance."
+            hint="This drives the stage-based SDG suggestions and the workbook phase guidance."
             label="Current stage"
           >
             <Select
@@ -184,12 +271,16 @@ export function EvaluationContextForm({
 
         <details className="rounded-2xl border border-[#dce8ce] bg-[#fbfdf7] p-4 text-sm text-[#5d7058]">
           <summary className="cursor-pointer font-semibold text-[#355d2d]">
-            Why this matters
+            Workbook guidance for the initial summary
           </summary>
-          <p className="mt-3 leading-7">
-            The tool is an early guidance instrument, not a judgement. These answers create an
-            initial compass reading before the full inside-out and outside-in assessment.
-          </p>
+          <div className="mt-3 grid gap-3">
+            {workbookGuidance.initialSummaryExplanationBlocks.slice(0, 3).map((block) => (
+              <div key={block.title}>
+                <p className="font-semibold text-[#355d2d]">{block.title}</p>
+                <p className="mt-1 leading-7">{block.body}</p>
+              </div>
+            ))}
+          </div>
         </details>
 
         {errorMessage ? (

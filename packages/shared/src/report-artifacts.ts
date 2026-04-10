@@ -14,6 +14,14 @@ export function serializeReportAsCsv(report: ReportResponse) {
   pushSection('evaluation', 'id', report.evaluation.id);
   pushSection('evaluation', 'name', report.evaluation.name);
   pushSection('evaluation', 'country', report.evaluation.country);
+  pushSection('evaluation', 'businessCategoryMain', report.evaluation.businessCategoryMain);
+  pushSection(
+    'evaluation',
+    'businessCategorySubcategory',
+    report.evaluation.businessCategorySubcategory
+  );
+  pushSection('evaluation', 'extendedNaceCode', report.evaluation.extendedNaceCode);
+  pushSection('evaluation', 'extendedNaceLabel', report.evaluation.extendedNaceLabel);
   pushSection('evaluation', 'naceDivision', report.evaluation.naceDivision);
   pushSection('evaluation', 'offeringType', report.evaluation.offeringType);
   pushSection('evaluation', 'launched', report.evaluation.launched);

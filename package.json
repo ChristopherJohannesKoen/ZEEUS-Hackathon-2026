@@ -1,5 +1,5 @@
 {
-  "name": "zeeus-hackathon-assessment-platform",
+  "name": "zeeus-sustainability-platform",
   "private": true,
   "version": "2.0.0",
   "packageManager": "npm@10.9.2",
@@ -16,11 +16,12 @@
     "docs:lint": "markdownlint-cli2 \"README.md\" \"docs/**/*.md\" \"tests/perf/**/*.md\"",
     "docs:links": "node ./scripts/check-markdown-links.mjs",
     "docs:check": "npm run docs:lint && npm run docs:links",
+    "references:validate": "node ./scripts/validate-reference-pack.mjs",
     "audit:deps": "npm audit --audit-level=high --omit=optional",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "node ./scripts/with-env.mjs turbo run test",
-    "test:e2e": "npm run build:runtime-packages && node ./scripts/with-e2e-env.mjs playwright test tests/e2e/public-auth.spec.ts tests/e2e/evaluations.spec.ts",
+    "test:e2e": "node ./scripts/with-e2e-env.mjs playwright test tests/e2e/public-auth.spec.ts tests/e2e/evaluations.spec.ts",
     "test:e2e:enterprise": "node ./scripts/with-enterprise-e2e-env.mjs playwright test tests/e2e/enterprise-login.spec.ts",
     "test:e2e:headed": "node ./scripts/with-e2e-env.mjs playwright test --headed",
     "test:e2e:ui": "node ./scripts/with-e2e-env.mjs playwright test --ui",
@@ -39,6 +40,7 @@
     "prisma:generate": "node ./scripts/with-env.mjs npm run prisma:generate --workspace=@packages/db",
     "prisma:migrate:deploy": "node ./scripts/with-env.mjs npm run prisma:migrate:deploy --workspace=@packages/db",
     "seed": "node ./scripts/with-env.mjs npm run seed --workspace=@packages/db",
+    "hf:space:publish": "node ./scripts/publish-hf-space.mjs",
     "docker:up": "docker compose up --build",
     "docker:down": "docker compose down --remove-orphans"
   },

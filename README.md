@@ -1,8 +1,17 @@
-# ZEEUS Hackathon Assessment Platform
+---
+title: ZEEUS Sustainability Platform
+emoji: 🚀
+colorFrom: green
+colorTo: teal
+sdk: docker
+app_port: 3000
+pinned: false
+---
 
-This repository is the working submission codebase for the ZEEUS hackathon.
-It turns the Excel-based Sustainability by Design workflow into a reproducible
-web application with:
+## ZEEUS Sustainability Platform
+
+This repository contains the working ZEEUS Sustainability by Design platform.
+It turns the Excel-based workflow into a reproducible web application with:
 
 - a public website for methodology, FAQ, resources, and partner onboarding
 - deterministic scoring
@@ -13,6 +22,7 @@ web application with:
 - persisted CSV and PDF export artifacts backed by object storage
 - async worker-driven PDF rendering and AI narratives
 - Docker-based local setup
+- Hugging Face Spaces full-stack deployment path
 
 ## Product Scope
 
@@ -108,6 +118,40 @@ docker compose up --build
 
 The Compose stack starts:
 
+## Hugging Face Spaces
+
+The repo also includes a Hugging Face Spaces deployment profile that runs the
+current product slice as a single-container full-stack staging deployment:
+
+- public marketing and methodology pages
+- signup, login, and saved founder workspaces
+- impact summary, SDG alignment, dashboard, evidence, scenarios, and reports
+- async CSV/PDF exports and narrative jobs
+- seeded organization, partner-program, submission, and reviewer workflows
+- iframe-safe headers remain enabled for the Space host without forking the public product surface
+
+The Space starts local PostgreSQL and Redis inside the container. Artifact files
+persist to the local filesystem and automatically use `/data` when persistent
+Space storage is available. If `OPENAI_API_KEY` is not configured, narrative
+requests fall back to the built-in deterministic explainer so the staging deployment remains
+functional.
+
+Seeded local accounts:
+
+- Owner: `owner@example.com` / `ChangeMe123!`
+- Admin: `admin@example.com` / `ChangeMe123!`
+- Member: `member@example.com` / `ChangeMe123!`
+
+Publish the Space bundle with:
+
+```powershell
+npm run hf:space:publish -- ChristopherJKoen/zeeus-ultimate-site
+```
+
+The publisher script builds a staged bundle in `.hf-space-build`, creates a
+Docker Space if needed, and uploads the current repo snapshot with the Space
+overlay files from `deploy/huggingface-space`.
+
 - `db` on port `5432`
 - `api` on port `4000`
 - `web` on port `3000`
@@ -159,7 +203,7 @@ Default runtime values:
 
 ## Validation
 
-Recommended verification before a handoff or submission:
+Recommended verification before a handoff or release:
 
 ```powershell
 npm run typecheck
@@ -195,7 +239,7 @@ Health checks:
 - The evaluation flow remains the deterministic core product slice.
 - The platform now includes public content, organization scaffolding, partner programs, evidence vault items, and advisory scenario runs.
 - Enterprise identity, admin, and observability modules remain available in the
-  codebase, but they are not the critical-path hackathon scope.
+  codebase, but they are not yet the critical-path public release scope.
 - Completed revisions are audit-stable. Reports, compare views, artifacts, AI
   narratives, and benchmarks all read from immutable revision snapshots.
 - The running application lives under `apps/` and shared packages under

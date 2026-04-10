@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { forbidden, notFound } from 'next/navigation';
 import { Badge, Card, buttonClassName } from '@packages/ui';
 import { ApiRequestError } from '../../../../../lib/api-error';
-import { confidenceTone, formatDate, formatEnumLabel } from '../../../../../lib/display';
+import { confidenceTone, formatDate } from '../../../../../lib/display';
 import { getEvaluation, getEvaluationSummary } from '../../../../../lib/server-api';
 import { EvaluationContextForm } from '../../../../../components/evaluation-context-form';
 import { EvaluationProgress } from '../../../../../components/evaluation-progress';
@@ -36,8 +36,16 @@ export default async function EvaluationSummaryPage({ params }: { params: Params
                 </p>
                 <h1 className="mt-2 text-3xl font-black text-slate-950">{evaluation.name}</h1>
                 <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">
-                  This is the early compass reading generated from the startup stage and the NACE
-                  business category before the full materiality workflow.
+                  This is the workbook-style initial summary generated from your startup stage and
+                  selected business category before the full materiality workflow.
+                </p>
+                <p className="mt-3 text-sm leading-7 text-slate-600">
+                  Need the surrounding methodology? Use the{' '}
+                  <Link className="font-semibold text-brand-dark underline" href="/resources">
+                    reference hub
+                  </Link>{' '}
+                  for the manual, score interpretation sheet, and the transcript-backed guidance
+                  used by this summary.
                 </p>
               </div>
               <Badge tone={confidenceTone(evaluation.confidenceBand)}>
@@ -48,16 +56,17 @@ export default async function EvaluationSummaryPage({ params }: { params: Params
             <div className="mt-6 grid gap-4 md:grid-cols-2">
               <div className="rounded-[28px] bg-[#f4f9ee] p-5">
                 <p className="text-xs uppercase tracking-[0.22em] text-[#5d7355]">Stage focus</p>
-                <h2 className="mt-2 text-xl font-bold text-slate-950">
-                  {formatEnumLabel(summary.currentStage)}
-                </h2>
+                <h2 className="mt-2 text-xl font-bold text-slate-950">{summary.stageLabel}</h2>
                 <p className="mt-3 text-sm leading-7 text-slate-600">{summary.phaseGoal}</p>
               </div>
               <div className="rounded-[28px] bg-[#f4f9ee] p-5">
                 <p className="text-xs uppercase tracking-[0.22em] text-[#5d7355]">
-                  What to consider
+                  Screening context
                 </p>
-                <p className="mt-2 text-sm leading-7 text-slate-600">{summary.whatToConsider}</p>
+                <h2 className="mt-2 text-lg font-bold text-slate-950">
+                  {summary.screeningContextLabel}
+                </h2>
+                <p className="mt-3 text-sm leading-7 text-slate-600">{summary.whatToConsider}</p>
               </div>
             </div>
 
@@ -126,6 +135,22 @@ export default async function EvaluationSummaryPage({ params }: { params: Params
               </div>
             </div>
 
+            {summary.explanationBlocks.length > 0 ? (
+              <div className="mt-6 grid gap-4 md:grid-cols-2">
+                {summary.explanationBlocks.map((block) => (
+                  <div
+                    className="rounded-[28px] border border-surface-border bg-white p-5"
+                    key={block.title}
+                  >
+                    <p className="text-xs uppercase tracking-[0.22em] text-[#5d7355]">
+                      {block.title}
+                    </p>
+                    <p className="mt-2 text-sm leading-7 text-slate-600">{block.body}</p>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+
             <div className="mt-6 flex flex-wrap gap-3">
               <Link
                 className={buttonClassName({ className: 'bg-brand hover:bg-brand-dark' })}
@@ -177,6 +202,10 @@ export default async function EvaluationSummaryPage({ params }: { params: Params
               initialValue={{
                 name: evaluation.name,
                 country: evaluation.country,
+                businessCategoryMain: evaluation.businessCategoryMain,
+                businessCategorySubcategory: evaluation.businessCategorySubcategory,
+                extendedNaceCode: evaluation.extendedNaceCode,
+                extendedNaceLabel: evaluation.extendedNaceLabel,
                 naceDivision: evaluation.naceDivision,
                 offeringType: evaluation.offeringType,
                 launched: evaluation.launched,

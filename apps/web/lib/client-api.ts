@@ -5,6 +5,9 @@ import type {
   AuthPayload,
   AuthResponse,
   BreakGlassLoginPayload,
+  CaseStudy,
+  ContentEntityType,
+  ContentRevisionListResponse,
   CreateEvidenceAssetPayload,
   CreateProgramSubmissionPayload,
   CreateEvaluationArtifactPayload,
@@ -13,20 +16,26 @@ import type {
   CreateReviewCommentPayload,
   CreateEvaluationPayload,
   CreateScenarioRunPayload,
+  EditorialOverview,
   EvidenceAssetSummary,
   EvaluationArtifactSummary,
   EvaluationBenchmarkSummary,
   EvaluationDetail,
   EvaluationNarrativeListResponse,
   EvaluationNarrativeSummary,
+  FaqEntry,
   ForgotPasswordPayload,
   ForgotPasswordResponse,
+  KnowledgeArticle,
+  MediaAsset,
   OkResponse,
   OrganizationDetail,
   OrganizationListResponse,
+  PartnerLeadSummary,
   ProgramDetail,
   ProgramListResponse,
   PublicSiteContent,
+  ResourceAssetSummary,
   SaveStage1Payload,
   SaveStage2Payload,
   ResetPasswordPayload,
@@ -35,11 +44,23 @@ import type {
   DashboardResponse,
   ScenarioRunSummary,
   SdgGoalDetail,
+  SitePage,
+  SitePagePreviewToken,
+  SiteSetting,
   StepUpResponse,
+  SubmitPartnerInterestPayload,
+  UpdateMediaAssetPayload,
+  UpdatePartnerLeadPayload,
   UpdateEvaluationContextPayload,
   UpdateProgramSubmissionStatusPayload,
   UpdateRecommendationActionPayload,
   UpdateProfilePayload,
+  UpsertCaseStudyPayload,
+  UpsertFaqEntryPayload,
+  UpsertKnowledgeArticlePayload,
+  UpsertResourceAssetPayload,
+  UpsertSitePagePayload,
+  UpsertSiteSettingPayload,
   UserSummary
 } from '@packages/shared';
 import { ApiErrorSchema } from '@packages/shared';
@@ -47,9 +68,7 @@ import { initClient } from '@ts-rest/core';
 import { toApiError, unwrapContractResponse } from './api-error';
 
 const unsafeMethods = new Set(['POST', 'PATCH', 'PUT', 'DELETE']);
-// Temporary until the oversized ts-rest contract is split back into typed subrouters.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const browserClient: any = initClient(apiContract, {
+const browserClient = initClient(apiContract, {
   baseUrl: '/api',
   credentials: 'same-origin',
   validateResponse: true,
@@ -134,7 +153,25 @@ async function executeMutation<T>({
       return call(headers);
     };
 
-    let response = await run(false);
+    const isRetryableCsrfError = (error: unknown) => {
+      const apiError = toApiError(error);
+      return shouldSendCsrf && apiError.statusCode === 403 && apiError.code === 'csrf_invalid'
+        ? apiError
+        : null;
+    };
+
+    let response;
+    try {
+      response = await run(false);
+    } catch (error) {
+      if (!isRetryableCsrfError(error)) {
+        throw error;
+      }
+
+      clearCsrfToken();
+      response = await run(true);
+    }
+
     const parsedError = ApiErrorSchema.safeParse(response.body);
 
     if (
@@ -556,12 +593,347 @@ export function getSiteContent() {
   });
 }
 
+export function submitPartnerInterest(body: SubmitPartnerInterestPayload) {
+  return executeMutation<OkResponse>({
+    method: 'POST',
+    requireCsrf: false,
+    expectedStatuses: [200],
+    idempotent: true,
+    call: (headers) =>
+      browserClient.content.submitPartnerInterest({
+        body,
+        headers: {
+          'idempotency-key': headers['idempotency-key']!
+        }
+      })
+  });
+}
+
 export function getSdgGoal(goalNumber: number) {
   return withApiErrors(async () => {
     const response = await browserClient.content.sdgGoal({
       params: { goalNumber }
     });
     return unwrapContractResponse<SdgGoalDetail>(response, [200]);
+  });
+}
+
+export function getEditorialOverview() {
+  return withApiErrors(async () => {
+    const response = await browserClient.content.getEditorialOverview();
+    return unwrapContractResponse<EditorialOverview>(response, [200]);
+  });
+}
+
+export function createSitePage(body: UpsertSitePagePayload) {
+  return executeMutation<SitePage>({
+    method: 'POST',
+    expectedStatuses: [201],
+    idempotent: true,
+    call: (headers) =>
+      browserClient.content.createSitePage({
+        body,
+        headers: {
+          'idempotency-key': headers['idempotency-key']!,
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export function updateSitePage(contentId: string, body: UpsertSitePagePayload) {
+  return executeMutation<SitePage>({
+    method: 'PUT',
+    expectedStatuses: [200],
+    call: (headers) =>
+      browserClient.content.updateSitePage({
+        params: { contentId },
+        body,
+        headers: {
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export function getContentRevisions(entityType: ContentEntityType, entityId: string) {
+  return withApiErrors(async () => {
+    const response = await browserClient.content.listContentRevisions({
+      params: {
+        entityType,
+        entityId
+      }
+    });
+    return unwrapContractResponse<ContentRevisionListResponse>(response, [200]);
+  });
+}
+
+export function restoreSitePageRevision(contentId: string, revisionId: string) {
+  return executeMutation<SitePage>({
+    method: 'POST',
+    expectedStatuses: [200],
+    idempotent: true,
+    call: (headers) =>
+      browserClient.content.restoreSitePageRevision({
+        params: { contentId, revisionId },
+        body: {},
+        headers: {
+          'idempotency-key': headers['idempotency-key']!,
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export function createSitePagePreviewToken(contentId: string) {
+  return executeMutation<SitePagePreviewToken>({
+    method: 'POST',
+    expectedStatuses: [201],
+    idempotent: true,
+    call: (headers) =>
+      browserClient.content.createSitePagePreviewToken({
+        params: { contentId },
+        body: {},
+        headers: {
+          'idempotency-key': headers['idempotency-key']!,
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export function createSiteSetting(body: UpsertSiteSettingPayload) {
+  return executeMutation<SiteSetting>({
+    method: 'POST',
+    expectedStatuses: [201],
+    idempotent: true,
+    call: (headers) =>
+      browserClient.content.createSiteSetting({
+        body,
+        headers: {
+          'idempotency-key': headers['idempotency-key']!,
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export function updateSiteSetting(contentId: string, body: UpsertSiteSettingPayload) {
+  return executeMutation<SiteSetting>({
+    method: 'PUT',
+    expectedStatuses: [200],
+    call: (headers) =>
+      browserClient.content.updateSiteSetting({
+        params: { contentId },
+        body,
+        headers: {
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export async function uploadSiteMediaAsset(body: FormData) {
+  return withApiErrors(async () => {
+    const csrfToken = await fetchCsrfToken();
+    const response = await fetch('/api/content/admin/media', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'x-csrf-token': csrfToken,
+        'idempotency-key': createIdempotencyKey()
+      },
+      body
+    });
+
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(
+        typeof payload?.message === 'string' ? payload.message : 'Unable to upload media asset.'
+      );
+    }
+
+    return payload as MediaAsset;
+  });
+}
+
+export function updateSiteMediaAsset(mediaId: string, body: UpdateMediaAssetPayload) {
+  return executeMutation<MediaAsset>({
+    method: 'PUT',
+    expectedStatuses: [200],
+    call: (headers) =>
+      browserClient.content.updateMediaAsset({
+        params: { mediaId },
+        body,
+        headers: {
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export function updatePartnerLead(leadId: string, body: UpdatePartnerLeadPayload) {
+  return executeMutation<PartnerLeadSummary>({
+    method: 'PUT',
+    expectedStatuses: [200],
+    call: (headers) =>
+      browserClient.content.updatePartnerLead({
+        params: { leadId },
+        body,
+        headers: {
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export function createKnowledgeArticle(body: UpsertKnowledgeArticlePayload) {
+  return executeMutation<KnowledgeArticle>({
+    method: 'POST',
+    expectedStatuses: [201],
+    idempotent: true,
+    call: (headers) =>
+      browserClient.content.createKnowledgeArticle({
+        body,
+        headers: {
+          'idempotency-key': headers['idempotency-key']!,
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export function updateKnowledgeArticle(contentId: string, body: UpsertKnowledgeArticlePayload) {
+  return executeMutation<KnowledgeArticle>({
+    method: 'PUT',
+    expectedStatuses: [200],
+    call: (headers) =>
+      browserClient.content.updateKnowledgeArticle({
+        params: { contentId },
+        body,
+        headers: {
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export function createFaqEntry(body: UpsertFaqEntryPayload) {
+  return executeMutation<FaqEntry>({
+    method: 'POST',
+    expectedStatuses: [201],
+    idempotent: true,
+    call: (headers) =>
+      browserClient.content.createFaqEntry({
+        body,
+        headers: {
+          'idempotency-key': headers['idempotency-key']!,
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export function updateFaqEntry(contentId: string, body: UpsertFaqEntryPayload) {
+  return executeMutation<FaqEntry>({
+    method: 'PUT',
+    expectedStatuses: [200],
+    call: (headers) =>
+      browserClient.content.updateFaqEntry({
+        params: { contentId },
+        body,
+        headers: {
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export function createCaseStudy(body: UpsertCaseStudyPayload) {
+  return executeMutation<CaseStudy>({
+    method: 'POST',
+    expectedStatuses: [201],
+    idempotent: true,
+    call: (headers) =>
+      browserClient.content.createCaseStudy({
+        body,
+        headers: {
+          'idempotency-key': headers['idempotency-key']!,
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export function updateCaseStudy(contentId: string, body: UpsertCaseStudyPayload) {
+  return executeMutation<CaseStudy>({
+    method: 'PUT',
+    expectedStatuses: [200],
+    call: (headers) =>
+      browserClient.content.updateCaseStudy({
+        params: { contentId },
+        body,
+        headers: {
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export function createResourceAsset(body: UpsertResourceAssetPayload) {
+  return executeMutation<ResourceAssetSummary>({
+    method: 'POST',
+    expectedStatuses: [201],
+    idempotent: true,
+    call: (headers) =>
+      browserClient.content.createResourceAsset({
+        body,
+        headers: {
+          'idempotency-key': headers['idempotency-key']!,
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export function updateResourceAsset(resourceId: string, body: UpsertResourceAssetPayload) {
+  return executeMutation<ResourceAssetSummary>({
+    method: 'PUT',
+    expectedStatuses: [200],
+    call: (headers) =>
+      browserClient.content.updateResourceAsset({
+        params: { resourceId },
+        body,
+        headers: {
+          'x-csrf-token': headers['x-csrf-token']!
+        }
+      })
+  });
+}
+
+export async function uploadResourceAsset(resourceId: string, body: FormData) {
+  return withApiErrors(async () => {
+    const csrfToken = await fetchCsrfToken();
+    const response = await fetch(`/api/content/admin/resources/${resourceId}/upload`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'x-csrf-token': csrfToken,
+        'idempotency-key': createIdempotencyKey()
+      },
+      body
+    });
+
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(
+        typeof payload?.message === 'string' ? payload.message : 'Unable to upload resource.'
+      );
+    }
+
+    return payload as ResourceAssetSummary;
   });
 }
 

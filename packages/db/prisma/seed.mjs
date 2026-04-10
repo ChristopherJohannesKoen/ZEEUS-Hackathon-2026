@@ -1,7 +1,8 @@
 import process from 'node:process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { Prisma, PrismaClient } from '@prisma/client';
 import argon2 from 'argon2';
 
@@ -10,9 +11,28 @@ const dryRun = process.argv.includes('--dry-run');
 const bootstrapStateId = 1;
 const seedFilePath = fileURLToPath(import.meta.url);
 const seedDir = path.dirname(seedFilePath);
+const repoRoot = path.resolve(seedDir, '../../..');
+const defaultArtifactsDir = path.resolve(repoRoot, '.artifacts');
 
 function readCatalogJson(relativePath) {
   return JSON.parse(readFileSync(path.resolve(seedDir, '..', relativePath), 'utf8'));
+}
+
+function readRepoFile(relativePath) {
+  return readFileSync(path.resolve(repoRoot, relativePath));
+}
+
+function buildSeedStorageKey(buffer, fileName, namespace) {
+  const checksumSha256 = createHash('sha256').update(buffer).digest('hex');
+  const extension = path.extname(fileName);
+  return path.posix.join(namespace, checksumSha256.slice(0, 2), `${checksumSha256}${extension}`);
+}
+
+function writeSeededObject(storageKey, buffer) {
+  const artifactsRoot = path.resolve(process.env.ARTIFACTS_DIR ?? defaultArtifactsDir);
+  const targetPath = path.join(artifactsRoot, storageKey.replaceAll('/', path.sep));
+  mkdirSync(path.dirname(targetPath), { recursive: true });
+  writeFileSync(targetPath, buffer);
 }
 
 const stageCatalog = readCatalogJson('../scoring/catalog/stage-sdgs.json');
@@ -81,7 +101,22 @@ const knowledgeArticles = [
       'The platform mirrors the workbook flow with a faster web experience, saved drafts, revision history, and clearer outputs.',
     body: 'ZEEUS starts with startup context, moves through the Stage I inside-out assessment, then Stage II risks and opportunities, and finishes with impact summary, SDG alignment, dashboard, and report outputs. The workflow is intentionally guidance-oriented, not judgment-oriented. Founders are encouraged to use reasonable qualitative inputs early, then strengthen them with evidence over time.',
     category: 'how_it_works',
+    status: 'published',
+    locale: 'en',
+    heroImageUrl: null,
     sortOrder: 10
+  },
+  {
+    slug: 'manual-walkthrough',
+    title: 'Manual walkthrough for founders and programme teams',
+    summary:
+      'The user manual is reflected in the live web flow: startup context, initial summary, Stage I, Stage II, impact summary, SDG alignment, dashboard, and report.',
+    body: 'Use the manual and the live site together. Start with startup context, review the initial summary as a screening view, complete Stage I for inside-out impacts, move to Stage II for risks and opportunities, then read the impact summary, SDG alignment, dashboard, and export outputs. The web product keeps that sequence intact while making it easier to save work, revisit revisions, and coordinate partner-review workflows.',
+    category: 'how_it_works',
+    status: 'published',
+    locale: 'en',
+    heroImageUrl: null,
+    sortOrder: 15
   },
   {
     slug: 'methodology',
@@ -90,7 +125,22 @@ const knowledgeArticles = [
       'Deterministic workbook-parity scoring remains the canonical engine behind the platform.',
     body: 'Stage I combines financial indicators with environmental, social, and governance impact topics. Stage II applies probability and impact matrices for risks and opportunities. Relevant topics are surfaced from 2.0 upward, while high-priority topics start at 2.5. The platform preserves deterministic scoring and treats AI as an explanatory layer only.',
     category: 'methodology',
+    status: 'published',
+    locale: 'en',
+    heroImageUrl: null,
     sortOrder: 20
+  },
+  {
+    slug: 'score-band-interpretation',
+    title: 'How to read relevant and high-priority topics',
+    summary:
+      'The platform uses the workbook score bands consistently across Stage I, impact summary, dashboard, benchmarks, reports, and reviewer surfaces.',
+    body: 'Topics below 2.0 remain low or very low. Topics from 2.0 to below 2.5 are surfaced as relevant and should be watched with intent. Topics from 2.5 upward are surfaced as high priority and should guide deeper evidence collection, action planning, and reviewer attention. These bands are not cosmetic labels; they shape recommendations, benchmark comparisons, and the way programme teams interpret results.',
+    category: 'methodology',
+    status: 'published',
+    locale: 'en',
+    heroImageUrl: null,
+    sortOrder: 25
   },
   {
     slug: 'sdg-esrs-explainer',
@@ -99,7 +149,22 @@ const knowledgeArticles = [
       'The SDGs act as a map, while the assessment logic borrows from double-materiality thinking to keep startup decisions practical.',
     body: 'The platform uses startup stage and business category to suggest likely SDG relevance, then refines that view through assessment logic. This keeps the SDGs useful as a directional map instead of a compliance checklist. The approach also reflects double materiality by looking at inside-out impacts and outside-in risks and opportunities.',
     category: 'sdg_esrs',
+    status: 'published',
+    locale: 'en',
+    heroImageUrl: null,
     sortOrder: 30
+  },
+  {
+    slug: 'tool-introduction-transcript',
+    title: 'Tool introduction transcript and onboarding notes',
+    summary:
+      'The introductory video language is preserved as founder-facing support copy so the public site, help hub, and workflow all speak with one voice.',
+    body: 'The introduction emphasizes three principles that remain consistent across the product: start early, use the tool for guidance rather than judgment, and treat sustainability as part of better venture design rather than as a late reporting burden. The transcript is preserved in the download library, while this article carries the same framing into the web help system.',
+    category: 'how_it_works',
+    status: 'published',
+    locale: 'en',
+    heroImageUrl: null,
+    sortOrder: 35
   },
   {
     slug: 'partner-programs',
@@ -108,6 +173,9 @@ const knowledgeArticles = [
       'Programs can enroll startups, request submissions, assign reviewers, and track evidence-backed improvement over time.',
     body: 'ZEEUS now supports dual-audience delivery. Founders can run evaluations and evidence workflows, while partners can manage programs, submissions, reviewer assignments, and official outputs. Evaluation lifecycle and program review lifecycle remain separate so canonical scoring is never altered by reviewers.',
     category: 'partner',
+    status: 'published',
+    locale: 'en',
+    heroImageUrl: null,
     sortOrder: 40
   },
   {
@@ -117,6 +185,9 @@ const knowledgeArticles = [
       'Use the knowledge base, FAQ, and partner support channels to onboard new teams without losing methodological consistency.',
     body: 'ZEEUS is designed to be explainable and reproducible. The public site provides plain-language guidance, while the workspace offers tooltips, scenario notes, evidence prompts, and reporting outputs. Partners can use branded program pages and reviewer workflows to coordinate startup support.',
     category: 'contact',
+    status: 'published',
+    locale: 'en',
+    heroImageUrl: null,
     sortOrder: 50
   }
 ];
@@ -127,6 +198,8 @@ const faqEntries = [
     answer:
       'No. It is a guidance tool designed to help startups identify material issues early and make better design decisions before scaling.',
     category: 'principles',
+    status: 'published',
+    locale: 'en',
     sortOrder: 10
   },
   {
@@ -134,6 +207,8 @@ const faqEntries = [
     answer:
       'No. The SDGs are treated as a map and early compass reading. Final relevance is refined by the full assessment workflow.',
     category: 'methodology',
+    status: 'published',
+    locale: 'en',
     sortOrder: 20
   },
   {
@@ -141,6 +216,8 @@ const faqEntries = [
     answer:
       'Yes. Qualitative judgments are valid early on, as long as teams are explicit about assumptions and improve evidence quality over time.',
     category: 'methodology',
+    status: 'published',
+    locale: 'en',
     sortOrder: 30
   },
   {
@@ -148,6 +225,8 @@ const faqEntries = [
     answer:
       'Scores from 2.0 to below 2.5 are surfaced as relevant. Scores from 2.5 upward are surfaced as high priority.',
     category: 'scores',
+    status: 'published',
+    locale: 'en',
     sortOrder: 40
   },
   {
@@ -155,6 +234,8 @@ const faqEntries = [
     answer:
       'No. AI is advisory only. It can explain outputs, highlight evidence gaps, and summarize findings, but it never alters canonical scoring.',
     category: 'ai',
+    status: 'published',
+    locale: 'en',
     sortOrder: 50
   },
   {
@@ -162,6 +243,8 @@ const faqEntries = [
     answer:
       'Yes. Reviewers work on top of immutable revision snapshots. They can comment, request changes, or approve submissions without mutating the saved scoring outputs.',
     category: 'programs',
+    status: 'published',
+    locale: 'en',
     sortOrder: 60
   }
 ];
@@ -177,6 +260,9 @@ const caseStudies = [
       'LoopLeaf started with strong opportunity signals but weak evidence quality. By collecting supplier data, clarifying waste assumptions, and mapping SDG targets, the team improved confidence without changing the deterministic logic.',
     stage: 'pre_launch',
     naceDivision: '10 Manufacture of food products',
+    status: 'published',
+    locale: 'en',
+    heroImageUrl: null,
     sortOrder: 10
   },
   {
@@ -189,51 +275,909 @@ const caseStudies = [
       'RouteKind used the scenario lab to compare geography and partner-dependency assumptions. The exercise clarified where evidence was missing and what had to be collected before pitching for scale capital.',
     stage: 'growth_channel_fit',
     naceDivision: '52 Warehousing and support activities for transportation',
+    status: 'published',
+    locale: 'en',
+    heroImageUrl: null,
     sortOrder: 20
   }
 ];
 
 const resourceAssets = [
   {
+    id: 'resource-introduction',
+    slug: 'zeeus-introduction',
+    title: 'Introduction to ZEEUS',
+    description:
+      'Overview of the ZEEUS project mission, the sustainability-by-design workflow, and the wider entrepreneurship context.',
+    category: 'workflow_asset',
+    fileLabel: 'PDF',
+    status: 'published',
+    locale: 'en',
+    externalUrl: null,
+    sourceRelativePath: 'references/Hackathon_User Guidlines/1) Introduction_ZEEUS.pdf',
+    fileName: '1) Introduction_ZEEUS.pdf',
+    mimeType: 'application/pdf',
+    sortOrder: 10
+  },
+  {
     id: 'resource-user-manual',
+    slug: 'zeeus-user-manual',
     title: 'User manual',
     description: 'Step-by-step description of the workflow, scoring logic, outputs, and dashboard.',
     category: 'manual',
-    href: '/resources#user-manual',
-    fileLabel: 'PDF guide'
+    fileLabel: 'PDF',
+    status: 'published',
+    locale: 'en',
+    externalUrl: null,
+    sourceRelativePath: 'references/Hackathon_User Guidlines/2) Usermanual_ZEEUS.pdf',
+    fileName: '2) Usermanual_ZEEUS.pdf',
+    mimeType: 'application/pdf',
+    sortOrder: 20
   },
   {
     id: 'resource-faq',
+    slug: 'zeeus-faq',
     title: 'FAQ',
     description: 'Plain-language answers on methodology, SDGs, and qualitative startup inputs.',
     category: 'faq',
-    href: '/faq',
-    fileLabel: 'FAQ page'
+    fileLabel: 'PDF',
+    status: 'published',
+    locale: 'en',
+    externalUrl: null,
+    sourceRelativePath: 'references/Hackathon_User Guidlines/3) FAQ_ZEEUS.pdf',
+    fileName: '3) FAQ_ZEEUS.pdf',
+    mimeType: 'application/pdf',
+    sortOrder: 30
   },
   {
-    id: 'resource-methodology',
-    title: 'Methodology note',
+    id: 'resource-score-interpretation',
+    slug: 'zeeus-score-interpretation',
+    title: 'Score interpretation',
     description:
-      'Short explanation of deterministic scoring and the relevant vs high-priority split.',
+      'Explanation of relevant versus high-priority topics and how founders should read the score outputs.',
     category: 'methodology',
-    href: '/methodology',
-    fileLabel: 'Method note'
+    fileLabel: 'PDF',
+    status: 'published',
+    locale: 'en',
+    externalUrl: null,
+    sourceRelativePath: 'references/Hackathon_User Guidlines/4) Score Interpretation_ZEEUS.pdf',
+    fileName: '4) Score Interpretation_ZEEUS.pdf',
+    mimeType: 'application/pdf',
+    sortOrder: 40
   },
   {
-    id: 'resource-sample-report',
-    title: 'Sample report walkthrough',
-    description: 'Overview of how dashboard and report outputs should be read and presented.',
-    category: 'sample_report',
-    href: '/how-it-works',
-    fileLabel: 'Walkthrough'
-  },
-  {
-    id: 'resource-workflow-assets',
-    title: 'Workflow assets',
-    description: 'Reference materials, explainer content, and onboarding prompts for programs.',
+    id: 'resource-tool-example',
+    slug: 'zeeus-tool-example-pack',
+    title: 'Tool and example pack',
+    description:
+      'Official tool-and-example archive from the ZEEUS reference pack for onboarding and comparison.',
     category: 'workflow_asset',
-    href: '/partners',
-    fileLabel: 'Partner pack'
+    fileLabel: 'ZIP',
+    status: 'published',
+    locale: 'en',
+    externalUrl: null,
+    sourceRelativePath: 'references/Hackathon_User Guidlines/5) Tool & Example.zip',
+    fileName: '5) Tool & Example.zip',
+    mimeType: 'application/zip',
+    sortOrder: 50
+  },
+  {
+    id: 'resource-guidelines-kit',
+    slug: 'zeeus-guidelines-kit',
+    title: 'Brand and guidelines kit',
+    description: 'Official ZEEUS identity guidance covering voice, framing, and visual treatment.',
+    category: 'workflow_asset',
+    fileLabel: 'PDF',
+    status: 'published',
+    locale: 'en',
+    externalUrl: null,
+    sourceRelativePath: 'references/Hackathon_User Guidlines/6) GUIDELINES KIT- ZEEUS.pdf',
+    fileName: '6) GUIDELINES KIT- ZEEUS.pdf',
+    mimeType: 'application/pdf',
+    sortOrder: 60
+  },
+  {
+    id: 'resource-tool-introduction-transcript',
+    slug: 'zeeus-tool-introduction-transcript',
+    title: 'Tool introduction transcript',
+    description:
+      'Transcript of the introductory tool video used for site copy alignment and onboarding support.',
+    category: 'workflow_asset',
+    fileLabel: 'TXT',
+    status: 'published',
+    locale: 'en',
+    externalUrl: null,
+    sourceRelativePath: 'references/Hackathon_User Guidlines/Tool_Introduction_Video.txt',
+    fileName: 'Tool_Introduction_Video.txt',
+    mimeType: 'text/plain; charset=utf-8',
+    sortOrder: 70
+  }
+];
+
+const siteMediaAssets = [
+  {
+    slug: 'zeeus-hero-application',
+    title: 'ZEEUS landing page hero image',
+    altText: 'ZEEUS sustainability and innovation materials displayed on a desk.',
+    publicUrl: '/brand/zeeus/imagery/hero-application.png',
+    filePath: 'apps/web/public/brand/zeeus/imagery/hero-application.png',
+    locale: 'en',
+    status: 'published'
+  },
+  {
+    slug: 'zeeus-logo-primary-horizontal',
+    title: 'ZEEUS primary horizontal logo',
+    altText: 'Primary horizontal ZEEUS logo.',
+    publicUrl: '/brand/zeeus/logos/logo-primary-horizontal.png',
+    filePath: 'apps/web/public/brand/zeeus/logos/logo-primary-horizontal.png',
+    locale: 'en',
+    status: 'published'
+  },
+  {
+    slug: 'zeeus-logo-symbol-circle',
+    title: 'ZEEUS symbol mark',
+    altText: 'Circular ZEEUS symbol logo.',
+    publicUrl: '/brand/zeeus/logos/logo-symbol-circle.png',
+    filePath: 'apps/web/public/brand/zeeus/logos/logo-symbol-circle.png',
+    locale: 'en',
+    status: 'published'
+  }
+];
+
+const siteSettings = [
+  {
+    key: 'site_announcement',
+    locale: 'en',
+    title: 'Top announcement',
+    description: 'Institutional attribution shown above the main navigation.',
+    value: 'Developed by IfaS | Trier University of Applied Sciences under the ZEEUS project.'
+  },
+  {
+    key: 'site_primary_navigation',
+    locale: 'en',
+    title: 'Primary navigation',
+    description: 'Primary navigation items for the public site.',
+    value: [
+      { label: 'Home', href: '/' },
+      { label: 'How it works', href: '/how-it-works' },
+      { label: 'What you get', href: '/#what-you-get' },
+      { label: 'About ZEEUS', href: '/about-zeeus' },
+      { label: 'FAQ', href: '/faq' },
+      { label: 'Contact', href: '/contact' }
+    ]
+  },
+  {
+    key: 'site_footer_columns',
+    locale: 'en',
+    title: 'Footer columns',
+    description: 'Footer link structure for the public site.',
+    value: [
+      {
+        title: 'Explore',
+        links: [
+          { label: 'Home', href: '/' },
+          { label: 'How it works', href: '/how-it-works' },
+          { label: 'Resources', href: '/resources' },
+          { label: 'FAQ', href: '/faq' },
+          { label: 'Contact', href: '/contact' }
+        ]
+      },
+      {
+        title: 'Project',
+        links: [
+          { label: 'About ZEEUS', href: '/about-zeeus' },
+          { label: 'Seed Factories', href: '/seed-factories' },
+          { label: 'Methodology', href: '/methodology' },
+          { label: 'SDG and ESRS', href: '/sdg-esrs' },
+          { label: 'Funding and support', href: '/funding-support' }
+        ]
+      },
+      {
+        title: 'Legal',
+        links: [
+          { label: 'Privacy policy', href: '/privacy' },
+          { label: 'Accessibility', href: '/accessibility' },
+          { label: 'Cookie notice', href: '/cookies' },
+          { label: 'Terms of use', href: '/terms' }
+        ]
+      }
+    ]
+  },
+  {
+    key: 'site_footer_note',
+    locale: 'en',
+    title: 'Footer note',
+    description: 'Institutional note shown in the footer.',
+    value:
+      'Developed by IfaS, Institute for Applied Material Flow Management, Trier University of Applied Sciences, within the ZEEUS project.'
+  },
+  {
+    key: 'site_funding_note',
+    locale: 'en',
+    title: 'Funding note',
+    description: 'Funding and ecosystem note shown in the footer.',
+    value:
+      'Supported within a broader European innovation and sustainability context. Use of project logos and co-branding should follow the ZEEUS visual identity guidance.'
+  },
+  {
+    key: 'site_contact_email',
+    locale: 'en',
+    title: 'Contact email',
+    description: 'Primary institutional contact email.',
+    value: 'zeeus@ifas.eu'
+  },
+  {
+    key: 'site_contact_links',
+    locale: 'en',
+    title: 'Utility links',
+    description: 'Utility links shown with the institutional announcement bar.',
+    value: [
+      { label: 'About ZEEUS', href: '/about-zeeus' },
+      { label: 'Contact', href: '/contact' },
+      { label: 'Privacy', href: '/privacy' }
+    ]
+  }
+];
+
+const sitePages = [
+  {
+    slug: 'home',
+    locale: 'en',
+    title: 'ZEEUS Sustainability by Design Tool',
+    summary:
+      'A founder-friendly guidance tool from IfaS at Trier University of Applied Sciences under the ZEEUS project.',
+    pageType: 'landing',
+    status: 'published',
+    heroEyebrow: 'Startup Sustainability Evaluation Tool',
+    heroTitle: 'Build your startup with sustainability in mind from day one',
+    heroBody:
+      'The Sustainability by Design tool helps founders explore how their idea connects to sustainability, strategy, and future business resilience. It translates the UN Sustainable Development Goals and ESRS double materiality into a practical, startup-friendly workflow so you can identify what matters early, avoid costly blind spots, and grow with greater confidence.',
+    heroPrimaryCtaLabel: 'Start evaluation',
+    heroPrimaryCtaHref: '/signup',
+    heroSecondaryCtaLabel: 'See how it works',
+    heroSecondaryCtaHref: '/#how-it-works',
+    heroMediaSlug: 'zeeus-hero-application',
+    navigationLabel: 'Home',
+    navigationGroup: 'explore',
+    showInPrimaryNav: true,
+    showInFooter: false,
+    canonicalUrl: 'https://zeeus.org',
+    seoTitle: 'Sustainability by Design for startups',
+    seoDescription:
+      'Assess your startup idea through sustainability, risk, and opportunity lenses with the ZEEUS Sustainability by Design tool.',
+    sections: [
+      {
+        id: 'what-you-can-explore',
+        kind: 'feature_grid',
+        eyebrow: 'What you can explore',
+        title: 'Relevant outputs from the start',
+        items: [
+          {
+            title: 'Relevant SDGs',
+            description:
+              'Surface SDGs linked to your startup stage and business context without turning them into a checklist.'
+          },
+          {
+            title: 'Material topics',
+            description:
+              'Explore environmental, social, governance, and economic topics that may matter to your venture.'
+          },
+          {
+            title: 'Risks and opportunities',
+            description:
+              'See where sustainability-related developments may create exposure or differentiation.'
+          },
+          {
+            title: 'Priority areas',
+            description:
+              'Identify where action, monitoring, or stronger evidence may be needed next.'
+          },
+          {
+            title: 'Export-ready outputs',
+            description:
+              'Generate results you can use in reflection, programme review, and reporting preparation.'
+          }
+        ]
+      },
+      {
+        id: 'founder-reassurance',
+        kind: 'feature_grid',
+        eyebrow: 'Built to guide',
+        title: 'A guidance tool, not a judgment tool',
+        body: 'The workflow is designed to help founders reflect, prioritise, and make better-informed decisions without requiring a mature reporting team.',
+        items: [
+          {
+            title: 'Startup-friendly',
+            description: 'Built for early-stage ventures, not only mature reporting teams.'
+          },
+          {
+            title: 'SDG-aligned',
+            description:
+              'Use globally recognised sustainability language without turning it into a checklist.'
+          },
+          {
+            title: 'ESRS-informed',
+            description:
+              'Explore inside-out impacts and outside-in risks in a structured, founder-friendly format.'
+          },
+          {
+            title: 'Action-oriented',
+            description:
+              'Get practical summaries, highlighted priorities, and recommendations to guide next steps.'
+          }
+        ]
+      },
+      {
+        id: 'why-this-matters',
+        kind: 'feature_grid',
+        eyebrow: 'Why this matters',
+        title: 'Sustainability matters early because startup decisions harden fast',
+        body: 'Many sustainability-related issues are easiest to address at the design stage, before processes harden, costs rise, and trade-offs become more expensive.',
+        items: [
+          {
+            title: 'See what could matter before it becomes a problem',
+            description:
+              'Spot topics related to energy, water, waste, labour, trust, ethics, and future business exposure earlier in your journey.'
+          },
+          {
+            title: 'Turn frameworks into practical founder questions',
+            description:
+              'The tool translates sustainability frameworks into focused questions that help you reflect in a realistic, stage-appropriate way.'
+          },
+          {
+            title: 'Build a stronger story for growth',
+            description:
+              'A clearer understanding of impacts, risks, opportunities, and SDG alignment can strengthen planning and positioning.'
+          },
+          {
+            title: 'Avoid unnecessary complexity',
+            description:
+              'The goal is not to master every disclosure requirement at once, but to focus on what is genuinely relevant now.'
+          }
+        ]
+      },
+      {
+        id: 'how-it-works',
+        kind: 'step_grid',
+        eyebrow: 'How it works',
+        title: 'Move from startup context to dashboard insights in five steps',
+        body: 'Enter your startup context, review relevant SDGs, complete Stage I and Stage II, then use the resulting outputs to guide next decisions.',
+        items: [
+          {
+            title: 'Describe your startup context',
+            description:
+              'Capture country, business category, offering type, current stage, and innovation approach.',
+            microcopy: 'Your context helps shape what the tool highlights first.'
+          },
+          {
+            title: 'Review relevant SDGs',
+            description:
+              'Use the early SDG screening as a directional map rather than a final verdict.',
+            microcopy: 'Think of SDGs as a map, not a checklist.'
+          },
+          {
+            title: 'Complete Stage I',
+            description:
+              'Assess the startup through financial, environmental, social, governance, and economic lenses.',
+            microcopy:
+              'Early-stage evaluation can still be structured, even when information is emerging.'
+          },
+          {
+            title: 'Complete Stage II',
+            description:
+              'Evaluate sustainability-related risks and opportunities that may affect the venture.',
+            microcopy: 'Not every topic becomes a threat. Some become differentiators.'
+          },
+          {
+            title: 'Review outputs',
+            description:
+              'Use the dashboard, recommendations, SDG alignment, and report outputs to guide next steps.',
+            microcopy: 'Use the outputs for planning, reflection, and stakeholder conversations.'
+          }
+        ]
+      },
+      {
+        id: 'what-you-get',
+        kind: 'feature_grid',
+        eyebrow: 'What you get',
+        title: 'Practical outputs you can use immediately',
+        body: 'The tool does more than collect inputs. It turns responses into outputs that help founders focus attention and move forward with more clarity.',
+        items: [
+          {
+            title: 'Impact Summary',
+            description:
+              'A concise overview of the sustainability topics most relevant to your startup.'
+          },
+          {
+            title: 'Results Dashboard',
+            description:
+              'A clear dashboard view of financial scores, impact topics, risks, opportunities, and priorities.'
+          },
+          {
+            title: 'SDG Alignment',
+            description:
+              'A combined view of SDGs linked to startup context so you can connect the venture to recognised goals and targets.'
+          },
+          {
+            title: 'Recommendations',
+            description:
+              'Practical, topic-linked guidance to help you decide what to monitor, refine, or strengthen over time.'
+          },
+          {
+            title: 'Export-ready report',
+            description:
+              'A printable or downloadable output for reflection, mentoring, programme review, and planning.'
+          }
+        ]
+      },
+      {
+        id: 'honest-reflection',
+        kind: 'quote',
+        eyebrow: 'Designed for honest reflection',
+        quote: 'Better awareness early leads to stronger choices later.'
+      },
+      {
+        id: 'audiences',
+        kind: 'audience_list',
+        eyebrow: 'Who this tool is for',
+        title: 'Built for founders, researchers, and entrepreneurship ecosystems',
+        items: [
+          { title: 'Startup founders and early-stage teams' },
+          { title: 'Students exploring venture ideas' },
+          { title: 'Researchers and innovation-focused project teams' },
+          { title: 'Entrepreneurship support programmes' },
+          { title: 'Incubators, accelerators, and mentoring environments' },
+          { title: 'Higher education innovation ecosystems' }
+        ]
+      },
+      {
+        id: 'about-zeeus',
+        kind: 'rich_text',
+        eyebrow: 'About ZEEUS',
+        title: 'A wider mission around innovation, sustainability, and Seed Factories',
+        body: `ZEEUS, Zero Emissions Entrepreneurship for Universal Sustainability, is an international initiative focused on strengthening innovation and entrepreneurship capacity within higher education institutions by supporting sustainable, impact-driven venture creation.
+
+The project supports sustainable entrepreneurship through training, mentoring, digital tools, and cross-border collaboration between Europe and Africa. It contributes to more resilient, scalable innovation ecosystems and encourages earlier sustainability awareness in venture creation.
+
+The Sustainability by Design tool is developed by IfaS at Trier University of Applied Sciences as part of that wider mission.`
+      },
+      {
+        id: 'ecosystem',
+        kind: 'logo_strip',
+        eyebrow: 'Supported by a wider innovation ecosystem',
+        title: 'Institutional context behind the platform',
+        items: [
+          { title: 'ZEEUS' },
+          { title: 'IfaS' },
+          { title: 'Trier University of Applied Sciences' },
+          { title: 'Climate-KIC' },
+          { title: 'European innovation support context' }
+        ]
+      },
+      {
+        id: 'faq',
+        kind: 'faq_list',
+        eyebrow: 'FAQ',
+        title: 'Straight answers for founders starting early',
+        items: [
+          {
+            title: 'Is this a scoring tool or a judgment tool?',
+            description:
+              'It is a guidance tool. The purpose is not to label a startup as good or bad, but to help founders understand which topics may matter and how they could shape future decisions.'
+          },
+          {
+            title: 'Do I need exact numbers before I use it?',
+            description:
+              'No. Early-stage ventures often do not have complete quantitative data. Structured qualitative inputs are supported where hard measurements are not yet available.'
+          },
+          {
+            title: 'Why are SDGs included?',
+            description:
+              'SDGs provide a broad sustainability map and help founders identify which areas may already be relevant to their model, operations, and future development.'
+          },
+          {
+            title: 'What is double materiality in simple terms?',
+            description:
+              'It means looking in two directions at once: how the startup may affect people and the environment, and how environmental, social, and governance issues may affect the startup.'
+          },
+          {
+            title: 'What do I receive at the end of the evaluation?',
+            description:
+              'You receive an impact summary, dashboard results, SDG alignment view, recommendations, and an exportable report-style output.'
+          },
+          {
+            title: 'Why start this early?',
+            description:
+              'Because early awareness can reduce future rework, strengthen design choices, and make it easier to align growth with resilient and sustainable business development.'
+          }
+        ]
+      },
+      {
+        id: 'start-evaluation',
+        kind: 'cta',
+        eyebrow: 'Final step',
+        title: 'Start exploring what matters for your startup',
+        body: 'Use the Sustainability by Design tool to identify relevant sustainability topics, reflect on risks and opportunities, and build a clearer picture of how your venture can grow with resilience and purpose.',
+        ctaLabel: 'Start evaluation',
+        ctaHref: '/signup'
+      }
+    ],
+    sortOrder: 0
+  },
+  {
+    slug: 'about-zeeus',
+    locale: 'en',
+    title: 'About ZEEUS',
+    summary:
+      'Learn how ZEEUS connects sustainable entrepreneurship, higher education, and innovation ecosystems.',
+    pageType: 'institutional',
+    status: 'published',
+    heroEyebrow: 'About ZEEUS',
+    heroTitle: 'An international initiative for sustainable, impact-driven entrepreneurship',
+    heroBody:
+      'ZEEUS strengthens innovation and entrepreneurship capacity within higher education institutions by supporting sustainable venture creation, transnational collaboration, and Seed Factory development.',
+    navigationLabel: 'About ZEEUS',
+    navigationGroup: 'project',
+    showInPrimaryNav: true,
+    showInFooter: true,
+    sections: [
+      {
+        id: 'about-mission',
+        kind: 'rich_text',
+        title: 'What ZEEUS is building',
+        body: 'ZEEUS, Zero Emissions Entrepreneurship for Universal Sustainability, promotes innovation, knowledge transfer, and entrepreneurial education through cooperation between institutions and ecosystems. The project supports scalable, sustainability-oriented venture creation and connects education, mentoring, and practical tools.'
+      },
+      {
+        id: 'about-pillars',
+        kind: 'feature_grid',
+        title: 'Core focus areas',
+        items: [
+          {
+            title: 'Innovation capacity',
+            description:
+              'Strengthening entrepreneurial capability inside higher education institutions and their surrounding ecosystems.'
+          },
+          {
+            title: 'Sustainable venture creation',
+            description:
+              'Supporting founders, students, and researchers in building ventures that are resilient and impact-aware from the outset.'
+          },
+          {
+            title: 'Europe-Africa collaboration',
+            description:
+              'Building practical cross-border cooperation around entrepreneurship, climate action, and innovation.'
+          }
+        ]
+      }
+    ],
+    sortOrder: 10
+  },
+  {
+    slug: 'seed-factories',
+    locale: 'en',
+    title: 'Seed Factories',
+    summary:
+      'Seed Factories connect training, mentoring, ecosystem navigation, and venture support in one model.',
+    pageType: 'institutional',
+    status: 'published',
+    heroEyebrow: 'Seed Factories',
+    heroTitle: 'One-stop support environments for sustainable entrepreneurship',
+    heroBody:
+      'A central part of the wider ZEEUS vision is the development of Seed Factories as one-stop support environments for students, researchers, staff, and entrepreneurs.',
+    navigationLabel: 'Seed Factories',
+    navigationGroup: 'project',
+    showInFooter: true,
+    sections: [
+      {
+        id: 'seed-overview',
+        kind: 'rich_text',
+        title: 'Why Seed Factories matter',
+        body: 'Seed Factories connect training, mentoring, ecosystem navigation, and access to opportunities that can turn promising ideas into impactful ventures. They are designed to reduce fragmentation and support more credible venture development from idea stage onward.'
+      }
+    ],
+    sortOrder: 20
+  },
+  {
+    slug: 'how-it-works',
+    locale: 'en',
+    title: 'How the evaluation works',
+    summary:
+      'Move through the process step by step, starting with startup context and ending with a dashboard of results, aligned SDGs, and practical recommendations.',
+    pageType: 'support',
+    status: 'published',
+    heroEyebrow: 'How it works',
+    heroTitle: 'A structured founder workflow from context to recommendations',
+    heroBody:
+      'The tool begins with startup context, adds SDG screening, then moves through Stage I and Stage II before producing dashboard insights, recommendations, and export-ready outputs.',
+    navigationLabel: 'How it works',
+    navigationGroup: 'explore',
+    showInFooter: true,
+    sections: [
+      {
+        id: 'workflow-steps',
+        kind: 'step_grid',
+        title: 'Five core steps',
+        items: [
+          {
+            title: 'Describe your startup context',
+            description:
+              'Capture country, business category, offering type, current stage, and innovation approach.'
+          },
+          {
+            title: 'Review relevant SDGs',
+            description: 'Use the early SDG screening as a directional map rather than a checklist.'
+          },
+          {
+            title: 'Complete Stage I',
+            description:
+              'Assess the startup through financial, environmental, social, governance, and economic lenses.'
+          },
+          {
+            title: 'Complete Stage II',
+            description:
+              'Evaluate sustainability-related risks and opportunities that may affect the venture.'
+          },
+          {
+            title: 'Review outputs',
+            description:
+              'Use the dashboard, recommendations, SDG alignment, and report outputs to guide next steps.'
+          }
+        ]
+      }
+    ],
+    sortOrder: 30
+  },
+  {
+    slug: 'methodology',
+    locale: 'en',
+    title: 'Methodology',
+    summary:
+      'Understand how the deterministic scoring logic preserves workbook parity while keeping the tool founder-friendly.',
+    pageType: 'methodology',
+    status: 'published',
+    heroEyebrow: 'Methodology',
+    heroTitle: 'Deterministic scoring with startup-friendly guidance',
+    heroBody:
+      'Stage I combines financial indicators with environmental, social, and governance impact topics. Stage II applies probability and impact matrices for risks and opportunities.',
+    navigationLabel: 'Methodology',
+    navigationGroup: 'project',
+    showInFooter: true,
+    sections: [
+      {
+        id: 'methodology-body',
+        kind: 'rich_text',
+        body: 'Relevant topics are surfaced from 2.0 upward, while high-priority topics start at 2.5. The platform preserves deterministic scoring and treats AI as an explanatory layer only. Qualitative inputs are acceptable early, as long as assumptions are explicit and improved over time.'
+      }
+    ],
+    sortOrder: 40
+  },
+  {
+    slug: 'sdg-esrs',
+    locale: 'en',
+    title: 'SDGs, ESRS, and double materiality',
+    summary:
+      'The tool uses globally recognised sustainability frameworks in a practical, founder-friendly way.',
+    pageType: 'methodology',
+    status: 'published',
+    heroEyebrow: 'Frameworks',
+    heroTitle: 'A sustainability map for early-stage ventures',
+    heroBody:
+      'The SDGs act as a map, while the assessment logic borrows from ESRS double-materiality thinking to keep startup decisions practical and relevant.',
+    navigationLabel: 'SDG and ESRS',
+    navigationGroup: 'project',
+    showInFooter: true,
+    sections: [
+      {
+        id: 'framework-columns',
+        kind: 'feature_grid',
+        items: [
+          {
+            title: 'UN Sustainable Development Goals',
+            description:
+              'SDGs help frame the broader sustainability areas your startup may touch, from water and energy to waste, labour, and innovation.'
+          },
+          {
+            title: 'ESRS double materiality',
+            description:
+              'The workflow looks in two directions at once: how your startup affects people and the environment, and how sustainability issues may affect your startup.'
+          }
+        ]
+      }
+    ],
+    sortOrder: 50
+  },
+  {
+    slug: 'partners',
+    locale: 'en',
+    title: 'Partner and program workflows',
+    summary:
+      'Programs can enroll startups, request submissions, assign reviewers, and coordinate official outputs without changing canonical scoring.',
+    pageType: 'institutional',
+    status: 'published',
+    heroEyebrow: 'Partner programs',
+    heroTitle: 'Built for founders, reviewers, and entrepreneurship ecosystems',
+    heroBody:
+      'The platform supports public partner pages, invite-only reviewer workflows, and program submissions that always point to immutable evaluation revisions.',
+    navigationLabel: 'Partner programmes',
+    navigationGroup: 'project',
+    showInFooter: true,
+    sections: [
+      {
+        id: 'partner-body',
+        kind: 'rich_text',
+        body: 'Partners can manage cohort oversight, startup submissions, reviewer workflows, and official outputs while keeping deterministic scoring immutable. The system is designed so programmes can support startups without overwriting the underlying result.'
+      }
+    ],
+    sortOrder: 60
+  },
+  {
+    slug: 'contact',
+    locale: 'en',
+    title: 'Contact',
+    summary:
+      'Use the contact and support routes to reach the appropriate ZEEUS or IfaS contact for onboarding, partnerships, and institutional requests.',
+    pageType: 'support',
+    status: 'published',
+    heroEyebrow: 'Contact',
+    heroTitle: 'Reach the ZEEUS and IfaS support context',
+    heroBody:
+      'Use the knowledge base, FAQ, and contact routes to onboard teams, route institutional requests, and coordinate next steps.',
+    navigationLabel: 'Contact',
+    navigationGroup: 'support',
+    showInPrimaryNav: true,
+    showInFooter: true,
+    sections: [
+      {
+        id: 'contact-body',
+        kind: 'rich_text',
+        body: 'For product guidance, institutional coordination, and project questions, use the contact pathways provided on the site. Privacy, accessibility, cookie, and legal requests are routed through dedicated pages and can also be directed to the project contact mailbox.'
+      }
+    ],
+    sortOrder: 70
+  },
+  {
+    slug: 'privacy',
+    locale: 'en',
+    title: 'Privacy policy',
+    summary:
+      'Understand how the platform handles account, contact, and evaluation data at a high level.',
+    pageType: 'legal',
+    status: 'published',
+    heroEyebrow: 'Privacy policy',
+    heroTitle: 'A clear statement of data handling responsibilities',
+    heroBody:
+      'This site stores account information, evaluation inputs, and contact requests to operate the platform and support programme workflows.',
+    navigationLabel: 'Privacy policy',
+    navigationGroup: 'legal',
+    showInFooter: true,
+    sections: [
+      {
+        id: 'privacy-body',
+        kind: 'rich_text',
+        body: 'Account, session, evaluation, evidence, and contact data are processed to operate the service, maintain security, and support authorised programme workflows. Access is role-controlled, audit logged, and aligned with institutional governance. Personal data should be limited to what is needed for account management, evaluation collaboration, programme review, and operational support, with retention and legal review handled through the responsible institutional owners.'
+      }
+    ],
+    sortOrder: 80
+  },
+  {
+    slug: 'accessibility',
+    locale: 'en',
+    title: 'Accessibility',
+    summary:
+      'Accessibility is treated as a product requirement across the public site and founder workspace.',
+    pageType: 'legal',
+    status: 'published',
+    heroEyebrow: 'Accessibility',
+    heroTitle: 'Designed for broad access and continuous improvement',
+    heroBody:
+      'The public site and authenticated workflows are intended to remain keyboard-friendly, readable, and compatible with responsive use.',
+    navigationLabel: 'Accessibility',
+    navigationGroup: 'legal',
+    showInFooter: true,
+    sections: [
+      {
+        id: 'accessibility-body',
+        kind: 'rich_text',
+        body: 'Accessibility improvements should be tracked as ongoing product work. Current priorities include semantic structure, focus visibility, colour contrast, responsive layouts, and clear form feedback. Issues can be reported through the contact route.'
+      }
+    ],
+    sortOrder: 90
+  },
+  {
+    slug: 'cookies',
+    locale: 'en',
+    title: 'Cookie notice',
+    summary:
+      'Cookies and similar technologies are limited to the needs of authentication, security, and approved analytics tooling.',
+    pageType: 'legal',
+    status: 'published',
+    heroEyebrow: 'Cookie notice',
+    heroTitle: 'Minimal, accountable use of browser storage',
+    heroBody:
+      'Session handling and security protections require limited browser storage. Additional analytics should be consent-aware and institutionally approved.',
+    navigationLabel: 'Cookie notice',
+    navigationGroup: 'legal',
+    showInFooter: true,
+    sections: [
+      {
+        id: 'cookie-body',
+        kind: 'rich_text',
+        body: 'Authentication cookies are used to keep signed-in users secure and connected to authorised workflows. Any future analytics or marketing tags should sit behind an explicit consent layer and documented retention policy.'
+      }
+    ],
+    sortOrder: 100
+  },
+  {
+    slug: 'terms',
+    locale: 'en',
+    title: 'Terms of use',
+    summary:
+      'Use the platform as a guidance tool for evaluation and programme workflows, not as a legal certification instrument.',
+    pageType: 'legal',
+    status: 'published',
+    heroEyebrow: 'Terms of use',
+    heroTitle: 'Guidance-oriented use with institutional governance',
+    heroBody:
+      'The platform is designed to support reflection, assessment, and programme workflows. It does not constitute legal, regulatory, or financial certification.',
+    navigationLabel: 'Terms of use',
+    navigationGroup: 'legal',
+    showInFooter: true,
+    sections: [
+      {
+        id: 'terms-body',
+        kind: 'rich_text',
+        body: 'Users should provide honest, supportable inputs and treat outputs as guidance for decision-making, mentoring, and reporting preparation. Institutional partners remain responsible for their own review, approval, and governance processes.'
+      }
+    ],
+    sortOrder: 110
+  },
+  {
+    slug: 'funding-support',
+    locale: 'en',
+    title: 'Funding and support context',
+    summary:
+      'ZEEUS sits within a wider innovation ecosystem and should present approved funding and support context clearly.',
+    pageType: 'institutional',
+    status: 'published',
+    heroEyebrow: 'Funding and support',
+    heroTitle: 'Part of a broader innovation and sustainability effort',
+    heroBody:
+      'The site should acknowledge the wider European innovation, entrepreneurship, and sustainability context in which the ZEEUS project operates.',
+    navigationLabel: 'Funding and support',
+    navigationGroup: 'project',
+    showInFooter: true,
+    sections: [
+      {
+        id: 'funding-body',
+        kind: 'rich_text',
+        body: 'ZEEUS should present its funding and support context in a clear, institutionally approved way that reflects the wider innovation, sustainability, and entrepreneurship ecosystem around the project. Public wording and logo usage should follow the official identity materials, while this page provides the stable public location for that context within the site.'
+      }
+    ],
+    sortOrder: 120
+  },
+  {
+    slug: 'consortium',
+    locale: 'en',
+    title: 'Consortium and ecosystem',
+    summary:
+      'The ZEEUS platform belongs to a wider collaboration of institutions and entrepreneurship ecosystems.',
+    pageType: 'institutional',
+    status: 'published',
+    heroEyebrow: 'Consortium',
+    heroTitle: 'A wider network behind the platform',
+    heroBody:
+      'The ZEEUS site should present the project as part of a broader network of institutions, mentors, and innovation actors rather than as an isolated software artifact.',
+    navigationLabel: 'Consortium',
+    navigationGroup: 'project',
+    showInFooter: true,
+    sections: [
+      {
+        id: 'consortium-body',
+        kind: 'rich_text',
+        body: 'The ZEEUS platform sits within a broader collaboration of higher-education institutions, sustainability experts, entrepreneurship actors, and programme partners. This page is intended to explain roles, collaboration pathways, and ecosystem links in a way that supports trust, not just attribution.'
+      }
+    ],
+    sortOrder: 130
   }
 ];
 
@@ -793,19 +1737,19 @@ async function main() {
   }
 
   const organization = await prisma.organization.upsert({
-    where: { slug: 'zeeus-demo-studio' },
+    where: { slug: 'zeeus-ifas-platform' },
     create: {
-      slug: 'zeeus-demo-studio',
-      name: 'ZEEUS Demo Studio',
+      slug: 'zeeus-ifas-platform',
+      name: 'ZEEUS IfaS Platform',
       description:
-        'Demo organization for the dual-audience ZEEUS platform, covering founder workflow and partner review flows.',
-      websiteUrl: 'https://zeeus.example.com'
+        'Institutional home for the ZEEUS sustainability-by-design platform, covering founder workflow and partner review flows.',
+      websiteUrl: 'https://zeeus.org'
     },
     update: {
-      name: 'ZEEUS Demo Studio',
+      name: 'ZEEUS IfaS Platform',
       description:
-        'Demo organization for the dual-audience ZEEUS platform, covering founder workflow and partner review flows.',
-      websiteUrl: 'https://zeeus.example.com'
+        'Institutional home for the ZEEUS sustainability-by-design platform, covering founder workflow and partner review flows.',
+      websiteUrl: 'https://zeeus.org'
     }
   });
 
@@ -854,13 +1798,13 @@ async function main() {
     where: {
       organizationId_slug: {
         organizationId: organization.id,
-        slug: 'zeeus-partner-cohort-2026'
+        slug: 'zeeus-sustainability-cohort-2026'
       }
     },
     create: {
       organizationId: organization.id,
-      slug: 'zeeus-partner-cohort-2026',
-      name: 'ZEEUS Partner Cohort 2026',
+      slug: 'zeeus-sustainability-cohort-2026',
+      name: 'ZEEUS Sustainability Cohort 2026',
       summary:
         'Program workspace for startup enrollment, reviewer assignment, and official co-branded outputs.',
       description:
@@ -871,12 +1815,12 @@ async function main() {
       status: 'active',
       isPublic: true,
       primaryLabel: 'ZEEUS',
-      partnerLabel: 'KIC Demo Partner',
-      coBrandingLabel: 'EU Co-branding placeholder',
-      watermarkLabel: 'Partner review watermark'
+      partnerLabel: 'IfaS / Trier University of Applied Sciences',
+      coBrandingLabel: 'Supported within the wider ZEEUS innovation and sustainability ecosystem',
+      watermarkLabel: 'Programme review watermark'
     },
     update: {
-      name: 'ZEEUS Partner Cohort 2026',
+      name: 'ZEEUS Sustainability Cohort 2026',
       summary:
         'Program workspace for startup enrollment, reviewer assignment, and official co-branded outputs.',
       description:
@@ -887,9 +1831,9 @@ async function main() {
       status: 'active',
       isPublic: true,
       primaryLabel: 'ZEEUS',
-      partnerLabel: 'KIC Demo Partner',
-      coBrandingLabel: 'EU Co-branding placeholder',
-      watermarkLabel: 'Partner review watermark'
+      partnerLabel: 'IfaS / Trier University of Applied Sciences',
+      coBrandingLabel: 'Supported within the wider ZEEUS innovation and sustainability ecosystem',
+      watermarkLabel: 'Programme review watermark'
     }
   });
 
@@ -1140,6 +2084,122 @@ async function main() {
     });
   }
 
+  const mediaAssetIdsBySlug = new Map();
+
+  for (const asset of siteMediaAssets) {
+    const fileBuffer = readRepoFile(asset.filePath);
+    const mediaAsset = await prisma.mediaAsset.upsert({
+      where: { slug: asset.slug },
+      create: {
+        slug: asset.slug,
+        title: asset.title,
+        altText: asset.altText,
+        caption: null,
+        attribution: null,
+        rights: 'Use according to approved ZEEUS identity guidance.',
+        mimeType:
+          path.extname(asset.filePath).toLowerCase() === '.png' ? 'image/png' : 'image/jpeg',
+        fileName: path.basename(asset.filePath),
+        byteSize: fileBuffer.byteLength,
+        publicUrl: asset.publicUrl,
+        locale: asset.locale,
+        status: asset.status
+      },
+      update: {
+        title: asset.title,
+        altText: asset.altText,
+        rights: 'Use according to approved ZEEUS identity guidance.',
+        fileName: path.basename(asset.filePath),
+        byteSize: fileBuffer.byteLength,
+        publicUrl: asset.publicUrl,
+        locale: asset.locale,
+        status: asset.status
+      }
+    });
+
+    mediaAssetIdsBySlug.set(asset.slug, mediaAsset.id);
+  }
+
+  for (const setting of siteSettings) {
+    await prisma.siteSetting.upsert({
+      where: {
+        key_locale: {
+          key: setting.key,
+          locale: setting.locale
+        }
+      },
+      create: setting,
+      update: {
+        title: setting.title,
+        description: setting.description,
+        value: setting.value
+      }
+    });
+  }
+
+  for (const page of sitePages) {
+    const heroMediaAssetId = page.heroMediaSlug
+      ? (mediaAssetIdsBySlug.get(page.heroMediaSlug) ?? null)
+      : null;
+
+    await prisma.sitePage.upsert({
+      where: {
+        slug_locale: {
+          slug: page.slug,
+          locale: page.locale
+        }
+      },
+      create: {
+        slug: page.slug,
+        locale: page.locale,
+        title: page.title,
+        summary: page.summary,
+        pageType: page.pageType,
+        status: page.status,
+        heroEyebrow: page.heroEyebrow ?? null,
+        heroTitle: page.heroTitle ?? null,
+        heroBody: page.heroBody ?? null,
+        heroPrimaryCtaLabel: page.heroPrimaryCtaLabel ?? null,
+        heroPrimaryCtaHref: page.heroPrimaryCtaHref ?? null,
+        heroSecondaryCtaLabel: page.heroSecondaryCtaLabel ?? null,
+        heroSecondaryCtaHref: page.heroSecondaryCtaHref ?? null,
+        heroMediaAssetId,
+        navigationLabel: page.navigationLabel ?? null,
+        navigationGroup: page.navigationGroup ?? null,
+        showInPrimaryNav: Boolean(page.showInPrimaryNav),
+        showInFooter: Boolean(page.showInFooter),
+        canonicalUrl: page.canonicalUrl ?? null,
+        seoTitle: page.seoTitle ?? null,
+        seoDescription: page.seoDescription ?? null,
+        sections: page.sections,
+        sortOrder: page.sortOrder
+      },
+      update: {
+        title: page.title,
+        summary: page.summary,
+        pageType: page.pageType,
+        status: page.status,
+        heroEyebrow: page.heroEyebrow,
+        heroTitle: page.heroTitle,
+        heroBody: page.heroBody,
+        heroPrimaryCtaLabel: page.heroPrimaryCtaLabel ?? null,
+        heroPrimaryCtaHref: page.heroPrimaryCtaHref ?? null,
+        heroSecondaryCtaLabel: page.heroSecondaryCtaLabel ?? null,
+        heroSecondaryCtaHref: page.heroSecondaryCtaHref ?? null,
+        heroMediaAssetId,
+        navigationLabel: page.navigationLabel ?? null,
+        navigationGroup: page.navigationGroup ?? null,
+        showInPrimaryNav: Boolean(page.showInPrimaryNav),
+        showInFooter: Boolean(page.showInFooter),
+        canonicalUrl: page.canonicalUrl ?? null,
+        seoTitle: page.seoTitle ?? null,
+        seoDescription: page.seoDescription ?? null,
+        sections: page.sections,
+        sortOrder: page.sortOrder
+      }
+    });
+  }
+
   for (const article of knowledgeArticles) {
     await prisma.knowledgeArticle.upsert({
       where: { slug: article.slug },
@@ -1149,6 +2209,9 @@ async function main() {
         summary: article.summary,
         body: article.body,
         category: article.category,
+        status: article.status,
+        locale: article.locale,
+        heroImageUrl: article.heroImageUrl,
         sortOrder: article.sortOrder
       }
     });
@@ -1167,6 +2230,8 @@ async function main() {
         question: entry.question,
         answer: entry.answer,
         category: entry.category,
+        status: entry.status,
+        locale: entry.locale,
         sortOrder: entry.sortOrder
       }
     });
@@ -1183,6 +2248,9 @@ async function main() {
         story: study.story,
         stage: study.stage,
         naceDivision: study.naceDivision,
+        status: study.status,
+        locale: study.locale,
+        heroImageUrl: study.heroImageUrl,
         sortOrder: study.sortOrder
       }
     });
@@ -1196,6 +2264,8 @@ async function main() {
       create: {
         id: `${target.goalNumber}:${target.targetCode}`,
         ...target,
+        status: 'published',
+        locale: 'en',
         sortOrder: (index + 1) * 10
       },
       update: {
@@ -1204,34 +2274,58 @@ async function main() {
         title: target.title,
         description: target.description,
         officialUrl: target.officialUrl,
+        status: 'published',
+        locale: 'en',
         sortOrder: (index + 1) * 10
       }
     });
   }
 
-  const resourceList = resourceAssets.map((asset) => ({
-    ...asset,
-    updatedAt: new Date().toISOString()
-  }));
-
-  await prisma.knowledgeArticle.upsert({
-    where: { slug: 'resources-downloads' },
-    create: {
-      slug: 'resources-downloads',
-      title: 'Resources and downloads',
-      summary: 'Download-center metadata for manuals, FAQs, methodology notes, and sample assets.',
-      body: JSON.stringify(resourceList),
-      category: 'how_it_works',
-      sortOrder: 60
-    },
-    update: {
-      title: 'Resources and downloads',
-      summary: 'Download-center metadata for manuals, FAQs, methodology notes, and sample assets.',
-      body: JSON.stringify(resourceList),
-      category: 'how_it_works',
-      sortOrder: 60
+  await prisma.knowledgeArticle.deleteMany({
+    where: {
+      slug: 'resources-downloads'
     }
   });
+
+  for (const asset of resourceAssets) {
+    const buffer = readRepoFile(asset.sourceRelativePath);
+    const storageKey = buildSeedStorageKey(buffer, asset.fileName, 'content-resources');
+    writeSeededObject(storageKey, buffer);
+
+    await prisma.resourceAsset.upsert({
+      where: { slug: asset.slug },
+      create: {
+        id: asset.id,
+        slug: asset.slug,
+        title: asset.title,
+        description: asset.description,
+        category: asset.category,
+        fileLabel: asset.fileLabel,
+        status: asset.status,
+        locale: asset.locale,
+        externalUrl: asset.externalUrl,
+        storageKey,
+        fileName: asset.fileName,
+        mimeType: asset.mimeType,
+        byteSize: buffer.byteLength,
+        sortOrder: asset.sortOrder
+      },
+      update: {
+        title: asset.title,
+        description: asset.description,
+        category: asset.category,
+        fileLabel: asset.fileLabel,
+        status: asset.status,
+        locale: asset.locale,
+        externalUrl: asset.externalUrl,
+        fileName: asset.fileName,
+        mimeType: asset.mimeType,
+        storageKey,
+        byteSize: buffer.byteLength,
+        sortOrder: asset.sortOrder
+      }
+    });
+  }
 
   for (const evidence of evidenceFixtures) {
     await prisma.evidenceAsset.upsert({
@@ -1280,6 +2374,7 @@ async function main() {
         id: `${evaluation.id}:${scenario.name}`,
         evaluationId: seededEvaluation.id,
         baseRevisionId: seededEvaluation.currentRevisionId,
+        baseRevisionNumber: seededEvaluation.currentRevisionNumber,
         name: scenario.name,
         status: 'draft',
         focusArea: scenario.focusArea,
@@ -1289,13 +2384,21 @@ async function main() {
         hypothesis: scenario.hypothesis,
         advisorySummary: scenario.advisorySummary,
         assumptions: {
-          comparisonMode: 'advisory_only',
-          confidenceBand: evaluationFixture.confidenceBand
+          financialDelta: 0.5,
+          riskDelta: 0.25,
+          opportunityDelta: 0.5,
+          confidenceShift: 'same',
+          impactedTopicCodes: ['E1', 'E5']
         },
+        metricDeltas: [],
+        topicDeltas: [],
+        projectedConfidenceBand: evaluationFixture.confidenceBand,
+        takeaways: ['Seeded scenario for founder-side advisory comparison.'],
         createdByUserId: owner.id
       },
       update: {
         baseRevisionId: seededEvaluation.currentRevisionId,
+        baseRevisionNumber: seededEvaluation.currentRevisionNumber,
         name: scenario.name,
         status: 'draft',
         focusArea: scenario.focusArea,
@@ -1305,9 +2408,16 @@ async function main() {
         hypothesis: scenario.hypothesis,
         advisorySummary: scenario.advisorySummary,
         assumptions: {
-          comparisonMode: 'advisory_only',
-          confidenceBand: evaluationFixture.confidenceBand
+          financialDelta: 0.5,
+          riskDelta: 0.25,
+          opportunityDelta: 0.5,
+          confidenceShift: 'same',
+          impactedTopicCodes: ['E1', 'E5']
         },
+        metricDeltas: [],
+        topicDeltas: [],
+        projectedConfidenceBand: evaluationFixture.confidenceBand,
+        takeaways: ['Seeded scenario for founder-side advisory comparison.'],
         createdByUserId: owner.id
       }
     });

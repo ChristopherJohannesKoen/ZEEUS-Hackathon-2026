@@ -6,6 +6,8 @@ import type {
   ImpactSummaryResponse,
   ImpactDimensionLevel,
   ImpactLikelihoodLevel,
+  MatrixLegend,
+  MatrixLegendEntry,
   MaterialTopicSummary,
   OpportunityCode,
   OpportunityRatingLabel,
@@ -16,6 +18,8 @@ import type {
   RiskProbabilityLevel,
   RiskRatingLabel,
   SdgReference,
+  ScoreInterpretationBand,
+  ScoreInterpretationGuide,
   SdgSourceType,
   Stage1FinancialAnswer,
   Stage1FinancialAnswersPayload,
@@ -36,24 +40,40 @@ import topicCatalog from '../catalog/topics.json';
 import riskCatalog from '../catalog/risks.json';
 import opportunityCatalog from '../catalog/opportunities.json';
 import benchmarkBaselines from '../catalog/benchmark-baselines.json';
+import businessCategories from '../catalog/business-categories.json';
+import extendedNaceCatalog from '../catalog/extended-nace.json';
+import workbookGuidance from '../catalog/workbook-guidance.json';
 import workbookSnapshot from '../catalog/workbook-snapshot.json';
 
 type StageCatalogEntry = (typeof stageCatalog)[number];
 type TopicCatalogEntry = (typeof topicCatalog)[number];
 type RiskCatalogEntry = (typeof riskCatalog)[number];
 type OpportunityCatalogEntry = (typeof opportunityCatalog)[number];
+type BusinessCategoryCatalogEntry = (typeof businessCategories)[number];
+type ExtendedNaceCatalogEntry = (typeof extendedNaceCatalog)[number];
 type BenchmarkBaselines = typeof benchmarkBaselines;
 
 const workbookFileName =
   workbookSnapshot.workbookPath.split(/[/\\]/).filter(Boolean).pop() ?? 'workbook-catalog';
 
-export const SCORING_VERSION = '2026.04.ready-software.1';
+export const SCORING_VERSION = '2026.04.ready-software.2';
 export const CATALOG_VERSION = workbookFileName;
 
 export function getScoringVersionInfo() {
   return {
     scoringVersion: SCORING_VERSION,
     catalogVersion: CATALOG_VERSION
+  };
+}
+
+export function getReferenceMetadata() {
+  return {
+    scoringVersion: SCORING_VERSION,
+    catalogVersion: CATALOG_VERSION,
+    workbookPath: workbookSnapshot.workbookPath,
+    workbookSha256: workbookSnapshot.workbookSha256,
+    extractedAt: workbookSnapshot.generatedAt,
+    sheetCount: Array.isArray(workbookSnapshot.sheetNames) ? workbookSnapshot.sheetNames.length : 0
   };
 }
 
@@ -69,6 +89,43 @@ const riskCatalogByCode = new Map<RiskCode, RiskCatalogEntry>(
 const opportunityCatalogByCode = new Map<OpportunityCode, OpportunityCatalogEntry>(
   opportunityCatalog.map((entry) => [entry.opportunityCode as OpportunityCode, entry])
 );
+const businessCategoryCatalogByLabel = new Map<string, BusinessCategoryCatalogEntry>(
+  businessCategories.map((entry) => [entry.label.trim().toLowerCase(), entry])
+);
+const extendedNaceCatalogByCode = new Map<string, ExtendedNaceCatalogEntry>(
+  extendedNaceCatalog.map((entry) => [entry.code, entry])
+);
+
+const workbookTextReplacements = new Map<string, string>([
+  ['â€“', '–'],
+  ['â€”', '—'],
+  ['â‰¥', '≥'],
+  ['â‰¤', '≤'],
+  ['Ã—', '×'],
+  ['â—', '●'],
+  ['â€™', '’'],
+  ['â€œ', '“'],
+  ['â€', '”'],
+  ['â€˜', '‘'],
+  ['â€¦', '…'],
+  ['â‚‚', '₂'],
+  ['â€', '‐'],
+  ['Â©', '©'],
+  ['â€œno opportunityâ€', '“no opportunity”']
+]);
+
+function cleanWorkbookCopy(value: string | null | undefined) {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  let cleaned = value;
+  for (const [source, target] of workbookTextReplacements) {
+    cleaned = cleaned.replaceAll(source, target);
+  }
+
+  return cleaned;
+}
 
 const benchmarkPriorityOrder: Record<PriorityBand, number> = {
   not_applicable: 0,
@@ -77,6 +134,110 @@ const benchmarkPriorityOrder: Record<PriorityBand, number> = {
   relevant: 3,
   high_priority: 4
 };
+
+const riskScoreOrder: Record<RiskRatingLabel, number> = {
+  neutral: 0,
+  sustainable: 1,
+  moderate: 2,
+  severe: 3,
+  critical: 4
+};
+
+const opportunityScoreOrder: Record<OpportunityRatingLabel, number> = {
+  neutral: 0,
+  small: 1,
+  reasonable: 2,
+  sustainable: 3,
+  great: 4
+};
+
+function sanitizeSdgReference(reference: SdgReference): SdgReference {
+  return {
+    ...reference,
+    title: cleanWorkbookCopy(reference.title) ?? reference.title
+  };
+}
+
+function getScoreInterpretationGuide(): ScoreInterpretationGuide {
+  return {
+    title:
+      cleanWorkbookCopy(workbookGuidance.scoreInterpretation.title) ??
+      'Workbook score interpretation',
+    subtitle: cleanWorkbookCopy(workbookGuidance.scoreInterpretation.subtitle),
+    bands: workbookGuidance.scoreInterpretation.bands.map((band) => ({
+      key: band.key as ScoreInterpretationBand['key'],
+      scoreRangeLabel: cleanWorkbookCopy(band.scoreRangeLabel) ?? band.scoreRangeLabel,
+      title: cleanWorkbookCopy(band.title) ?? band.title,
+      interpretation: cleanWorkbookCopy(band.interpretation) ?? band.interpretation
+    }))
+  };
+}
+
+function getMatrixLegend(
+  rawLegend:
+    | (typeof workbookGuidance)['riskMatrixLegend']
+    | (typeof workbookGuidance)['opportunityMatrixLegend']
+): MatrixLegend {
+  return {
+    title: cleanWorkbookCopy(rawLegend.title) ?? rawLegend.title,
+    subtitle: cleanWorkbookCopy(rawLegend.subtitle),
+    entries: rawLegend.entries.map((entry) => ({
+      label: cleanWorkbookCopy(entry.label) ?? entry.label,
+      score: entry.score,
+      whatItMeans: cleanWorkbookCopy(entry.whatItMeans) ?? entry.whatItMeans,
+      esrsAngle: cleanWorkbookCopy(entry.esrsAngle) ?? entry.esrsAngle,
+      businessSignal: cleanWorkbookCopy(entry.businessSignal) ?? entry.businessSignal,
+      actionWindow: cleanWorkbookCopy(entry.actionWindow) ?? entry.actionWindow
+    }))
+  };
+}
+
+function getPriorityInterpretation(priorityBand: PriorityBand) {
+  return (
+    getScoreInterpretationGuide().bands.find((band) => band.key === priorityBand)?.interpretation ??
+    null
+  );
+}
+
+function getRiskLegendEntry(label: RiskRatingLabel): MatrixLegendEntry | null {
+  return (
+    getMatrixLegend(workbookGuidance.riskMatrixLegend).entries.find(
+      (entry) => entry.score === riskScoreOrder[label]
+    ) ?? null
+  );
+}
+
+function getOpportunityLegendEntry(label: OpportunityRatingLabel): MatrixLegendEntry | null {
+  return (
+    getMatrixLegend(workbookGuidance.opportunityMatrixLegend).entries.find(
+      (entry) => entry.score === opportunityScoreOrder[label]
+    ) ?? null
+  );
+}
+
+function deriveDivisionEntryFromContext(context: EvaluationContextPayload) {
+  const candidates = [
+    context.naceDivision,
+    context.businessCategorySubcategory,
+    context.extendedNaceCode
+      ? extendedNaceCatalogByCode.get(context.extendedNaceCode)?.divisionLabel
+      : null,
+    context.extendedNaceCode ? context.extendedNaceCode.slice(0, 2) : null
+  ];
+
+  for (const candidate of candidates) {
+    if (!candidate) {
+      continue;
+    }
+
+    const found = findNaceEntry(candidate);
+    if (found) {
+      return found;
+    }
+  }
+
+  return null;
+}
 
 const financialIndicatorCatalog = {
   roi: {
@@ -245,23 +406,6 @@ const opportunityMatrix = matrices.opportunityMatrix as Record<
   Record<RiskProbabilityLevel, OpportunityRatingLabel>
 >;
 
-const riskActionWindows: Record<RiskRatingLabel, string> = {
-  neutral: 'Record rationale and set a review date if the topic is still unknown.',
-  sustainable: 'Routine monitoring and periodic review are enough for now.',
-  moderate: 'Assign ownership and track mitigation quarterly.',
-  severe: 'Define an immediate mitigation plan with budget, owners, and milestones.',
-  critical:
-    'Escalate to executive attention now and redesign or stabilise the exposure immediately.'
-};
-
-const opportunityActionWindows: Record<OpportunityRatingLabel, string> = {
-  neutral: 'Document why the topic is not relevant or when you will re-check it.',
-  small: 'Treat as a quick win and bundle it with larger initiatives.',
-  reasonable: 'Run a focused pilot and define the evidence needed to scale.',
-  sustainable: 'Move into roadmap planning with explicit metrics and owners.',
-  great: 'Invest now and communicate it externally as a strategic move.'
-};
-
 function createSdgReference(number: number, sourceType: SdgSourceType): SdgReference {
   return {
     number,
@@ -296,7 +440,11 @@ function findNaceEntry(naceDivision: string) {
 
   return naceCatalog.find((entry) => {
     const divisionValue = `${entry.code} ${entry.division}`.toLowerCase();
-    return divisionValue === normalized || entry.division.toLowerCase() === normalized;
+    return (
+      divisionValue === normalized ||
+      entry.division.toLowerCase() === normalized ||
+      entry.code.toLowerCase() === normalized
+    );
   });
 }
 
@@ -390,14 +538,86 @@ function mapFinancialIndicatorResult(
 export function getStartupStageOptions() {
   return stageCatalog.map((entry) => ({
     value: entry.stage as StartupStage,
-    label: entry.label
+    label: cleanWorkbookCopy(entry.label) ?? entry.label
   }));
+}
+
+export function getBusinessCategoryOptions() {
+  return businessCategories.map((entry) => ({
+    value: entry.label,
+    label: cleanWorkbookCopy(entry.label) ?? entry.label,
+    sectionCode: entry.sectionCode,
+    sdgs: entry.sdgs
+  }));
+}
+
+export function getBusinessSubcategoryOptions(mainCategory?: string | null) {
+  const selectedCategory = mainCategory
+    ? businessCategoryCatalogByLabel.get(mainCategory.trim().toLowerCase())
+    : null;
+  const sectionCode = selectedCategory?.sectionCode ?? null;
+  const seen = new Set<string>();
+
+  return extendedNaceCatalog
+    .filter((entry) => !sectionCode || entry.sectionCode === sectionCode)
+    .filter((entry) => {
+      if (seen.has(entry.divisionCode)) {
+        return false;
+      }
+
+      seen.add(entry.divisionCode);
+      return true;
+    })
+    .map((entry) => ({
+      value: entry.divisionLabel,
+      label: cleanWorkbookCopy(entry.divisionLabel) ?? entry.divisionLabel,
+      code: entry.divisionCode,
+      sectionCode: entry.sectionCode
+    }));
+}
+
+export function getExtendedNaceOptions(filters?: {
+  businessCategoryMain?: string | null;
+  divisionCode?: string | null;
+}) {
+  const selectedCategory = filters?.businessCategoryMain
+    ? businessCategoryCatalogByLabel.get(filters.businessCategoryMain.trim().toLowerCase())
+    : null;
+  const selectedSectionCode = selectedCategory?.sectionCode ?? null;
+
+  return extendedNaceCatalog
+    .filter((entry) => !selectedSectionCode || entry.sectionCode === selectedSectionCode)
+    .filter((entry) => !filters?.divisionCode || entry.divisionCode === filters.divisionCode)
+    .map((entry) => ({
+      value: entry.code,
+      label: cleanWorkbookCopy(entry.label) ?? entry.label,
+      code: entry.code,
+      divisionCode: entry.divisionCode,
+      divisionLabel: cleanWorkbookCopy(entry.divisionLabel) ?? entry.divisionLabel,
+      sectionCode: entry.sectionCode,
+      sectionLabel: cleanWorkbookCopy(entry.sectionLabel) ?? entry.sectionLabel
+    }));
+}
+
+export function getWorkbookGuidance() {
+  return {
+    scoreInterpretation: getScoreInterpretationGuide(),
+    riskMatrixLegend: getMatrixLegend(workbookGuidance.riskMatrixLegend),
+    opportunityMatrixLegend: getMatrixLegend(workbookGuidance.opportunityMatrixLegend),
+    initialSummaryExplanationBlocks: workbookGuidance.initialSummaryExplanationBlocks.map(
+      (block) => ({
+        title: cleanWorkbookCopy(block.title) ?? block.title,
+        body: cleanWorkbookCopy(block.body) ?? block.body
+      })
+    )
+  };
 }
 
 export function getNaceDivisionOptions() {
   return naceCatalog.map((entry) => ({
     value: `${entry.code} ${entry.division}`,
-    label: `${entry.code} ${entry.division}`,
+    label:
+      cleanWorkbookCopy(`${entry.code} ${entry.division}`) ?? `${entry.code} ${entry.division}`,
     sdgs: entry.sdgs
   }));
 }
@@ -447,26 +667,29 @@ export function getStageOneTopicCatalog() {
   return topicCatalog.map((entry) => ({
     topicCode: entry.topicCode as TopicCode,
     group: entry.group,
-    title: entry.title,
-    question: entry.question
+    title: cleanWorkbookCopy(entry.title) ?? entry.title,
+    question: cleanWorkbookCopy(entry.question) ?? entry.question,
+    guidance: cleanWorkbookCopy(entry.guidance) ?? entry.guidance
   }));
 }
 
 export function getRiskCatalog() {
   return riskCatalog.map((entry) => ({
     riskCode: entry.riskCode as RiskCode,
-    group: entry.group,
-    title: entry.title,
-    question: entry.question
+    group: cleanWorkbookCopy(entry.group) ?? entry.group,
+    title: cleanWorkbookCopy(entry.title) ?? entry.title,
+    question: cleanWorkbookCopy(entry.question) ?? entry.question,
+    guidance: cleanWorkbookCopy(entry.guidance) ?? entry.guidance
   }));
 }
 
 export function getOpportunityCatalog() {
   return opportunityCatalog.map((entry) => ({
     opportunityCode: entry.opportunityCode as OpportunityCode,
-    group: entry.group,
-    title: entry.title,
-    question: entry.question
+    group: cleanWorkbookCopy(entry.group) ?? entry.group,
+    title: cleanWorkbookCopy(entry.title) ?? entry.title,
+    question: cleanWorkbookCopy(entry.question) ?? entry.question,
+    guidance: cleanWorkbookCopy(entry.guidance) ?? entry.guidance
   }));
 }
 
@@ -480,7 +703,9 @@ export function getBenchmarkReferenceProfile(context: EvaluationContextPayload) 
     benchmarkBaselines.stageBaselines[
       context.currentStage as keyof BenchmarkBaselines['stageBaselines']
     ];
-  const naceCode = extractNaceCode(context.naceDivision);
+  const naceCode = extractNaceCode(
+    deriveDivisionEntryFromContext(context)?.code ?? context.naceDivision ?? 'default'
+  );
   const naceAdjustment =
     benchmarkBaselines.naceAdjustments[naceCode as keyof BenchmarkBaselines['naceAdjustments']] ??
     benchmarkBaselines.naceAdjustments.default;
@@ -524,23 +749,52 @@ export function buildInitialSummary(context: EvaluationContextPayload): StageSdg
     throw new Error(`Unknown startup stage: ${context.currentStage}`);
   }
 
-  const naceEntry = findNaceEntry(context.naceDivision);
-  const stageSdgs = stageEntry.sdgs.map((number) => createSdgReference(number, 'stage'));
-  const businessSdgs = (naceEntry?.sdgs ?? []).map((number) =>
-    createSdgReference(number, 'business')
+  const guidance = getWorkbookGuidance();
+  const businessCategoryEntry = context.businessCategoryMain
+    ? (businessCategoryCatalogByLabel.get(context.businessCategoryMain.trim().toLowerCase()) ??
+      null)
+    : null;
+  const naceEntry = deriveDivisionEntryFromContext(context);
+  const stageSdgs = stageEntry.sdgs.map((number) =>
+    sanitizeSdgReference(createSdgReference(number, 'stage'))
   );
+  const businessSdgNumbers = naceEntry?.sdgs ?? businessCategoryEntry?.sdgs ?? [];
+  const businessSdgs = businessSdgNumbers.map((number) =>
+    sanitizeSdgReference(createSdgReference(number, 'business'))
+  );
+  const screeningContextLabel =
+    cleanWorkbookCopy(
+      context.extendedNaceLabel ??
+        context.businessCategorySubcategory ??
+        (naceEntry ? `${naceEntry.code} ${naceEntry.division}` : null) ??
+        context.businessCategoryMain ??
+        context.naceDivision ??
+        'Business category not yet specified'
+    ) ?? 'Business category not yet specified';
 
   return {
     currentStage: context.currentStage,
-    phaseGoal: stageEntry.phaseGoal,
-    phaseConsideration: stageEntry.phaseConsideration,
+    stageLabel: cleanWorkbookCopy(stageEntry.label) ?? stageEntry.label,
+    businessCategoryMain: cleanWorkbookCopy(context.businessCategoryMain),
+    businessCategorySubcategory: cleanWorkbookCopy(context.businessCategorySubcategory),
+    extendedNaceCode: cleanWorkbookCopy(context.extendedNaceCode),
+    extendedNaceLabel: cleanWorkbookCopy(context.extendedNaceLabel),
+    naceDivision: cleanWorkbookCopy(
+      context.naceDivision ?? (naceEntry ? `${naceEntry.code} ${naceEntry.division}` : null)
+    ),
+    screeningContextLabel,
+    phaseGoal: cleanWorkbookCopy(stageEntry.phaseGoal) ?? stageEntry.phaseGoal,
+    phaseConsideration: cleanWorkbookCopy(stageEntry.phaseConsideration),
     whatToConsider:
       context.offeringType === 'product'
-        ? stageEntry.productWhatToConsider
-        : stageEntry.serviceWhatToConsider,
+        ? (cleanWorkbookCopy(stageEntry.productWhatToConsider) ?? stageEntry.productWhatToConsider)
+        : (cleanWorkbookCopy(stageEntry.serviceWhatToConsider) ?? stageEntry.serviceWhatToConsider),
     stageSdgs,
     businessSdgs,
-    mergedSdgs: buildMergedSdgReferences(stageEntry.sdgs, naceEntry?.sdgs ?? [])
+    mergedSdgs: buildMergedSdgReferences(stageEntry.sdgs, businessSdgNumbers).map(
+      sanitizeSdgReference
+    ),
+    explanationBlocks: guidance.initialSummaryExplanationBlocks
   };
 }
 
@@ -582,11 +836,13 @@ export function scoreStage1TopicAnswer(input: Stage1TopicAnswerInput): Stage1Top
 
   return {
     ...input,
-    title: topic.title,
-    question: topic.question,
+    title: cleanWorkbookCopy(topic.title) ?? topic.title,
+    question: cleanWorkbookCopy(topic.question) ?? topic.question,
     impactScore,
     priorityBand: toPriorityBand(impactScore, input.applicable),
-    sdgNumbers: topic.sdgs
+    sdgNumbers: topic.sdgs,
+    guidance: cleanWorkbookCopy(topic.guidance) ?? topic.guidance,
+    interpretation: getPriorityInterpretation(toPriorityBand(impactScore, input.applicable))
   };
 }
 
@@ -619,14 +875,21 @@ export function scoreStage2RiskAnswer(input: Stage2RiskAnswerInput): Stage2RiskA
       )
     : 0;
 
+  const ratingLabel = input.applicable
+    ? getRiskMatrixLabel(input.impact, input.probability)
+    : 'neutral';
+  const legendEntry = getRiskLegendEntry(ratingLabel);
+
   return {
     ...input,
-    group: risk.group,
-    title: risk.title,
-    question: risk.question,
-    ratingLabel: input.applicable ? getRiskMatrixLabel(input.impact, input.probability) : 'neutral',
+    group: cleanWorkbookCopy(risk.group) ?? risk.group,
+    title: cleanWorkbookCopy(risk.title) ?? risk.title,
+    question: cleanWorkbookCopy(risk.question) ?? risk.question,
+    ratingLabel,
     ratingScore,
-    sdgNumbers: risk.sdgs
+    sdgNumbers: risk.sdgs,
+    guidance: cleanWorkbookCopy(risk.guidance) ?? risk.guidance,
+    interpretation: legendEntry?.whatItMeans ?? null
   };
 }
 
@@ -647,16 +910,21 @@ export function scoreStage2OpportunityAnswer(
       )
     : 0;
 
+  const ratingLabel = input.applicable
+    ? getOpportunityMatrixLabel(input.impact, input.likelihood)
+    : 'neutral';
+  const legendEntry = getOpportunityLegendEntry(ratingLabel);
+
   return {
     ...input,
-    group: opportunity.group,
-    title: opportunity.title,
-    question: opportunity.question,
-    ratingLabel: input.applicable
-      ? getOpportunityMatrixLabel(input.impact, input.likelihood)
-      : 'neutral',
+    group: cleanWorkbookCopy(opportunity.group) ?? opportunity.group,
+    title: cleanWorkbookCopy(opportunity.title) ?? opportunity.title,
+    question: cleanWorkbookCopy(opportunity.question) ?? opportunity.question,
+    ratingLabel,
     ratingScore,
-    sdgNumbers: opportunity.sdgs
+    sdgNumbers: opportunity.sdgs,
+    guidance: cleanWorkbookCopy(opportunity.guidance) ?? opportunity.guidance,
+    interpretation: legendEntry?.whatItMeans ?? null
   };
 }
 
@@ -667,8 +935,9 @@ function createTopicSummary(topic: Stage1TopicAnswer): MaterialTopicSummary {
     title: topic.title,
     score: topic.impactScore,
     priorityBand: topic.priorityBand,
-    recommendation: catalogEntry?.guidance ?? null,
-    sdgNumbers: topic.sdgNumbers
+    recommendation: cleanWorkbookCopy(catalogEntry?.guidance ?? null),
+    sdgNumbers: topic.sdgNumbers,
+    interpretation: topic.interpretation ?? getPriorityInterpretation(topic.priorityBand)
   };
 }
 
@@ -782,11 +1051,12 @@ function buildRecommendations(
     if (item.recommendation) {
       recommendations.push({
         id: `financial:${item.id}`,
-        title: item.label,
-        text: item.recommendation,
+        title: cleanWorkbookCopy(item.label) ?? item.label,
+        text: cleanWorkbookCopy(item.recommendation) ?? item.recommendation,
         evidenceToCollect: evidenceHintForSource('financial'),
+        rationale: `Triggered because the workbook financial lookup returned ${cleanWorkbookCopy(item.level) ?? item.level}.`,
         source: 'financial',
-        severityBand: item.level,
+        severityBand: cleanWorkbookCopy(item.level) ?? item.level,
         action: null
       });
     }
@@ -803,8 +1073,9 @@ function buildRecommendations(
     recommendations.push({
       id: `topic:${topic.topicCode}`,
       title: topic.title,
-      text: catalogEntry.guidance,
+      text: cleanWorkbookCopy(catalogEntry.guidance) ?? catalogEntry.guidance,
       evidenceToCollect: evidenceHintForSource('stage1'),
+      rationale: `Triggered because ${topic.title} scored ${topic.impactScore.toFixed(2)} and falls into the ${topic.priorityBand.replaceAll('_', ' ')} workbook band.`,
       source: 'stage1',
       severityBand: topic.priorityBand,
       action: null
@@ -822,8 +1093,9 @@ function buildRecommendations(
     recommendations.push({
       id: `risk:${risk.riskCode}`,
       title: risk.title,
-      text: catalogEntry.guidance,
+      text: cleanWorkbookCopy(catalogEntry.guidance) ?? catalogEntry.guidance,
       evidenceToCollect: evidenceHintForSource('risk'),
+      rationale: `Triggered because ${risk.title} is currently rated ${risk.ratingLabel} in the workbook risk matrix.`,
       source: 'risk',
       severityBand: risk.ratingLabel,
       action: null
@@ -841,8 +1113,9 @@ function buildRecommendations(
     recommendations.push({
       id: `opportunity:${opportunity.opportunityCode}`,
       title: opportunity.title,
-      text: catalogEntry.guidance,
+      text: cleanWorkbookCopy(catalogEntry.guidance) ?? catalogEntry.guidance,
       evidenceToCollect: evidenceHintForSource('opportunity'),
+      rationale: `Triggered because ${opportunity.title} is currently rated ${opportunity.ratingLabel} in the workbook opportunity matrix.`,
       source: 'opportunity',
       severityBand: opportunity.ratingLabel,
       action: null
@@ -893,8 +1166,9 @@ export function buildImpactSummary(
   return {
     relevantTopics,
     highPriorityTopics,
-    whatToConsiderNext,
-    relevantSdgs: initialSummary.mergedSdgs
+    whatToConsiderNext: whatToConsiderNext.map((item) => cleanWorkbookCopy(item) ?? item),
+    relevantSdgs: initialSummary.mergedSdgs,
+    scoreInterpretation: getScoreInterpretationGuide()
   };
 }
 
@@ -925,6 +1199,8 @@ export function buildDashboard(
     stage2Opportunities.reduce((sum, item) => sum + item.ratingScore, 0).toFixed(2)
   );
   const confidenceBand = calculateConfidenceBand(stage1Topics, stage2Risks, stage2Opportunities);
+  const riskLegend = getMatrixLegend(workbookGuidance.riskMatrixLegend);
+  const opportunityLegend = getMatrixLegend(workbookGuidance.opportunityMatrixLegend);
 
   return {
     evaluationId,
@@ -943,7 +1219,10 @@ export function buildDashboard(
         title: item.title,
         ratingLabel: item.ratingLabel,
         score: item.ratingScore,
-        actionWindow: riskActionWindows[item.ratingLabel]
+        actionWindow:
+          getRiskLegendEntry(item.ratingLabel)?.actionWindow ??
+          getRiskLegendEntry(item.ratingLabel)?.whatItMeans ??
+          ''
       })),
     topOpportunities: [...stage2Opportunities]
       .sort((left, right) => right.ratingScore - left.ratingScore)
@@ -954,7 +1233,10 @@ export function buildDashboard(
         title: item.title,
         ratingLabel: item.ratingLabel,
         score: item.ratingScore,
-        actionWindow: opportunityActionWindows[item.ratingLabel]
+        actionWindow:
+          getOpportunityLegendEntry(item.ratingLabel)?.actionWindow ??
+          getOpportunityLegendEntry(item.ratingLabel)?.whatItMeans ??
+          ''
       })),
     recommendations: buildRecommendations(
       financial,
@@ -963,7 +1245,10 @@ export function buildDashboard(
       stage2Opportunities
     ),
     confidenceBand,
-    sensitivityHints: buildSensitivityHints(stage1Topics)
+    sensitivityHints: buildSensitivityHints(stage1Topics),
+    scoreInterpretation: getScoreInterpretationGuide(),
+    riskMatrixLegend: riskLegend,
+    opportunityMatrixLegend: opportunityLegend
   };
 }
 

@@ -14,7 +14,8 @@ const {
   requestPasswordResetMock,
   resetPasswordMock,
   routerPushMock,
-  routerRefreshMock
+  routerRefreshMock,
+  navigateToAuthenticatedAppMock
 } = vi.hoisted(() => ({
   signInMock: vi.fn(),
   breakGlassSignInMock: vi.fn(),
@@ -22,7 +23,8 @@ const {
   requestPasswordResetMock: vi.fn(),
   resetPasswordMock: vi.fn(),
   routerPushMock: vi.fn(),
-  routerRefreshMock: vi.fn()
+  routerRefreshMock: vi.fn(),
+  navigateToAuthenticatedAppMock: vi.fn()
 }));
 
 vi.mock('next/navigation', () => ({
@@ -45,6 +47,10 @@ vi.mock('../lib/client-api', async () => {
   };
 });
 
+vi.mock('../lib/post-auth-redirect', () => ({
+  navigateToAuthenticatedApp: navigateToAuthenticatedAppMock
+}));
+
 describe('auth forms', () => {
   beforeEach(() => {
     signInMock.mockReset();
@@ -54,6 +60,7 @@ describe('auth forms', () => {
     resetPasswordMock.mockReset();
     routerPushMock.mockReset();
     routerRefreshMock.mockReset();
+    navigateToAuthenticatedAppMock.mockReset();
   });
 
   afterEach(() => {
@@ -231,5 +238,7 @@ describe('auth forms', () => {
         password: 'ChangeMe123!'
       });
     });
+
+    expect(navigateToAuthenticatedAppMock).toHaveBeenCalledTimes(1);
   });
 });

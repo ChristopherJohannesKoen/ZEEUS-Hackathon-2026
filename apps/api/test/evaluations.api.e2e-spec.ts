@@ -39,7 +39,11 @@ function buildEvaluationPayload(name = 'EcoGrid Pilot'): CreateEvaluationPayload
   return {
     name,
     country: 'South Africa',
-    naceDivision: 'A1',
+    businessCategoryMain: 'Information and Communication',
+    businessCategorySubcategory: 'Computer programming, consultancy and related activities',
+    extendedNaceCode: '62.10',
+    extendedNaceLabel: '62.10 Computer programming activities',
+    naceDivision: '62 Computer programming, consultancy and related activities',
     offeringType: 'product',
     launched: true,
     currentStage: 'validation',

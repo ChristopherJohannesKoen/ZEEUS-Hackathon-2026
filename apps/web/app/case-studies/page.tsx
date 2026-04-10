@@ -1,13 +1,18 @@
 import { Card } from '@packages/ui';
 import { MarketingShell } from '../../components/marketing-shell';
-import { getCurrentUser, getPublicSiteContent } from '../../lib/server-api';
+import { getOptionalCurrentUser, getPublicSiteContent } from '../../lib/server-api';
+import { getSiteSettings } from '../../lib/site-content';
 
 export default async function CaseStudiesPage() {
-  const [currentUser, content] = await Promise.all([getCurrentUser(), getPublicSiteContent()]);
+  const [currentUser, content] = await Promise.all([
+    getOptionalCurrentUser(),
+    getPublicSiteContent()
+  ]);
 
   return (
     <MarketingShell
       currentUser={currentUser}
+      settings={getSiteSettings(content)}
       eyebrow="Case studies"
       title="Example startup journeys"
       intro="Use these examples to understand how founders can move from assumptions to better evidence without changing the deterministic backbone."

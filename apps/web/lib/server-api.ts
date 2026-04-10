@@ -2,6 +2,7 @@ import { apiContract } from '@packages/contracts';
 import type {
   AuthResponse,
   DashboardResponse,
+  EditorialOverview,
   EvidenceAssetListResponse,
   EvaluationArtifactListResponse,
   EvaluationArtifactSummary,
@@ -20,6 +21,7 @@ import type {
   PublicSiteContent,
   ReportResponse,
   ScenarioRunListResponse,
+  SitePage,
   SessionListResponse,
   SdgAlignmentResponse,
   SdgGoalDetail,
@@ -34,13 +36,13 @@ import { cookies } from 'next/headers';
 import { unstable_noStore as noStore } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { ApiRequestError, toApiError, unwrapContractResponse } from './api-error';
+import { resolveRuntimeMode } from './runtime-mode';
 
 const apiOrigin = process.env.API_ORIGIN ?? 'http://localhost:4000';
 const sessionCookieName = process.env.SESSION_COOKIE_NAME ?? 'zeeus_assessment_session';
+const runtimeMode = resolveRuntimeMode();
 
-// Temporary until the oversized ts-rest contract is split back into typed subrouters.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const serverClient: any = initClient(apiContract, {
+const serverClient = initClient(apiContract, {
   baseUrl: `${apiOrigin}/api`,
   validateResponse: true,
   throwOnUnknownStatus: true,
@@ -103,6 +105,14 @@ export async function getCurrentUser() {
     }
 
     throw error;
+  }
+}
+
+export async function getOptionalCurrentUser() {
+  try {
+    return await getCurrentUser();
+  } catch {
+    return undefined;
   }
 }
 
@@ -318,14 +328,42 @@ export function getProgram(programId: string) {
 }
 
 export function getPublicSiteContent() {
-  return executeServerRequest<PublicSiteContent>(() => serverClient.content.site(), [200]);
+  return executeServerRequest<PublicSiteContent>(
+    () =>
+      serverClient.content.site({
+        query: {
+          locale: runtimeMode.defaultLocale
+        }
+      }),
+    [200]
+  );
+}
+
+export function getPreviewSitePage(token: string) {
+  return executeServerRequest<SitePage>(
+    () =>
+      serverClient.content.previewSitePage({
+        params: { token }
+      }),
+    [200]
+  );
+}
+
+export function getEditorialOverview() {
+  return protectedServerRequest<EditorialOverview>(
+    () => serverClient.content.getEditorialOverview(),
+    [200]
+  );
 }
 
 export function getSdgGoal(goalNumber: number) {
   return executeServerRequest<SdgGoalDetail>(
     () =>
       serverClient.content.sdgGoal({
-        params: { goalNumber }
+        params: { goalNumber },
+        query: {
+          locale: runtimeMode.defaultLocale
+        }
       }),
     [200]
   );

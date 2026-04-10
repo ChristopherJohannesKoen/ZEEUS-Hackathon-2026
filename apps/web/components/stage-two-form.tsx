@@ -1,8 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Card, Field, Select, Textarea } from '@packages/ui';
+import { getWorkbookGuidance } from '@packages/scoring';
 import type { EvaluationDetail, Stage2OpportunityAnswer, Stage2RiskAnswer } from '@packages/shared';
 import { saveStage2 } from '../lib/client-api';
 
@@ -25,6 +27,7 @@ const evidenceOptions = [
   { value: 'estimated', label: 'Estimated' },
   { value: 'assumed', label: 'Assumed' }
 ] as const;
+const workbookGuidance = getWorkbookGuidance();
 
 function normaliseRisk(item: Stage2RiskAnswer, applicable: boolean): Stage2RiskAnswer {
   if (applicable) {
@@ -112,8 +115,52 @@ export function StageTwoForm({ evaluation }: { evaluation: EvaluationDetail }) {
         <h2 className="mt-2 text-2xl font-black text-slate-950">Risks and opportunities</h2>
         <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
           This outside-in layer captures sustainability-linked downside risks and upside
-          opportunities. Ratings stay deterministic and matrix-based.
+          opportunities. Ratings stay deterministic and workbook matrix-based.
         </p>
+        <p className="mt-3 text-sm leading-7 text-slate-600">
+          Use the{' '}
+          <Link className="font-semibold text-brand-dark underline" href="/resources">
+            reference hub
+          </Link>{' '}
+          whenever you need the workbook matrix explanation, FAQ wording, or score interpretation
+          sheet while completing Stage II.
+        </p>
+        <div className="mt-5 grid gap-4 lg:grid-cols-2">
+          <div className="rounded-2xl border border-[#dbe8cf] bg-[#fbfdf7] p-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-[#607557]">Risk matrix legend</p>
+            <div className="mt-3 grid gap-3">
+              {workbookGuidance.riskMatrixLegend.entries.map((entry) => (
+                <div className="rounded-2xl bg-white p-3" key={`risk-${entry.score}`}>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-semibold text-slate-950">{entry.label}</p>
+                    <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[#607557]">
+                      {entry.score}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-xs leading-6 text-slate-600">{entry.actionWindow}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="rounded-2xl border border-[#dbe8cf] bg-[#fbfdf7] p-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-[#607557]">
+              Opportunity matrix legend
+            </p>
+            <div className="mt-3 grid gap-3">
+              {workbookGuidance.opportunityMatrixLegend.entries.map((entry) => (
+                <div className="rounded-2xl bg-white p-3" key={`opportunity-${entry.score}`}>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-semibold text-slate-950">{entry.label}</p>
+                    <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[#607557]">
+                      {entry.score}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-xs leading-6 text-slate-600">{entry.actionWindow}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </Card>
 
       <Card className="border-[#d4e8c2]">
@@ -232,6 +279,18 @@ export function StageTwoForm({ evaluation }: { evaluation: EvaluationDetail }) {
                   <p className="mt-2 text-lg font-bold text-slate-950">{item.ratingLabel}</p>
                 </div>
               </div>
+
+              {item.interpretation ? (
+                <p className="mt-4 text-sm leading-7 text-slate-600">{item.interpretation}</p>
+              ) : null}
+              {item.guidance ? (
+                <div className="mt-3 rounded-2xl border border-[#dbe8cf] bg-white p-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-[#607557]">
+                    Workbook guidance
+                  </p>
+                  <p className="mt-2 text-sm leading-7 text-slate-600">{item.guidance}</p>
+                </div>
+              ) : null}
 
               <div className="mt-4">
                 <Field
@@ -383,6 +442,18 @@ export function StageTwoForm({ evaluation }: { evaluation: EvaluationDetail }) {
                   <p className="mt-2 text-lg font-bold text-slate-950">{item.ratingLabel}</p>
                 </div>
               </div>
+
+              {item.interpretation ? (
+                <p className="mt-4 text-sm leading-7 text-slate-600">{item.interpretation}</p>
+              ) : null}
+              {item.guidance ? (
+                <div className="mt-3 rounded-2xl border border-[#dbe8cf] bg-white p-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-[#607557]">
+                    Workbook guidance
+                  </p>
+                  <p className="mt-2 text-sm leading-7 text-slate-600">{item.guidance}</p>
+                </div>
+              ) : null}
 
               <div className="mt-4">
                 <Field

@@ -135,7 +135,11 @@ model Evaluation {
   organizationId       String?
   organization         Organization?           @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   name                 String
-  country              String
+  country              String?
+  businessCategoryMain String?
+  businessCategorySubcategory String?
+  extendedNaceCode     String?
+  extendedNaceLabel    String?
   naceDivision         String
   offeringType         OfferingType
   launched             Boolean
@@ -145,7 +149,7 @@ model Evaluation {
   currentStep          EvaluationStep          @default(start)
   currentRevisionId    String?
   currentRevisionNumber Int                    @default(0)
-  scoringVersion       String                  @default("2026.04.ready-software.1")
+  scoringVersion       String                  @default("2026.04.ready-software.2")
   catalogVersion       String                  @default("workbook-catalog")
   completedAt          DateTime?
   archivedAt           DateTime?
@@ -380,6 +384,7 @@ model Organization {
   programs     Program[]
   evaluations  Evaluation[]
   submissions  ProgramSubmission[]
+  partnerInterestLeads PartnerInterestLead[]
   createdAt    DateTime               @default(now())
   updatedAt    DateTime               @updatedAt
 }
@@ -429,6 +434,7 @@ model Program {
   watermarkLabel   String?
   members          ProgramMember[]
   submissions      ProgramSubmission[]
+  partnerInterestLeads PartnerInterestLead[]
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
 
@@ -515,7 +521,10 @@ model EvidenceAsset {
   evidenceBasis        EvidenceBasis
   confidenceWeight     Float?
   linkedTopicCode      TopicCode?
+  linkedRiskCode       RiskCode?
+  linkedOpportunityCode OpportunityCode?
   linkedRecommendationId String?
+  reviewState          EvidenceReviewState @default(draft)
   storageKey           String?
   fileName             String?
   mimeType             String?
@@ -536,11 +545,14 @@ model KnowledgeArticle {
   summary   String
   body      String
   category  String
+  status    ContentStatus @default(published)
+  locale    String   @default("en")
+  heroImageUrl String?
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([category, sortOrder])
+  @@index([category, status, locale, sortOrder])
 }
 
 model FaqEntry {
@@ -548,11 +560,13 @@ model FaqEntry {
   question  String
   answer    String
   category  String
+  status    ContentStatus @default(published)
+  locale    String   @default("en")
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([category, sortOrder])
+  @@index([category, status, locale, sortOrder])
 }
 
 model CaseStudy {
@@ -564,9 +578,136 @@ model CaseStudy {
   story        String
   stage        String
   naceDivision String
+  status       ContentStatus @default(published)
+  locale       String   @default("en")
+  heroImageUrl String?
   sortOrder    Int      @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  @@index([status, locale, sortOrder])
+}
+
+model ResourceAsset {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  title       String
+  description String
+  category    String
+  fileLabel   String
+  status      ContentStatus @default(draft)
+  locale      String        @default("en")
+  externalUrl String?
+  storageKey  String?
+  fileName    String?
+  mimeType    String?
+  byteSize    Int?
+  sortOrder   Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([status, locale, category, sortOrder])
+}
+
+model MediaAsset {
+  id           String        @id @default(cuid())
+  slug         String        @unique
+  title        String
+  altText      String
+  caption      String?
+  attribution  String?
+  rights       String?
+  mimeType     String
+  fileName     String
+  byteSize     Int
+  width        Int?
+  height       Int?
+  focalPointX  Float?
+  focalPointY  Float?
+  storageKey   String?
+  publicUrl    String?
+  locale       String        @default("en")
+  status       ContentStatus @default(draft)
+  heroPages    SitePage[]    @relation("SitePageHeroMedia")
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([status, locale, createdAt])
+}
+
+model SitePage {
+  id                  String        @id @default(cuid())
+  slug                String
+  locale              String        @default("en")
+  title               String
+  summary             String
+  pageType            String
+  status              ContentStatus @default(draft)
+  heroEyebrow         String?
+  heroTitle           String?
+  heroBody            String?
+  heroPrimaryCtaLabel String?
+  heroPrimaryCtaHref  String?
+  heroSecondaryCtaLabel String?
+  heroSecondaryCtaHref String?
+  heroMediaAssetId    String?
+  heroMediaAsset      MediaAsset?   @relation("SitePageHeroMedia", fields: [heroMediaAssetId], references: [id], onDelete: SetNull)
+  navigationLabel     String?
+  navigationGroup     String?
+  showInPrimaryNav    Boolean       @default(false)
+  showInFooter        Boolean       @default(false)
+  canonicalUrl        String?
+  seoTitle            String?
+  seoDescription      String?
+  sections            Json?
+  sortOrder           Int           @default(0)
+  previewTokens       SitePagePreviewToken[]
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  @@unique([slug, locale])
+  @@index([status, locale, pageType, sortOrder])
+  @@index([showInPrimaryNav, locale, sortOrder])
+  @@index([showInFooter, locale, sortOrder])
+}
+
+model ContentRevision {
+  id             String   @id @default(cuid())
+  entityType     String
+  entityId       String
+  locale         String?
+  changeSummary  String?
+  snapshot       Json
+  createdByUserId String?
+  createdAt      DateTime @default(now())
+
+  @@index([entityType, entityId, createdAt])
+}
+
+model SitePagePreviewToken {
+  id              String   @id @default(cuid())
+  sitePageId      String
+  sitePage        SitePage @relation(fields: [sitePageId], references: [id], onDelete: Cascade)
+  tokenHash       String   @unique
+  expiresAt       DateTime
+  createdByUserId String?
+  createdAt       DateTime @default(now())
+
+  @@index([sitePageId, expiresAt])
+}
+
+model SiteSetting {
+  id          String   @id @default(cuid())
+  key         String
+  locale      String   @default("en")
+  title       String?
+  description String?
+  value       Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([key, locale])
+  @@index([locale, key])
 }
 
 model SdgTarget {
@@ -578,11 +719,13 @@ model SdgTarget {
   title       String
   description String
   officialUrl String
+  status      ContentStatus @default(published)
+  locale      String   @default("en")
   sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  @@index([goalNumber, sortOrder])
+  @@index([goalNumber, status, locale, sortOrder])
 }
 
 model ScenarioRun {
@@ -590,6 +733,7 @@ model ScenarioRun {
   evaluationId    String
   evaluation      Evaluation   @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
   baseRevisionId  String?
+  baseRevisionNumber Int?
   name            String
   status          String       @default("draft")
   focusArea       String
@@ -599,6 +743,10 @@ model ScenarioRun {
   hypothesis      String
   advisorySummary String
   assumptions     Json?
+  metricDeltas    Json?
+  topicDeltas     Json?
+  projectedConfidenceBand ConfidenceBand @default(low)
+  takeaways       Json?
   createdByUserId String?
   createdBy       User?        @relation("ScenarioCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
   evidenceAssets  EvidenceAsset[]
@@ -606,6 +754,31 @@ model ScenarioRun {
   updatedAt       DateTime     @updatedAt
 
   @@index([evaluationId, createdAt])
+}
+
+model PartnerInterestLead {
+  id               String        @id @default(cuid())
+  organizationId   String?
+  organization     Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  programId        String?
+  program          Program?      @relation(fields: [programId], references: [id], onDelete: SetNull)
+  name             String
+  organizationName String
+  email            String
+  websiteUrl       String?
+  message          String
+  status           PartnerLeadStatus @default(new)
+  assigneeName     String?
+  assigneeEmail    String?
+  notes            String?
+  sourcePage       String        @default("partners")
+  resolvedAt       DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@index([status, createdAt])
+  @@index([organizationId, createdAt])
+  @@index([programId, createdAt])
 }
 
 model IdentityProviderConfig {
@@ -985,11 +1158,32 @@ enum EvaluationArtifactStatus {
   failed
 }
 
+enum ContentStatus {
+  draft
+  published
+  archived
+}
+
+enum PartnerLeadStatus {
+  new
+  reviewing
+  contacted
+  qualified
+  archived
+}
+
 enum RecommendationActionStatus {
   not_started
   in_progress
   completed
   dismissed
+}
+
+enum EvidenceReviewState {
+  draft
+  review_requested
+  validated
+  needs_update
 }
 
 enum EvaluationNarrativeKind {

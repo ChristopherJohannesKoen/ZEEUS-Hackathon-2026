@@ -2,11 +2,39 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import type { EvidenceAssetSummary, TopicCode } from '@packages/shared';
+import type {
+  EvidenceAssetSummary,
+  EvidenceReviewState,
+  OpportunityCode,
+  RiskCode,
+  TopicCode
+} from '@packages/shared';
 import { Button, Card, Field, Input, Select, Textarea } from '@packages/ui';
 import { createEvidenceAsset, uploadEvidenceFile } from '../lib/client-api';
 
 const topicOptions: TopicCode[] = ['E1', 'E2', 'E3', 'E4', 'E5', 'S1', 'S2', 'S3', 'S4', 'G1'];
+const riskOptions: RiskCode[] = [
+  'climate_policy_risk',
+  'water_scarcity_risk',
+  'biodiversity_regulation_risk',
+  'resource_scarcity_risk',
+  'community_stability_risk',
+  'consumer_governance_risk'
+];
+const opportunityOptions: OpportunityCode[] = [
+  'climate_transition_opportunity',
+  'water_reputation_opportunity',
+  'biodiversity_reputation_opportunity',
+  'circular_efficiency_opportunity',
+  'community_reputation_opportunity',
+  'governance_trust_opportunity'
+];
+const reviewStateOptions: EvidenceReviewState[] = [
+  'draft',
+  'review_requested',
+  'validated',
+  'needs_update'
+];
 
 export function EvidenceVaultClient({
   evaluationId,
@@ -29,7 +57,10 @@ export function EvidenceVaultClient({
     sourceDate: '',
     evidenceBasis: 'estimated',
     confidenceWeight: '0.5',
-    linkedTopicCode: ''
+    linkedTopicCode: '',
+    linkedRiskCode: '',
+    linkedOpportunityCode: '',
+    reviewState: 'draft'
   });
 
   return (
@@ -61,6 +92,9 @@ export function EvidenceVaultClient({
                   payload.set('evidenceBasis', formState.evidenceBasis);
                   payload.set('confidenceWeight', formState.confidenceWeight);
                   payload.set('linkedTopicCode', formState.linkedTopicCode || '');
+                  payload.set('linkedRiskCode', formState.linkedRiskCode || '');
+                  payload.set('linkedOpportunityCode', formState.linkedOpportunityCode || '');
+                  payload.set('reviewState', formState.reviewState);
                   await uploadEvidenceFile(evaluationId, payload);
                 } else {
                   await createEvidenceAsset(evaluationId, {
@@ -72,7 +106,11 @@ export function EvidenceVaultClient({
                     sourceDate: formState.sourceDate || null,
                     evidenceBasis: formState.evidenceBasis as 'measured' | 'estimated' | 'assumed',
                     confidenceWeight: Number(formState.confidenceWeight),
-                    linkedTopicCode: (formState.linkedTopicCode || null) as TopicCode | null
+                    linkedTopicCode: (formState.linkedTopicCode || null) as TopicCode | null,
+                    linkedRiskCode: (formState.linkedRiskCode || null) as RiskCode | null,
+                    linkedOpportunityCode: (formState.linkedOpportunityCode ||
+                      null) as OpportunityCode | null,
+                    reviewState: formState.reviewState as EvidenceReviewState
                   });
                 }
                 setFormState({
@@ -84,7 +122,10 @@ export function EvidenceVaultClient({
                   sourceDate: '',
                   evidenceBasis: 'estimated',
                   confidenceWeight: '0.5',
-                  linkedTopicCode: ''
+                  linkedTopicCode: '',
+                  linkedRiskCode: '',
+                  linkedOpportunityCode: '',
+                  reviewState: 'draft'
                 });
                 setSelectedFile(null);
                 setFileInputKey((current) => current + 1);
@@ -215,6 +256,55 @@ export function EvidenceVaultClient({
               ))}
             </Select>
           </Field>
+          <div className="grid gap-4 md:grid-cols-3">
+            <Field label="Linked risk">
+              <Select
+                value={formState.linkedRiskCode}
+                onChange={(event) =>
+                  setFormState((current) => ({ ...current, linkedRiskCode: event.target.value }))
+                }
+              >
+                <option value="">No direct risk link</option>
+                {riskOptions.map((riskCode) => (
+                  <option key={riskCode} value={riskCode}>
+                    {riskCode.replaceAll('_', ' ')}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Linked opportunity">
+              <Select
+                value={formState.linkedOpportunityCode}
+                onChange={(event) =>
+                  setFormState((current) => ({
+                    ...current,
+                    linkedOpportunityCode: event.target.value
+                  }))
+                }
+              >
+                <option value="">No direct opportunity link</option>
+                {opportunityOptions.map((opportunityCode) => (
+                  <option key={opportunityCode} value={opportunityCode}>
+                    {opportunityCode.replaceAll('_', ' ')}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Review state">
+              <Select
+                value={formState.reviewState}
+                onChange={(event) =>
+                  setFormState((current) => ({ ...current, reviewState: event.target.value }))
+                }
+              >
+                {reviewStateOptions.map((reviewState) => (
+                  <option key={reviewState} value={reviewState}>
+                    {reviewState.replaceAll('_', ' ')}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </div>
           {errorMessage ? (
             <p className="text-sm font-medium text-rose-600">{errorMessage}</p>
           ) : null}
@@ -248,6 +338,12 @@ export function EvidenceVaultClient({
                     <span>{item.linkedTopicCode}</span>
                   </>
                 ) : null}
+                {item.reviewState ? (
+                  <>
+                    <span>/</span>
+                    <span>{item.reviewState.replaceAll('_', ' ')}</span>
+                  </>
+                ) : null}
               </div>
               <h3 className="mt-3 text-xl font-bold text-slate-950">{item.title}</h3>
               {item.description ? (
@@ -274,6 +370,12 @@ export function EvidenceVaultClient({
                 ) : null}
                 {item.ownerName ? <p>Owner: {item.ownerName}</p> : null}
                 {item.sourceDate ? <p>Source date: {item.sourceDate}</p> : null}
+                {item.linkedRiskCode ? (
+                  <p>Risk link: {item.linkedRiskCode.replaceAll('_', ' ')}</p>
+                ) : null}
+                {item.linkedOpportunityCode ? (
+                  <p>Opportunity link: {item.linkedOpportunityCode.replaceAll('_', ' ')}</p>
+                ) : null}
                 {item.byteSize !== null ? (
                   <p>File size: {(item.byteSize / 1024).toFixed(1)} KB</p>
                 ) : null}

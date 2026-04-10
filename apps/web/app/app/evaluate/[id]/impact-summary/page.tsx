@@ -26,9 +26,32 @@ export default async function ImpactSummaryPage({ params }: { params: Params }) 
           </p>
           <h1 className="mt-2 text-3xl font-black text-slate-950">What matters most right now</h1>
           <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
-            This output is generated from the saved answers and keeps relevant topics distinct from
-            high-priority topics.
+            This output is generated from the saved answers and uses the workbook score bands to
+            separate relevant topics from high-priority topics.
           </p>
+          <p className="mt-3 text-sm leading-7 text-slate-600">
+            For the full interpretation guidance behind these bands, open the{' '}
+            <Link className="font-semibold text-brand-dark underline" href="/resources">
+              reference hub
+            </Link>{' '}
+            or the{' '}
+            <Link className="font-semibold text-brand-dark underline" href="/methodology">
+              methodology page
+            </Link>
+            .
+          </p>
+          <h2 className="mt-6 text-lg font-bold text-slate-950">Score interpretation bands</h2>
+          <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+            {summary.scoreInterpretation.bands.map((band) => (
+              <div className="rounded-2xl bg-[#f7f9f4] p-4" key={band.key}>
+                <p className="text-xs uppercase tracking-[0.18em] text-[#5d7355]">
+                  {band.scoreRangeLabel}
+                </p>
+                <p className="mt-2 font-bold text-slate-950">{band.title}</p>
+                <p className="mt-2 text-xs leading-6 text-slate-600">{band.interpretation}</p>
+              </div>
+            ))}
+          </div>
         </Card>
 
         <section className="grid gap-6 lg:grid-cols-2">

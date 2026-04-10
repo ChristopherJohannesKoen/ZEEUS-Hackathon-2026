@@ -1,5 +1,4 @@
 import { PrismaClient, Role } from '@prisma/client';
-import argon2 from 'argon2';
 import { spawn } from 'node:child_process';
 import process from 'node:process';
 import {
@@ -56,65 +55,33 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function buildPasswordHash(password: string) {
-  return argon2.hash(password, {
-    type: argon2.argon2id,
-    memoryCost: Number(process.env.ARGON2_MEMORY_COST ?? '19456')
-  });
-}
-
 async function clearTemplateData(prisma: PrismaClient) {
-  await prisma.evaluationNarrative.deleteMany();
-  await prisma.evaluationRecommendationAction.deleteMany();
-  await prisma.evaluationArtifact.deleteMany();
-  await prisma.evaluationRevision.deleteMany();
-  await prisma.stage2OpportunityAnswer.deleteMany();
-  await prisma.stage2RiskAnswer.deleteMany();
-  await prisma.stage1TopicAnswer.deleteMany();
-  await prisma.stage1FinancialAnswer.deleteMany();
-  await prisma.evaluation.deleteMany();
-  await prisma.bootstrapState.deleteMany();
-  await prisma.idempotencyRequest.deleteMany();
-  await prisma.passwordResetToken.deleteMany();
-  await prisma.session.deleteMany();
-  await prisma.auditLog.deleteMany();
-  await prisma.user.deleteMany();
+  const tables = await prisma.$queryRaw<Array<{ tablename: string }>>`
+    SELECT tablename
+    FROM pg_tables
+    WHERE schemaname = 'public'
+      AND tablename <> '_prisma_migrations'
+  `;
+
+  if (tables.length === 0) {
+    return;
+  }
+
+  const quotedTables = tables
+    .map(({ tablename }) => `"public"."${tablename.replaceAll('"', '""')}"`)
+    .join(', ');
+
+  await prisma.$executeRawUnsafe(`TRUNCATE TABLE ${quotedTables} RESTART IDENTITY CASCADE`);
 }
 
 async function seedBaselineData(prisma: PrismaClient) {
-  const createdUsers = {
-    owner: await prisma.user.create({
-      data: {
-        email: seedUsers.owner.email,
-        name: seedUsers.owner.name,
-        role: seedUsers.owner.role,
-        passwordHash: await buildPasswordHash(seedUsers.owner.password)
-      }
-    }),
-    admin: await prisma.user.create({
-      data: {
-        email: seedUsers.admin.email,
-        name: seedUsers.admin.name,
-        role: seedUsers.admin.role,
-        passwordHash: await buildPasswordHash(seedUsers.admin.password)
-      }
-    }),
-    member: await prisma.user.create({
-      data: {
-        email: seedUsers.member.email,
-        name: seedUsers.member.name,
-        role: seedUsers.member.role,
-        passwordHash: await buildPasswordHash(seedUsers.member.password)
-      }
-    })
-  };
+  const seedResult = await runSeed();
 
-  await prisma.bootstrapState.create({
-    data: {
-      id: 1,
-      bootstrapOwnerId: createdUsers.owner.id
-    }
-  });
+  if (seedResult.exitCode !== 0) {
+    throw new Error(
+      `Full seed failed during E2E baseline reset.\nSTDOUT:\n${seedResult.stdout}\nSTDERR:\n${seedResult.stderr}`
+    );
+  }
 }
 
 export async function waitForPostgres(timeoutMs = 60_000) {

@@ -1,4 +1,4 @@
-FROM node:22-alpine AS base
+FROM node:25-alpine AS base
 ENV npm_config_fetch_retries=5
 ENV npm_config_fetch_retry_mintimeout=20000
 ENV npm_config_fetch_retry_maxtimeout=120000

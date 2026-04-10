@@ -5,6 +5,27 @@ log() {
   printf '[hf-space] %s\n' "$*"
 }
 
+prepare_next_standalone_assets() {
+  local standalone_server="$1"
+  local standalone_root
+  local standalone_next_dir
+
+  standalone_root="$(dirname "$standalone_server")"
+  standalone_next_dir="$standalone_root/.next"
+
+  if [[ -d "apps/web/public" && ! -d "$standalone_root/public" ]]; then
+    log "Copying public assets into Next.js standalone runtime"
+    mkdir -p "$standalone_root"
+    cp -R "apps/web/public" "$standalone_root/public"
+  fi
+
+  if [[ -d "apps/web/.next/static" && ! -d "$standalone_next_dir/static" ]]; then
+    log "Copying Next.js static assets into standalone runtime"
+    mkdir -p "$standalone_next_dir"
+    cp -R "apps/web/.next/static" "$standalone_next_dir/static"
+  fi
+}
+
 PERSIST_ROOT="/tmp/zeeus-space"
 if mkdir -p /data/zeeus-space 2>/dev/null; then
   PERSIST_ROOT="/data/zeeus-space"
@@ -169,9 +190,11 @@ done
 log "Starting web app"
 if [[ -f "apps/web/.next/standalone/apps/web/server.js" ]]; then
   log "Using Next.js standalone server"
+  prepare_next_standalone_assets "apps/web/.next/standalone/apps/web/server.js"
   node apps/web/.next/standalone/apps/web/server.js &
 elif [[ -f "apps/web/.next/standalone/server.js" ]]; then
   log "Using Next.js standalone server"
+  prepare_next_standalone_assets "apps/web/.next/standalone/server.js"
   node apps/web/.next/standalone/server.js &
 else
   log "Standalone server not found, falling back to next start"

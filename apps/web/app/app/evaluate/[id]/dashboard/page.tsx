@@ -313,6 +313,56 @@ export default async function DashboardPage({ params }: { params: Params }) {
           </div>
         </Card>
 
+        <section className="grid gap-6 lg:grid-cols-3">
+          <Card className="border-surface-border bg-[#f4f9ee]">
+            <p className="text-xs uppercase tracking-[0.25em] text-[#58724d]">Evidence vault</p>
+            <h2 className="mt-2 text-2xl font-black text-slate-950">Collect supporting proof</h2>
+            <p className="mt-3 text-sm leading-7 text-slate-600">
+              Add notes, links, and references so partner reviewers and future team members can see
+              how the current answers were supported.
+            </p>
+            <div className="mt-5">
+              <Link
+                className={buttonClassName({ variant: 'secondary' })}
+                href={`/app/evaluate/${evaluation.id}/evidence`}
+              >
+                Open evidence vault
+              </Link>
+            </div>
+          </Card>
+
+          <Card className="border-surface-border bg-[#fbfdf8]">
+            <p className="text-xs uppercase tracking-[0.25em] text-[#58724d]">Scenario lab</p>
+            <h2 className="mt-2 text-2xl font-black text-slate-950">Stress-test assumptions</h2>
+            <p className="mt-3 text-sm leading-7 text-slate-600">
+              Build advisory scenarios for geography, dependency, and time horizon without changing
+              the canonical saved revision.
+            </p>
+            <div className="mt-5">
+              <Link
+                className={buttonClassName({ variant: 'secondary' })}
+                href={`/app/evaluate/${evaluation.id}/scenarios`}
+              >
+                Open scenario lab
+              </Link>
+            </div>
+          </Card>
+
+          <Card className="border-surface-border bg-[#fbfdf8]">
+            <p className="text-xs uppercase tracking-[0.25em] text-[#58724d]">Partner console</p>
+            <h2 className="mt-2 text-2xl font-black text-slate-950">Program-ready reviews</h2>
+            <p className="mt-3 text-sm leading-7 text-slate-600">
+              Reviewers work against immutable revisions so approval and feedback stay separate from
+              the deterministic result.
+            </p>
+            <div className="mt-5">
+              <Link className={buttonClassName({ variant: 'secondary' })} href="/app/programs">
+                Open programs
+              </Link>
+            </div>
+          </Card>
+        </section>
+
         <Card className="border-surface-border">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>

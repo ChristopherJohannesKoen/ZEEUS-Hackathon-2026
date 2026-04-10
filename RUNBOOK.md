@@ -2,9 +2,9 @@
 
 ## Purpose
 
-This repository ships the ZEEUS hackathon assessment app as a monorepo with:
+This repository ships the ZEEUS sustainability platform as a monorepo with:
 
-- `apps/web`: Next.js assessment UI
+- `apps/web`: Next.js public site, founder workspace, and partner console
 - `apps/api`: NestJS API
 - `apps/worker`: BullMQ worker for queued artifacts and narratives
 - `packages/scoring`: deterministic scoring engine
@@ -16,16 +16,18 @@ This repository ships the ZEEUS hackathon assessment app as a monorepo with:
 The primary product flow is:
 
 1. Landing page
-2. Login or signup
-3. Saved evaluations workspace
-4. Startup context and SDG pre-screen
-5. Stage I assessment
-6. Stage II risks and opportunities
-7. Impact summary
-8. SDG alignment
-9. Dashboard
-10. Review before completion
-11. Report, revisions, compare, persisted export artifacts, narratives, and benchmarks
+2. Public methodology, FAQ, resources, case-study, partner, and contact pages
+3. Login or signup
+4. Saved evaluations workspace
+5. Organization and partner-program views
+6. Startup context and SDG pre-screen
+7. Stage I assessment
+8. Stage II risks and opportunities
+9. Impact summary
+10. SDG alignment and goal-target exploration
+11. Dashboard, evidence vault, and scenario lab
+12. Review before completion
+13. Report, revisions, compare, persisted export artifacts, narratives, and benchmarks
 
 ## First Boot
 
@@ -83,14 +85,22 @@ The worker consumes queued export and narrative jobs after the stack is healthy.
 - `npm run db:setup`: migrate and seed local DB
 - `npm run db:reset`: rebuild local DB from scratch
 - `npm run prisma:generate`: regenerate Prisma client
+- `npm run audit:deps`: fail on current high-severity dependency advisories
 - `npm run typecheck`: TypeScript validation
 - `npm test`: workspace test suites
 - `npm run build`: production builds
 - `node scripts/extract-workbook-catalogs.mjs`: refresh workbook-derived catalogs
 
+## Security Maintenance
+
+- Run `npm run audit:deps` before cutting a release and after any frontend test-tooling upgrade. The current CI gate fails on new high-severity dependency advisories.
+- Refresh Docker image tags for Postgres, Redis, and MinIO on a regular cadence; keep image bumps grouped with a smoke run of `docker compose up --build`.
+- Treat `OPENAI_API_KEY`, `INTERNAL_SERVICE_TOKEN`, and S3/MinIO credentials as deployment secrets only. Never hardcode them into seed data, screenshots, or checked-in `.env` files.
+- Evidence uploads now persist as binary objects in MinIO/S3-compatible storage. If reviewing a production incident, verify both the DB row and object-store key before marking the item lost.
+
 ## Verification Checklist
 
-Run this before a demo or handoff:
+Run this before a release or handoff:
 
 ```powershell
 npm run typecheck
@@ -105,9 +115,12 @@ Then verify:
 - `http://localhost:3000`
 - `http://localhost:4000/api/health`
 - `http://localhost:4000/api/docs`
+- open `/how-it-works`, `/methodology`, `/faq`, `/resources`, and `/partners`
 - create an evaluation, complete it through the review step, generate CSV and PDF artifacts, and confirm they remain downloadable from revision history after restarting `api` and `worker`
 - request at least one AI narrative and confirm it transitions to `ready`
 - open the benchmarks view and confirm it renders seeded baseline comparisons
+- add at least one evidence item and one scenario run
+- open the partner program console and confirm seeded reviewer activity renders
 
 ## Troubleshooting
 
@@ -116,5 +129,5 @@ Then verify:
 - If the workbook catalogs need updating, rerun `node scripts/extract-workbook-catalogs.mjs`.
 - If `next build` on Windows warns about an invalid native SWC binary, the repo already falls back to `@next/swc-wasm-nodejs` during the web build.
 - If the API cannot connect to Postgres in Docker, confirm `.env` exists and that `docker compose ps` shows `db` as healthy.
-- If exports remain `pending`, check `docker compose ps` for healthy `redis`, `minio`, and `worker` services and inspect `docker logs zeeus-hackathon-2026-worker-1`.
+- If exports remain `pending`, check `docker compose ps` for healthy `redis`, `minio`, and `worker` services and inspect `docker compose logs worker`.
 - If artifact downloads fail, confirm the `zeeus-artifacts` bucket exists in MinIO and that `S3_ENDPOINT`, `S3_BUCKET`, and credentials match the Compose defaults.

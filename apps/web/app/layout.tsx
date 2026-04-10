@@ -1,24 +1,42 @@
 import type { Metadata } from 'next';
-import { IBM_Plex_Sans, Space_Grotesk } from 'next/font/google';
+import { Urbanist } from 'next/font/google';
 import { connection } from 'next/server';
+import { resolveSiteOrigin } from '../lib/runtime-mode';
 import './globals.css';
 
-const bodyFont = IBM_Plex_Sans({
+const brandFont = Urbanist({
   subsets: ['latin'],
-  variable: '--font-body',
-  weight: ['400', '500', '600', '700']
-});
-
-const displayFont = Space_Grotesk({
-  subsets: ['latin'],
-  variable: '--font-display',
-  weight: ['500', '700']
+  variable: '--font-brand',
+  weight: ['400', '500', '600', '700', '800']
 });
 
 export const metadata: Metadata = {
-  title: 'ZEEUS Sustainability by Design',
+  metadataBase: new URL(resolveSiteOrigin()),
+  title: {
+    default: 'ZEEUS Sustainability by Design Tool',
+    template: '%s | ZEEUS'
+  },
   description:
-    'A Dockerized assessment platform for startup sustainability scoring, SDG alignment, and deterministic Excel-parity reporting.'
+    'A founder-friendly guidance tool from IfaS at Trier University of Applied Sciences under the ZEEUS project, helping startups explore SDGs, ESRS double materiality, risks, opportunities, and practical next steps.',
+  applicationName: 'ZEEUS',
+  icons: {
+    icon: '/brand/zeeus/logos/logo-symbol-circle.png',
+    shortcut: '/brand/zeeus/logos/logo-symbol-circle.png',
+    apple: '/brand/zeeus/logos/logo-symbol-circle.png'
+  },
+  openGraph: {
+    title: 'ZEEUS Sustainability by Design Tool',
+    description:
+      'Assess your startup idea through sustainability, risk, and opportunity lenses with guidance from the ZEEUS project and IfaS at Trier University of Applied Sciences.',
+    siteName: 'ZEEUS',
+    type: 'website'
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'ZEEUS Sustainability by Design Tool',
+    description:
+      'A guidance tool, not a judgment tool, for founders exploring SDGs, ESRS dual materiality, material topics, risks, and opportunities.'
+  }
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -26,7 +44,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang="en">
-      <body className={`${bodyFont.variable} ${displayFont.variable} font-sans`}>{children}</body>
+      <body className={`${brandFont.variable} font-sans`}>{children}</body>
     </html>
   );
 }

@@ -2,15 +2,17 @@
 
 ## Goal
 
-This codebase implements the ZEEUS Sustainability by Design assessment as a
-single-tenant web application. The product goal is not a generic ESG platform.
-It is a reproducible, database-backed implementation of the workbook flow with
-clear UX, deterministic scoring, dashboards, and export.
+This codebase implements the ZEEUS Sustainability by Design platform as a
+single-tenant, dual-audience web application. The product goal is not a generic
+ESG platform. It is a reproducible, database-backed implementation of the
+workbook flow with a public methodology site, founder workspace, partner review
+surfaces, deterministic scoring, dashboards, and export.
 
 ## Runtime Topology
 
-- `apps/web` serves the landing page, auth pages, evaluation workspace, wizard,
-  dashboard, benchmarks, and report UI.
+- `apps/web` serves the landing page, methodology/FAQ/resources/partner pages,
+  auth pages, evaluation workspace, evidence vault, scenario lab, partner
+  program console, benchmarks, and report UI.
 - `apps/web` reaches the API through contract-backed helpers and Next rewrites
   for `/api/*`.
 - `apps/api` owns auth, persistence, scoring orchestration, evaluation
@@ -35,14 +37,15 @@ The primary assessment flow is:
 3. Stage I financial and E/S/G assessment
 4. Stage II risks and opportunities
 5. Impact summary
-6. SDG alignment
-7. Dashboard and structured recommendations
+6. SDG alignment and goal/target exploration
+7. Dashboard, structured recommendations, evidence vault, and scenario lab
 8. Review before completion
 9. Immutable revisions, compare view, and revision-scoped recommendation actions
 10. Persisted CSV/PDF artifacts, AI narratives, and seeded benchmark comparisons
+11. Organization and partner-program submission/review surfaces
 
-Saved evaluations belong to the authenticated user and can be resumed from the
-workspace list.
+Saved evaluations remain user-authenticated and are linked to the user primary
+organization when one exists.
 
 ## Module Layout
 
@@ -50,6 +53,7 @@ Primary API modules:
 
 - `AuthModule`: session auth, CSRF, session management, password reset
 - `EvaluationsModule`: evaluation CRUD, wizard-step persistence, report payloads
+- `PlatformModule`: public content, SDG targets, organizations, programs, evidence, scenarios
 - `HealthModule`: API and database health
 - `UsersModule`: profile and session data used by the web shell
 
@@ -74,6 +78,20 @@ tables:
 - `EvaluationArtifact`
 - `EvaluationNarrative`
 - `EvaluationRecommendationAction`
+- `Organization`
+- `OrganizationMember`
+- `OrganizationInvitation`
+- `Program`
+- `ProgramMember`
+- `ProgramSubmission`
+- `ReviewAssignment`
+- `ReviewComment`
+- `EvidenceAsset`
+- `KnowledgeArticle`
+- `FaqEntry`
+- `CaseStudy`
+- `SdgTarget`
+- `ScenarioRun`
 - `Stage1FinancialAnswer`
 - `Stage1TopicAnswer`
 - `Stage2RiskAnswer`
@@ -86,6 +104,8 @@ the workspace list and dashboard can render without recomputing every answer
 from scratch. Immutable revision snapshots preserve completed outputs, while
 artifact rows track persisted CSV/PDF generation for specific revisions.
 Narrative rows track queued or completed AI explanations for specific revisions.
+Organization and program models add the dual-audience layer without allowing
+review workflows to mutate canonical scoring outputs.
 
 ## Deterministic Scoring Boundary
 

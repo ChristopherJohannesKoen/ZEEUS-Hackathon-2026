@@ -89,6 +89,28 @@ export function NarrativeActionsPanel({
               {narrative?.content ??
                 'Generate a revision-scoped explanation from the immutable report snapshot.'}
             </p>
+            {narrative?.sourceReferences?.length ? (
+              <div className="mt-4 grid gap-2 border-t border-surface-border pt-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Sources</p>
+                {narrative.sourceReferences.map((reference, index) =>
+                  reference.href ? (
+                    <a
+                      className="text-sm font-medium text-brand-dark"
+                      href={reference.href}
+                      key={`${reference.label}-${index}`}
+                      rel={reference.href.startsWith('http') ? 'noreferrer' : undefined}
+                      target={reference.href.startsWith('http') ? '_blank' : undefined}
+                    >
+                      {reference.label}
+                    </a>
+                  ) : (
+                    <p className="text-sm text-slate-600" key={`${reference.label}-${index}`}>
+                      {reference.label}
+                    </p>
+                  )
+                )}
+              </div>
+            ) : null}
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <Button
                 disabled={isPending}

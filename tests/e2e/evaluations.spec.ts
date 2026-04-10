@@ -16,7 +16,9 @@ test('runs the evaluation workflow through dashboard, completion, and revision h
   await page.goto('/app/evaluate/start');
   await page.getByTestId('evaluation-name').fill('EcoGrid Pilot');
   await page.getByTestId('evaluation-country').fill('South Africa');
-  await page.getByTestId('evaluation-nace-division').selectOption({ index: 1 });
+  await page.getByTestId('evaluation-business-category-main').selectOption({ index: 1 });
+  await page.getByTestId('evaluation-business-subcategory').selectOption({ index: 1 });
+  await page.getByTestId('evaluation-extended-nace').selectOption({ index: 1 });
   await page.getByTestId('evaluation-offering-type').selectOption('product');
   await page.getByTestId('evaluation-launched').selectOption('true');
   await page.getByTestId('evaluation-current-stage').selectOption('validation');
@@ -68,14 +70,41 @@ test('runs the evaluation workflow through dashboard, completion, and revision h
   await expect(page.getByRole('heading', { name: 'What matters most right now' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'High-priority topics' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Relevant topics' })).toBeVisible();
+  await expect(page.getByText('Score interpretation bands')).toBeVisible();
   await page.getByRole('link', { name: 'Continue to SDG alignment' }).click();
 
   await expect(page.getByRole('heading', { name: 'Merged stage and business SDGs' })).toBeVisible();
   await page.getByRole('link', { name: 'Continue to dashboard' }).click();
   await page.waitForURL(/\/app\/evaluate\/[^/]+\/dashboard$/);
+  const evaluationId = page.url().match(/\/app\/evaluate\/([^/]+)\/dashboard$/)?.[1];
+
+  if (!evaluationId) {
+    throw new Error('Failed to resolve evaluation id from dashboard URL.');
+  }
 
   await expect(page.getByRole('heading', { name: 'EcoGrid Pilot' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Review before completion' })).toBeVisible();
+  await expect(
+    page.getByText('Compare this revision to prior work and seeded baselines')
+  ).toBeVisible();
+  await page.getByRole('link', { name: 'Open evidence vault' }).click();
+  await expect(page).toHaveURL(new RegExp(`/app/evaluate/${evaluationId}/evidence$`));
+  await page.getByRole('link', { name: 'Open scenario lab' }).click();
+  await expect(page).toHaveURL(new RegExp(`/app/evaluate/${evaluationId}/scenarios$`));
+  await page.goto(`/app/evaluate/${evaluationId}/benchmarks`);
+  await expect(page.getByText('Compare movement through score interpretation bands')).toBeVisible();
+  await expect(page.getByText('How to read the benchmark')).toBeVisible();
+  await page.goto('/app/programs');
+  await expect(page.getByRole('heading', { name: 'Programs and cohort workflows' })).toBeVisible();
+  await page.getByRole('link', { name: 'Open program' }).first().click();
+  await expect(
+    page.getByRole('heading', { name: 'ZEEUS Sustainability Cohort 2026' })
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Submit revision' }).click();
+  await expect(page.getByText('Deterministic workbook summary')).toBeVisible();
+  await expect(page.locator('[data-testid^="program-submission-parity-"]')).toBeVisible();
+  await page.goto(`/app/evaluate/${evaluationId}/dashboard`);
+
   const firstRecommendationSave = page
     .locator('[data-testid^="recommendation-action-save-"]')
     .first();
@@ -95,6 +124,8 @@ test('runs the evaluation workflow through dashboard, completion, and revision h
   await expect(
     page.getByRole('heading', { name: 'Freeze the current deterministic result' })
   ).toBeVisible();
+  await expect(page.getByText('Review the output in workbook bands')).toBeVisible();
+  await expect(page.getByText('Stage II matrix legend')).toBeVisible();
   await page.getByTestId('evaluation-complete').click();
 
   await expect(page.getByTestId('evaluation-archive')).toBeVisible();

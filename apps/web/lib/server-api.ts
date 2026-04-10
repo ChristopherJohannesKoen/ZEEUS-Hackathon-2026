@@ -2,6 +2,8 @@ import { apiContract } from '@packages/contracts';
 import type {
   AuthResponse,
   DashboardResponse,
+  EditorialOverview,
+  EvidenceAssetListResponse,
   EvaluationArtifactListResponse,
   EvaluationArtifactSummary,
   EvaluationBenchmarkSummary,
@@ -12,9 +14,17 @@ import type {
   EvaluationRevisionDetail,
   EvaluationRevisionListResponse,
   ImpactSummaryResponse,
+  OrganizationDetail,
+  OrganizationListResponse,
+  ProgramDetail,
+  ProgramListResponse,
+  PublicSiteContent,
   ReportResponse,
+  ScenarioRunListResponse,
+  SitePage,
   SessionListResponse,
   SdgAlignmentResponse,
+  SdgGoalDetail,
   StageSdgSummary,
   SsoProvidersResponse,
   UserListQuery,
@@ -26,9 +36,11 @@ import { cookies } from 'next/headers';
 import { unstable_noStore as noStore } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { ApiRequestError, toApiError, unwrapContractResponse } from './api-error';
+import { resolveRuntimeMode } from './runtime-mode';
 
 const apiOrigin = process.env.API_ORIGIN ?? 'http://localhost:4000';
 const sessionCookieName = process.env.SESSION_COOKIE_NAME ?? 'zeeus_assessment_session';
+const runtimeMode = resolveRuntimeMode();
 
 const serverClient = initClient(apiContract, {
   baseUrl: `${apiOrigin}/api`,
@@ -93,6 +105,14 @@ export async function getCurrentUser() {
     }
 
     throw error;
+  }
+}
+
+export async function getOptionalCurrentUser() {
+  try {
+    return await getCurrentUser();
+  } catch {
+    return undefined;
   }
 }
 
@@ -251,6 +271,99 @@ export function getEvaluationBenchmarks(evaluationId: string, revisionNumber?: n
       serverClient.evaluations.getBenchmarks({
         params: { id: evaluationId },
         query: revisionNumber ? { revisionNumber } : {}
+      }),
+    [200]
+  );
+}
+
+export function getEvaluationEvidence(evaluationId: string) {
+  return protectedServerRequest<EvidenceAssetListResponse>(
+    () =>
+      serverClient.evaluations.listEvidence({
+        params: { id: evaluationId }
+      }),
+    [200]
+  );
+}
+
+export function getEvaluationScenarios(evaluationId: string) {
+  return protectedServerRequest<ScenarioRunListResponse>(
+    () =>
+      serverClient.evaluations.listScenarios({
+        params: { id: evaluationId }
+      }),
+    [200]
+  );
+}
+
+export function getOrganizations() {
+  return protectedServerRequest<OrganizationListResponse>(
+    () => serverClient.organizations.list(),
+    [200]
+  );
+}
+
+export function getOrganization(organizationId: string) {
+  return protectedServerRequest<OrganizationDetail>(
+    () =>
+      serverClient.organizations.get({
+        params: { organizationId }
+      }),
+    [200]
+  );
+}
+
+export function getPrograms() {
+  return protectedServerRequest<ProgramListResponse>(() => serverClient.programs.list(), [200]);
+}
+
+export function getProgram(programId: string) {
+  return protectedServerRequest<ProgramDetail>(
+    () =>
+      serverClient.programs.get({
+        params: { programId }
+      }),
+    [200]
+  );
+}
+
+export function getPublicSiteContent() {
+  return executeServerRequest<PublicSiteContent>(
+    () =>
+      serverClient.content.site({
+        query: {
+          locale: runtimeMode.defaultLocale
+        }
+      }),
+    [200]
+  );
+}
+
+export function getPreviewSitePage(token: string) {
+  return executeServerRequest<SitePage>(
+    () =>
+      serverClient.content.previewSitePage({
+        params: { token }
+      }),
+    [200]
+  );
+}
+
+export function getEditorialOverview() {
+  return protectedServerRequest<EditorialOverview>(
+    () => serverClient.content.getEditorialOverview(),
+    [200]
+  );
+}
+
+export function getSdgGoal(goalNumber: number) {
+  return executeServerRequest<SdgGoalDetail>(
+    () =>
+      serverClient.content.sdgGoal({
+        params: { goalNumber },
+        query: {
+          locale: runtimeMode.defaultLocale
+        }
       }),
     [200]
   );

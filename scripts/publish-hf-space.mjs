@@ -146,7 +146,7 @@ run('hf', [
   repoId,
   '--repo-type',
   'space',
-  '--space_sdk',
+  '--space-sdk',
   'docker',
   '--exist-ok'
 ]);

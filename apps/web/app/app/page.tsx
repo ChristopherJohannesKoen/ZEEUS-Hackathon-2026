@@ -32,7 +32,7 @@ export default async function DashboardPage() {
             </h1>
             <p className="max-w-2xl text-sm leading-7 text-white/80">
               Continue saved assessments, review materiality outputs, and move directly into the
-              dashboard and report flow built for the hackathon submission.
+              dashboard and report flow for startup sustainability guidance and export.
             </p>
           </div>
           <div className="mt-6 flex flex-wrap gap-3">
@@ -176,7 +176,7 @@ export default async function DashboardPage() {
 
         <div className="grid gap-6">
           <Card className="border-surface-border bg-[#f4f9ee]">
-            <p className="text-xs uppercase tracking-[0.25em] text-[#5c7353]">Submission fit</p>
+            <p className="text-xs uppercase tracking-[0.25em] text-[#5c7353]">Program readiness</p>
             <h2 className="mt-3 text-2xl font-black text-slate-950">Deterministic by design</h2>
             <p className="mt-3 text-sm leading-7 text-slate-600">
               The platform preserves the fixed scoring logic from the workbook, keeps saved answers

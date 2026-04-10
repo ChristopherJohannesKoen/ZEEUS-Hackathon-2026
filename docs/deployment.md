@@ -22,6 +22,33 @@ This starts:
 The compose path is the canonical local reproduction flow for judges and
 reviewers.
 
+## Hugging Face Spaces
+
+The repository also ships a Hugging Face Space overlay under
+`deploy/huggingface-space`. This overlay boots the current full-stack demo
+inside a single Docker Space:
+
+- local PostgreSQL inside the container
+- local Redis inside the container
+- Next.js web app on port `7860`
+- NestJS API on `127.0.0.1:4000`
+- BullMQ worker for exports and narratives
+- filesystem-backed artifacts with `/data` support when persistent storage is enabled
+
+Publish with:
+
+```powershell
+npm run hf:space:publish -- <username/space-name>
+```
+
+Recommended Space secrets and variables:
+
+- `OPENAI_API_KEY` for hosted OpenAI narratives
+- `SEED_OWNER_EMAIL` and `SEED_OWNER_PASSWORD` if the default owner credentials should be overridden
+
+Without `OPENAI_API_KEY`, narrative requests still succeed through the built-in
+deterministic explainer path.
+
 ## Containers
 
 - `apps/api/Dockerfile` builds the NestJS API

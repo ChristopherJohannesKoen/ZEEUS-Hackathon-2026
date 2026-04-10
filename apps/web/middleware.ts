@@ -1,9 +1,12 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { buildContentSecurityPolicy, generateNonce, readBooleanEnv } from './lib/csp';
+import { resolveRuntimeMode } from './lib/runtime-mode';
 
 const apiOrigin = process.env.API_ORIGIN ?? 'http://localhost:4000';
 const cspReportUri = process.env.CSP_REPORT_URI?.trim();
+const runtimeMode = resolveRuntimeMode();
+const allowEmbedding = runtimeMode.publicSpaceMode || runtimeMode.spaceHostedMode;
 
 export function middleware(request: NextRequest) {
   const nonce = generateNonce();
@@ -11,13 +14,15 @@ export function middleware(request: NextRequest) {
   const contentSecurityPolicy = buildContentSecurityPolicy({
     apiOrigin,
     environment: process.env.NODE_ENV,
-    nonce
+    nonce,
+    allowEmbedding
   });
   const reportOnlyPolicy = readBooleanEnv(process.env.CSP_REPORT_ONLY)
     ? buildContentSecurityPolicy({
         apiOrigin,
         environment: process.env.NODE_ENV,
         nonce,
+        allowEmbedding,
         reportOnly: true,
         reportUri: cspReportUri
       })
@@ -36,15 +41,23 @@ export function middleware(request: NextRequest) {
   if (reportOnlyPolicy) {
     response.headers.set('Content-Security-Policy-Report-Only', reportOnlyPolicy);
   }
-  response.headers.set('X-Frame-Options', 'DENY');
+  if (!allowEmbedding) {
+    response.headers.set('X-Frame-Options', 'DENY');
+  }
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   response.headers.set(
     'Permissions-Policy',
     'accelerometer=(), autoplay=(), camera=(), display-capture=(), geolocation=(), gyroscope=(), microphone=(), midi=(), payment=(), usb=(), browsing-topics=()'
   );
-  response.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
-  response.headers.set('Cross-Origin-Resource-Policy', 'same-origin');
+  response.headers.set(
+    'Cross-Origin-Opener-Policy',
+    allowEmbedding ? 'unsafe-none' : 'same-origin'
+  );
+  response.headers.set(
+    'Cross-Origin-Resource-Policy',
+    allowEmbedding ? 'cross-origin' : 'same-origin'
+  );
 
   if (process.env.NODE_ENV === 'production') {
     response.headers.set(

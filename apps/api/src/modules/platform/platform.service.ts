@@ -76,8 +76,7 @@ const referenceResourceFallbacks: Record<string, string> = {
   'zeeus-score-interpretation':
     'references/Hackathon_User Guidlines/4) Score Interpretation_ZEEUS.pdf',
   'zeeus-tool-example-pack': 'references/Hackathon_User Guidlines/5) Tool & Example.zip',
-  'zeeus-guidelines-kit':
-    'references/Hackathon_User Guidlines/6) GUIDELINES KIT- ZEEUS.pdf',
+  'zeeus-guidelines-kit': 'references/Hackathon_User Guidlines/6) GUIDELINES KIT- ZEEUS.pdf',
   'zeeus-tool-introduction-transcript':
     'references/Hackathon_User Guidlines/Tool_Introduction_Video.txt'
 };
@@ -175,41 +174,41 @@ export class PlatformService {
       })
     ]);
 
-    const sitePages = this.pickPreferredLocale(
-      sitePagesRaw as any[],
+    const sitePages = this.pickPreferredLocale<(typeof sitePagesRaw)[number], string>(
+      sitePagesRaw,
       (item) => item.slug,
       resolvedLocale
-    ) as typeof sitePagesRaw;
+    );
     const siteSettings = this.pickPreferredLocale(
-      siteSettingsRaw as any[],
+      siteSettingsRaw as (typeof siteSettingsRaw)[number][],
       (item) => item.key,
       resolvedLocale
-    ) as typeof siteSettingsRaw;
-    const mediaAssets = this.pickPreferredLocale(
-      mediaAssetsRaw as any[],
+    );
+    const mediaAssets = this.pickPreferredLocale<(typeof mediaAssetsRaw)[number], string>(
+      mediaAssetsRaw,
       (item) => item.slug,
       resolvedLocale
-    ) as typeof mediaAssetsRaw;
-    const articles = this.pickPreferredLocale(
-      articlesRaw as any[],
+    );
+    const articles = this.pickPreferredLocale<(typeof articlesRaw)[number], string>(
+      articlesRaw,
       (item) => item.slug,
       resolvedLocale
-    ) as typeof articlesRaw;
+    );
     const faqEntries = this.pickPreferredLocale(
-      faqEntriesRaw as any[],
+      faqEntriesRaw as (typeof faqEntriesRaw)[number][],
       (item) => `${item.category}:${item.sortOrder}`,
       resolvedLocale
-    ) as typeof faqEntriesRaw;
-    const caseStudies = this.pickPreferredLocale(
-      caseStudiesRaw as any[],
+    );
+    const caseStudies = this.pickPreferredLocale<(typeof caseStudiesRaw)[number], string>(
+      caseStudiesRaw,
       (item) => item.slug,
       resolvedLocale
-    ) as typeof caseStudiesRaw;
-    const resources = this.pickPreferredLocale(
-      resourcesRaw as any[],
+    );
+    const resources = this.pickPreferredLocale<(typeof resourcesRaw)[number], string>(
+      resourcesRaw,
       (item) => item.slug,
       resolvedLocale
-    ) as typeof resourcesRaw;
+    );
 
     return {
       referenceMetadata: this.buildReferenceMetadata(),
@@ -269,7 +268,10 @@ export class PlatformService {
 
   async getSdgGoal(goalNumber: number, locale?: string): Promise<SdgGoalDetail> {
     const resolvedLocale = this.resolveLocale(locale);
-    const targets = this.pickPreferredLocale(
+    const targets = this.pickPreferredLocale<
+      Awaited<ReturnType<typeof this.prismaService.sdgTarget.findMany>>[number],
+      string
+    >(
       await this.prismaService.sdgTarget.findMany({
         where: {
           goalNumber,
@@ -280,7 +282,7 @@ export class PlatformService {
       }),
       (item) => item.targetCode,
       resolvedLocale
-    ) as Awaited<ReturnType<typeof this.prismaService.sdgTarget.findMany>>;
+    );
 
     if (targets.length === 0) {
       throw new NotFoundException('SDG goal not found.');
@@ -1143,13 +1145,7 @@ export class PlatformService {
       updatedAt: study.updatedAt.toISOString()
     } satisfies PublicSiteContent['caseStudies'][number];
 
-    await this.recordContentRevision(
-      'case_study',
-      study.id,
-      serialized,
-      currentUser.id,
-      'Created'
-    );
+    await this.recordContentRevision('case_study', study.id, serialized, currentUser.id, 'Created');
 
     return serialized;
   }
@@ -1191,13 +1187,7 @@ export class PlatformService {
       updatedAt: study.updatedAt.toISOString()
     } satisfies PublicSiteContent['caseStudies'][number];
 
-    await this.recordContentRevision(
-      'case_study',
-      study.id,
-      serialized,
-      currentUser.id,
-      'Updated'
-    );
+    await this.recordContentRevision('case_study', study.id, serialized, currentUser.id, 'Updated');
 
     return serialized;
   }
@@ -1735,59 +1725,70 @@ export class PlatformService {
       ])
     );
 
-    const reviewAssignments = program.submissions.flatMap((submission: (typeof program.submissions)[number]) =>
-      submission.reviewAssignments.map((assignment: (typeof submission.reviewAssignments)[number]) =>
-        this.serializeReviewAssignment(submission.id, assignment)
-      )
+    const reviewAssignments = program.submissions.flatMap(
+      (submission: (typeof program.submissions)[number]) =>
+        submission.reviewAssignments.map(
+          (assignment: (typeof submission.reviewAssignments)[number]) =>
+            this.serializeReviewAssignment(submission.id, assignment)
+        )
     );
-    const reviewComments = program.submissions.flatMap((submission: (typeof program.submissions)[number]) =>
-      submission.reviewComments.map((comment: (typeof submission.reviewComments)[number]) => ({
-        id: comment.id,
-        submissionId: submission.id,
-        authorUserId: comment.author.id,
-        authorName: comment.author.name,
-        body: comment.body,
-        createdAt: comment.createdAt.toISOString()
-      }))
+    const reviewComments = program.submissions.flatMap(
+      (submission: (typeof program.submissions)[number]) =>
+        submission.reviewComments.map((comment: (typeof submission.reviewComments)[number]) => ({
+          id: comment.id,
+          submissionId: submission.id,
+          authorUserId: comment.author.id,
+          authorName: comment.author.name,
+          body: comment.body,
+          createdAt: comment.createdAt.toISOString()
+        }))
     );
-    const submissionSummaries = program.submissions.map((submission: (typeof program.submissions)[number]) => {
-      const submissionReport = reportsByRevisionId.get(submission.revisionId) ?? null;
-      const openAssignmentCount = submission.reviewAssignments.filter(
-        (assignment: (typeof submission.reviewAssignments)[number]) => assignment.status !== 'approved'
-      ).length;
-      const overdueAssignmentCount = submission.reviewAssignments.filter(
-        (assignment: (typeof submission.reviewAssignments)[number]) =>
-          this.isAssignmentOverdue(assignment.dueAt, assignment.status)
-      ).length;
+    const submissionSummaries = program.submissions.map(
+      (submission: (typeof program.submissions)[number]) => {
+        const submissionReport = reportsByRevisionId.get(submission.revisionId) ?? null;
+        const openAssignmentCount = submission.reviewAssignments.filter(
+          (assignment: (typeof submission.reviewAssignments)[number]) =>
+            assignment.status !== 'approved'
+        ).length;
+        const overdueAssignmentCount = submission.reviewAssignments.filter(
+          (assignment: (typeof submission.reviewAssignments)[number]) =>
+            this.isAssignmentOverdue(assignment.dueAt, assignment.status)
+        ).length;
 
-      return {
-        id: submission.id,
-        evaluationId: submission.evaluation.id,
-        evaluationName: submission.evaluation.name,
-        startupName: submission.evaluation.name,
-        revisionNumber: submission.revisionNumber,
-        submissionStatus: submission.status as
-          | 'draft'
-          | 'submitted'
-          | 'in_review'
-          | 'changes_requested'
-          | 'approved'
-          | 'archived',
-        evaluationStatus: submission.evaluation.status,
-        context: this.buildProgramEvaluationContext(submissionReport?.evaluation ?? submission.evaluation),
-        deterministicSummary: this.buildProgramDeterministicSummary(submissionReport, submission.evaluation),
-        scoreInterpretation: submissionReport?.dashboard.scoreInterpretation ?? null,
-        topMaterialTopics: this.buildProgramMaterialTopicPreview(submissionReport),
-        recommendationsPreview: this.buildProgramRecommendationPreview(submissionReport),
-        reviewChecklist: this.buildProgramReviewChecklist(submissionReport, submission),
-        openAssignmentCount,
-        overdueAssignmentCount,
-        latestDecisionRationale: this.getLatestDecisionRationale(submission.reviewComments),
-        reportSnapshotHref: `/app/evaluate/${submission.evaluation.id}/revisions/${submission.revisionNumber}`,
-        submittedAt: submission.submittedAt ? submission.submittedAt.toISOString() : null,
-        lastReviewedAt: submission.lastReviewedAt ? submission.lastReviewedAt.toISOString() : null
-      };
-    });
+        return {
+          id: submission.id,
+          evaluationId: submission.evaluation.id,
+          evaluationName: submission.evaluation.name,
+          startupName: submission.evaluation.name,
+          revisionNumber: submission.revisionNumber,
+          submissionStatus: submission.status as
+            | 'draft'
+            | 'submitted'
+            | 'in_review'
+            | 'changes_requested'
+            | 'approved'
+            | 'archived',
+          evaluationStatus: submission.evaluation.status,
+          context: this.buildProgramEvaluationContext(
+            submissionReport?.evaluation ?? submission.evaluation
+          ),
+          deterministicSummary: this.buildProgramDeterministicSummary(
+            submissionReport,
+            submission.evaluation
+          ),
+          scoreInterpretation: submissionReport?.dashboard.scoreInterpretation ?? null,
+          topMaterialTopics: this.buildProgramMaterialTopicPreview(submissionReport),
+          recommendationsPreview: this.buildProgramRecommendationPreview(submissionReport),
+          reviewChecklist: this.buildProgramReviewChecklist(submissionReport, submission),
+          openAssignmentCount,
+          overdueAssignmentCount,
+          latestDecisionRationale: this.getLatestDecisionRationale(submission.reviewComments),
+          reportSnapshotHref: `/app/evaluate/${submission.evaluation.id}/revisions/${submission.revisionNumber}`,
+          submittedAt: submission.submittedAt ? submission.submittedAt.toISOString() : null,
+          lastReviewedAt: submission.lastReviewedAt ? submission.lastReviewedAt.toISOString() : null
+        };
+      }
+    );
     const reviewerWorkloads = this.buildReviewerWorkloads(reviewAssignments);
     const cohortSummary = this.buildProgramCohortSummary(submissionSummaries);
 
@@ -1805,19 +1806,25 @@ export class PlatformService {
       submissions: submissionSummaries,
       reviewAssignments,
       reviewComments,
-      availableEvaluations: availableEvaluations.map((evaluation: (typeof availableEvaluations)[number]) => {
-        const evaluationReport = reportsByRevisionId.get(evaluation.currentRevisionId ?? '') ?? null;
+      availableEvaluations: availableEvaluations.map(
+        (evaluation: (typeof availableEvaluations)[number]) => {
+          const evaluationReport =
+            reportsByRevisionId.get(evaluation.currentRevisionId ?? '') ?? null;
 
-        return {
-          evaluationId: evaluation.id,
-          name: evaluation.name,
-          status: evaluation.status,
-          context: this.buildProgramEvaluationContext(evaluationReport?.evaluation ?? evaluation),
-          deterministicSummary: this.buildProgramDeterministicSummary(evaluationReport, evaluation),
-          currentRevisionNumber: evaluation.currentRevisionNumber,
-          updatedAt: evaluation.updatedAt.toISOString()
-        };
-      }),
+          return {
+            evaluationId: evaluation.id,
+            name: evaluation.name,
+            status: evaluation.status,
+            context: this.buildProgramEvaluationContext(evaluationReport?.evaluation ?? evaluation),
+            deterministicSummary: this.buildProgramDeterministicSummary(
+              evaluationReport,
+              evaluation
+            ),
+            currentRevisionNumber: evaluation.currentRevisionNumber,
+            updatedAt: evaluation.updatedAt.toISOString()
+          };
+        }
+      ),
       cohortSummary,
       reviewerWorkloads
     };
@@ -2354,13 +2361,13 @@ export class PlatformService {
     return locale === 'en' ? ['en'] : [locale, 'en'];
   }
 
-  private pickPreferredLocale<T extends { id: string; locale: string }>(
+  private pickPreferredLocale<T extends { id: string; locale: string }, K extends string | number>(
     items: T[],
-    getKey: (item: any) => string,
+    getKey: (item: T) => K,
     locale: string
   ): T[] {
-    const preferred = new Map<string, string>();
-    const fallback = new Map<string, string>();
+    const preferred = new Map<K, string>();
+    const fallback = new Map<K, string>();
 
     for (const item of items) {
       const key = getKey(item);
@@ -2625,8 +2632,8 @@ export class PlatformService {
       {
         key: 'score_interpretation',
         label: 'Workbook score bands available',
-        completed: Boolean(report?.dashboard.scoreInterpretation.bands.length),
-        detail: report?.dashboard.scoreInterpretation.subtitle ?? null
+        completed: Boolean(report?.dashboard.scoreInterpretation?.bands.length),
+        detail: report?.dashboard.scoreInterpretation?.subtitle ?? null
       },
       {
         key: 'material_topics',
@@ -2841,7 +2848,10 @@ export class PlatformService {
           )
         : null,
       recurringTopics: [...topicAggregate.values()]
-        .sort((left, right) => right.appearances - left.appearances || right.totalScore - left.totalScore)
+        .sort(
+          (left, right) =>
+            right.appearances - left.appearances || right.totalScore - left.totalScore
+        )
         .slice(0, 6)
         .map((topic) => ({
           topicCode: topic.topicCode,
@@ -2852,7 +2862,10 @@ export class PlatformService {
           averageScore: Number((topic.totalScore / topic.appearances).toFixed(2))
         })),
       recommendationPatterns: [...recommendationAggregate.values()]
-        .sort((left, right) => right.appearances - left.appearances || left.title.localeCompare(right.title))
+        .sort(
+          (left, right) =>
+            right.appearances - left.appearances || left.title.localeCompare(right.title)
+        )
         .slice(0, 6)
         .map((pattern) => ({
           title: pattern.title,
@@ -2992,7 +3005,7 @@ export class PlatformService {
   ) {
     const locale =
       snapshot && typeof snapshot === 'object' && 'locale' in snapshot
-        ? (snapshot.locale as string | null | undefined) ?? null
+        ? ((snapshot.locale as string | null | undefined) ?? null)
         : null;
 
     await this.prismaService.contentRevision.create({

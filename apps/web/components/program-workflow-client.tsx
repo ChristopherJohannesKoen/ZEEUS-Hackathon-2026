@@ -186,9 +186,7 @@ export function ProgramWorkflowClient({ program }: { program: ProgramDetail }) {
               </p>
             </div>
             <div className="rounded-[20px] bg-white px-4 py-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
-                Avg opportunity
-              </p>
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Avg opportunity</p>
               <p className="mt-2 text-2xl font-black text-slate-950">
                 {program.cohortSummary.averageOpportunityOverall?.toFixed(2) ?? 'n/a'}
               </p>
@@ -200,7 +198,9 @@ export function ProgramWorkflowClient({ program }: { program: ProgramDetail }) {
               <div className="mt-3 grid gap-2">
                 {program.cohortSummary.submissionFunnel.map((item) => (
                   <div className="flex items-center justify-between gap-3" key={item.status}>
-                    <span className="text-sm text-slate-600">{item.status.replaceAll('_', ' ')}</span>
+                    <span className="text-sm text-slate-600">
+                      {item.status.replaceAll('_', ' ')}
+                    </span>
                     <Badge tone="slate">{item.count}</Badge>
                   </div>
                 ))}
@@ -234,8 +234,8 @@ export function ProgramWorkflowClient({ program }: { program: ProgramDetail }) {
                         <Badge tone="slate">{topic.appearances}</Badge>
                       </div>
                       <p className="mt-1 text-xs leading-6 text-slate-500">
-                        Avg {topic.averageScore.toFixed(2)} / High priority {topic.highPriorityCount} /
-                        Relevant {topic.relevantCount}
+                        Avg {topic.averageScore.toFixed(2)} / High priority{' '}
+                        {topic.highPriorityCount} / Relevant {topic.relevantCount}
                       </p>
                     </div>
                   ))

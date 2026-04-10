@@ -17,7 +17,9 @@ function resolveWorkspacePackageEntry(packageDirectory: string) {
   const exportsRoot = packageJson.exports?.['.'];
   const relativeEntry =
     packageJson.module ??
-    (typeof exportsRoot === 'string' ? exportsRoot : exportsRoot?.import ?? exportsRoot?.default) ??
+    (typeof exportsRoot === 'string'
+      ? exportsRoot
+      : (exportsRoot?.import ?? exportsRoot?.default)) ??
     packageJson.main;
 
   if (!relativeEntry) {

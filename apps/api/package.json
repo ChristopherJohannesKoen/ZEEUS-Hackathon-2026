@@ -23,7 +23,7 @@
     "@opentelemetry/auto-instrumentations-node": "^0.66.0",
     "@opentelemetry/exporter-trace-otlp-http": "^0.206.0",
     "@opentelemetry/sdk-node": "^0.206.0",
-    "@aws-sdk/client-s3": "^3.908.0",
+    "@aws-sdk/client-s3": "^3.1030.0",
     "@packages/contracts": "file:../../packages/contracts",
     "@packages/scoring": "file:../../packages/scoring",
     "@packages/shared": "file:../../packages/shared",

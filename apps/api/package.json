@@ -16,7 +16,7 @@
     "@nestjs/common": "^11.1.18",
     "@nestjs/config": "file:../../vendor/nestjs-config-4.0.3.tgz",
     "@nestjs/core": "^11.1.18",
-    "@nestjs/platform-express": "^11.1.18",
+    "@nestjs/platform-express": "^11.1.19",
     "@nestjs/schedule": "^5.0.1",
     "@nestjs/swagger": "file:../../vendor/nestjs-swagger-11.2.6.tgz",
     "@nestjs/throttler": "^6.4.0",
